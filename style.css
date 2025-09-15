@@ -110,7 +110,6 @@ a {
 /* ==== HERO SECTION ==== */
 .hero-section {
     background-color: var(--primary-color);
-    /* In a real project, we'd add the patterned background image here */
     color: var(--light-text);
     display: flex;
     justify-content: center;
@@ -158,4 +157,22 @@ a {
     padding: 20px;
     background-color: #f4f4f4;
     border-top: 1px solid #ddd;
+}
+
+
+/* ==== RESPONSIVE STYLES (for Mobile) ==== */
+@media (max-width: 850px) {
+    .nav-links, .nav-actions {
+        display: none; /* Hide desktop navigation on smaller screens */
+        /* A full implementation would have a hamburger menu button to show these */
+    }
+
+    h1 {
+        font-size: 2.5rem; /* Smaller heading on mobile */
+    }
+    
+    .hero-section {
+        padding: 60px 20px;
+        min-height: 70vh;
+    }
 }
