@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Skate Winery</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="dashboard.css"> </head>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
 <body>
     <header class="dashboard-header">
         <div class="logo">SKATE WINERY</div>
@@ -30,7 +31,6 @@
     </main>
 
     <script>
-        // The JavaScript code is exactly the same as before
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
             const welcomeMessage = document.getElementById('welcomeMessage');
@@ -43,7 +43,6 @@
 
             try {
                 const response = await fetch('http://localhost:3000/api/dashboard', {
-                    method: 'GET',
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
@@ -53,26 +52,64 @@
                     return;
                 }
                 const data = await response.json();
+
                 welcomeMessage.textContent = `Welcome, ${data.user.full_name}!`;
                 phoneDetail.textContent = data.user.phone_number;
                 referralCodeDetail.textContent = data.user.own_referral_code;
+
                 plansContainer.innerHTML = '';
+                // Use data.plans from the server's response
                 data.plans.forEach(plan => {
                     const planCard = document.createElement('div');
                     planCard.className = 'plan-card';
+                    // NEW: Added data-plan-id to the button
                     planCard.innerHTML = `
                         <h3>${plan.name}</h3>
                         <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
                         <p><strong>Daily Revenue:</strong> ₦${plan.daily_revenue.toLocaleString()}</p>
-                        <button class="btn-cta" style="margin-top: 1rem;">Invest</button>
+                        <button class="btn-cta invest-button" data-plan-id="${plan.id}" style="margin-top: 1rem;">Invest</button>
                     `;
                     plansContainer.appendChild(planCard);
                 });
+
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
             }
+
+            // --- NEW: Event Listener for Invest Buttons ---
+            plansContainer.addEventListener('click', async (event) => {
+                // Check if an invest button was clicked
+                if (event.target.classList.contains('invest-button')) {
+                    const planId = event.target.dataset.planId;
+                    
+                    if (!confirm(`Are you sure you want to invest in this plan?`)) {
+                        return; // Stop if the user clicks cancel
+                    }
+
+                    try {
+                        const response = await fetch('http://localhost:3000/api/invest', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({ planId: planId })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Success: ' + result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Investment error:', error);
+                        alert('An investment error occurred. Please try again.');
+                    }
+                }
+            });
+
             logoutButton.addEventListener('click', () => {
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
