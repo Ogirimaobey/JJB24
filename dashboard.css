@@ -1,0 +1,98 @@
+/* ==== DASHBOARD STYLES ==== */
+
+body {
+    background-color: var(--light-gray-bg);
+}
+
+.dashboard-header {
+    background-color: var(--light-text);
+    padding: 1rem 5%;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+#welcomeMessage {
+    font-family: var(--body-font);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+#logoutButton {
+    background: transparent;
+    border: 1px solid #ddd;
+    color: var(--primary-color);
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#logoutButton:hover {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+}
+
+.dashboard-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 5%;
+}
+
+.user-details-card, .investment-plans-section {
+    background-color: var(--light-text);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+h2 {
+    text-align: left;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+.user-details-card p {
+    font-size: 1.1rem;
+}
+
+.user-details-card span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.plan-card {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    background-color: #fafafa;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.plan-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.plan-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
