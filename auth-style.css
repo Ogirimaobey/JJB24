@@ -1,5 +1,4 @@
 /* ==== AUTHENTICATION PAGE STYLES ==== */
-
 .auth-container {
     display: flex;
     justify-content: center;
@@ -19,81 +18,17 @@
     text-align: center;
 }
 
-.auth-logo {
-    margin-bottom: 1rem;
-}
-
-.auth-logo a {
-    text-decoration: none;
-}
-
-.auth-box h2 {
-    margin-bottom: 0.5rem;
-    font-size: 2rem;
-}
-
-.auth-box p {
-    margin-bottom: 2rem;
-    color: #666;
-}
-
-.auth-form {
-    text-align: left;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-family: var(--body-font);
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 5px rgba(128,0,32,0.2);
-}
-
-.form-options {
-    text-align: right;
-    margin-top: -1rem;
-    margin-bottom: 1.5rem;
-}
-
-.form-options a {
-    font-size: 0.9rem;
-}
-
-.btn-auth {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 5px;
-    background-color: var(--primary-color);
-    color: var(--light-text);
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn-auth:hover {
-    background-color: #600018;
-}
-
-.auth-footer {
-    margin-top: 2rem;
-}
+.auth-logo { margin-bottom: 1rem; }
+.auth-logo a { text-decoration: none; }
+.auth-box h2 { font-family: var(--heading-font); margin-bottom: 0.5rem; font-size: 2rem; color: var(--dark-text); }
+.auth-box p { margin-bottom: 2rem; color: #666; }
+.auth-form { text-align: left; }
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.9rem; }
+.form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; font-family: var(--body-font); }
+.form-group input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 5px rgba(128,0,32,0.2); }
+.form-options { text-align: right; margin-top: -1rem; margin-bottom: 1.5rem; }
+.form-options a { font-size: 0.9rem; }
+.btn-auth { width: 100%; padding: 15px; border: none; border-radius: 5px; background-color: var(--primary-color); color: var(--light-text); font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease; }
+.btn-auth:hover { background-color: #600018; }
+.auth-footer { margin-top: 2rem; }
