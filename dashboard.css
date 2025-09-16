@@ -84,12 +84,13 @@ h2 {
     padding: 1.5rem;
     text-align: center;
     background-color: #fafafa;
-    transition: transform 0.3s, box-shadow 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smoother transition */
+    cursor: pointer; /* Change mouse on hover */
 }
 
 .plan-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-8px); /* Increased the lift effect */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Made the shadow stronger */
 }
 
 .plan-card h3 {
