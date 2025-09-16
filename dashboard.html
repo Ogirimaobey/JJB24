@@ -49,7 +49,9 @@
             if (!token) { window.location.href = 'login.html'; return; }
 
             try {
-                const response = await fetch('http://localhost:3000/api/dashboard', { headers: { 'Authorization': 'Bearer ' + token } });
+                const response = await fetch('http://localhost:3000/api/dashboard', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
                 if (!response.ok) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; }
                 const data = await response.json();
                 
@@ -63,7 +65,6 @@
                         const item = document.createElement('div');
                         item.className = 'investment-item';
                         const startDate = new Date(inv.start_date).toLocaleDateString();
-                        // **UPDATED LINE TO INCLUDE DAILY REVENUE**
                         item.innerHTML = `
                             <div class="investment-details">
                                 <h4>${inv.plan_name}</h4>
@@ -78,12 +79,51 @@
                 }
 
                 plansContainer.innerHTML = '';
-                data.plans.forEach(plan => { /* ... existing available plans code ... */ });
+                data.plans.forEach(plan => {
+                    const card = document.createElement('div');
+                    card.className = 'plan-card';
+                    card.innerHTML = `
+                        <h3>${plan.name}</h3>
+                        <p>₦${plan.price.toLocaleString()}</p>
+                        <button class="btn-cta invest-button" data-plan-id="${plan.id}">Invest</button>
+                    `;
+                    plansContainer.appendChild(card);
+                });
 
-            } catch (error) { /* ... existing error handling code ... */ }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            }
             
-            plansContainer.addEventListener('click', async (event) => { /* ... existing invest button code ... */ });
-            logoutButton.addEventListener('click', () => { /* ... existing logout button code ... */ });
+            plansContainer.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('invest-button')) {
+                    const planId = event.target.dataset.planId;
+                    if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+                    try {
+                        const response = await fetch('http://localhost:3000/api/invest', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ planId: planId })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Success: ' + result.message);
+                            window.location.reload(); // Reload the page to show the new investment
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Investment error:', error);
+                        alert('An investment error occurred. Please try again.');
+                    }
+                }
+            });
+
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            });
         });
     </script>
 </body>
