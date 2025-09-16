@@ -49,7 +49,9 @@ body {
     padding: 0 5%;
 }
 
-.user-details-card, .investment-plans-section {
+.user-details-card, 
+.investment-plans-section,
+.my-investments-card { /* Added new card to the list */
     background-color: var(--light-text);
     padding: 2rem;
     border-radius: 8px;
@@ -63,14 +65,28 @@ h2 {
     font-size: 1.8rem;
 }
 
-.user-details-card p {
-    font-size: 1.1rem;
-}
+.user-details-card p { font-size: 1.1rem; }
+.user-details-card span { font-weight: 600; color: var(--primary-color); }
 
-.user-details-card span {
+/* --- NEW STYLES for My Investments Section --- */
+.investment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #eee;
+}
+.investment-item:last-child { border-bottom: none; }
+.investment-item:first-child { padding-top: 0; }
+
+.investment-item h4 {
+    font-family: var(--body-font);
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--primary-color);
 }
+.investment-item p { margin-bottom: 0; font-size: 0.9rem; color: #555; }
+/* --- END OF NEW STYLES --- */
 
 .plans-grid {
     display: grid;
@@ -84,13 +100,13 @@ h2 {
     padding: 1.5rem;
     text-align: center;
     background-color: #fafafa;
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smoother transition */
-    cursor: pointer; /* Change mouse on hover */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
 }
 
 .plan-card:hover {
-    transform: translateY(-8px); /* Increased the lift effect */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15); /* Made the shadow stronger */
+    transform: translateY(-8px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
 
 .plan-card h3 {
