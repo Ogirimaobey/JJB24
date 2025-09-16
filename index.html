@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Skate Winery</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="auth-style.css"> <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="auth-style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
@@ -17,7 +18,7 @@
             </div>
             <h2>Create Your Account</h2>
             <p>Start your investment journey with us today.</p>
-            <form class="auth-form">
+            <form class="auth-form" id="registerForm">
                 <div class="form-group">
                     <label for="fullname">Full Name</label>
                     <input type="text" id="fullname" name="fullname" required>
@@ -37,4 +38,53 @@
                 <button type="submit" class="btn-auth">Register</button>
             </form>
             <div class="auth-footer">
-                <p>Already have an account? <a href="login.html">Login here</a></
+                <p>Already have an account? <a href="login.html">Login here</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get a reference to the form
+        const form = document.getElementById('registerForm');
+
+        // Add an event listener for when the form is submitted
+        form.addEventListener('submit', async (event) => {
+            // Prevent the default form submission (page reload)
+            event.preventDefault();
+
+            // Get the data from the form inputs
+            const fullName = document.getElementById('fullname').value;
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const referralCode = document.getElementById('referral').value;
+
+            // Create a data object to send to the server
+            const userData = { fullName, phone, password, referralCode };
+
+            try {
+                // Send the data to our backend server using the Fetch API
+                const response = await fetch('http://localhost:3000/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Success: ' + result.message);
+                    // In a real app, you would redirect the user to the login page or dashboard
+                    // window.location.href = 'login.html';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('There was an error sending the data:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>
