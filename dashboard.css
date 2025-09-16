@@ -49,14 +49,25 @@ body {
     padding: 0 5%;
 }
 
+.my-investments-card, 
 .user-details-card, 
-.investment-plans-section,
-.my-investments-card { /* Added new card to the list */
+.investment-plans-section {
     background-color: var(--light-text);
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     margin-bottom: 2rem;
+    /* Animation Applied Here */
+    opacity: 0; /* Start hidden for animation */
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Stagger the animation for each card */
+.user-details-card {
+    animation-delay: 0.2s;
+}
+.investment-plans-section {
+    animation-delay: 0.4s;
 }
 
 h2 {
@@ -68,25 +79,14 @@ h2 {
 .user-details-card p { font-size: 1.1rem; }
 .user-details-card span { font-weight: 600; color: var(--primary-color); }
 
-/* --- NEW STYLES for My Investments Section --- */
 .investment-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid #eee;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 0; border-bottom: 1px solid #eee;
 }
 .investment-item:last-child { border-bottom: none; }
 .investment-item:first-child { padding-top: 0; }
-
-.investment-item h4 {
-    font-family: var(--body-font);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--primary-color);
-}
+.investment-item h4 { font-family: var(--body-font); font-size: 1.1rem; font-weight: 600; color: var(--primary-color); }
 .investment-item p { margin-bottom: 0; font-size: 0.9rem; color: #555; }
-/* --- END OF NEW STYLES --- */
 
 .plans-grid {
     display: grid;
@@ -112,4 +112,16 @@ h2 {
 .plan-card h3 {
     color: var(--primary-color);
     margin-bottom: 1rem;
+}
+
+/* --- NEW: Animation Definition --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
