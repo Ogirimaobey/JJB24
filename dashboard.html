@@ -5,33 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Skate Winery</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* Simple styles for the dashboard layout */
-        .dashboard-header { padding: 2rem 5%; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; padding: 2rem 5%; }
-        .plan-card { border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .plan-card h3 { color: var(--primary-color); }
-        #logoutButton { background: #eee; border: 1px solid #ddd; color: var(--dark-text); padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; }
-    </style>
-</head>
+    <link rel="stylesheet" href="dashboard.css"> </head>
 <body>
     <header class="dashboard-header">
-        <h1 id="welcomeMessage">Loading...</h1>
-        <button id="logoutButton">Logout</button>
+        <div class="logo">SKATE WINERY</div>
+        <div class="header-user">
+            <span id="welcomeMessage">Loading...</span>
+            <button id="logoutButton">Logout</button>
+        </div>
     </header>
 
-    <main class="container">
-        <h2>Your Details</h2>
-        <p><strong>Phone:</strong> <span id="phoneDetail">-</span></p>
-        <p><strong>Your Referral Code:</strong> <span id="referralCodeDetail">-</span></p>
+    <main class="dashboard-container">
+        <section class="user-details-card">
+            <h2>Your Details</h2>
+            <p><strong>Phone:</strong> <span id="phoneDetail">-</span></p>
+            <p><strong>Your Referral Code:</strong> <span id="referralCodeDetail">-</span></p>
+        </section>
 
-        <h2 style="margin-top: 2rem;">Available Investment Plans</h2>
-        <div class="plans-grid" id="plansContainer">
-            </div>
+        <section class="investment-plans-section">
+            <h2>Available Investment Plans</h2>
+            <div class="plans-grid" id="plansContainer">
+                </div>
+        </section>
     </main>
 
     <script>
-        // This script runs as soon as the page loads
+        // The JavaScript code is exactly the same as before
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
             const welcomeMessage = document.getElementById('welcomeMessage');
@@ -40,38 +39,24 @@
             const plansContainer = document.getElementById('plansContainer');
             const logoutButton = document.getElementById('logoutButton');
 
-            // If there's no token, the user is not logged in. Redirect them.
-            if (!token) {
-                window.location.href = 'login.html';
-                return;
-            }
+            if (!token) { window.location.href = 'login.html'; return; }
 
             try {
-                // Fetch the protected dashboard data from the server
                 const response = await fetch('http://localhost:3000/api/dashboard', {
                     method: 'GET',
-                    headers: {
-                        // Include the token in the Authorization header
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
 
                 if (!response.ok) {
-                    // If the token is invalid or expired, server will send an error
-                    localStorage.removeItem('token'); // Clear the bad token
+                    localStorage.removeItem('token');
                     window.location.href = 'login.html';
                     return;
                 }
-
                 const data = await response.json();
-
-                // Populate the page with the user's data
                 welcomeMessage.textContent = `Welcome, ${data.user.full_name}!`;
                 phoneDetail.textContent = data.user.phone_number;
                 referralCodeDetail.textContent = data.user.own_referral_code;
-
-                // Populate the investment plans
-                plansContainer.innerHTML = ''; // Clear any loading text
+                plansContainer.innerHTML = '';
                 data.plans.forEach(plan => {
                     const planCard = document.createElement('div');
                     planCard.className = 'plan-card';
@@ -83,15 +68,11 @@
                     `;
                     plansContainer.appendChild(planCard);
                 });
-
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
-                // If there's a network error, also send back to login
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
             }
-
-            // Logout button functionality
             logoutButton.addEventListener('click', () => {
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
