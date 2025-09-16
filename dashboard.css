@@ -1,127 +1,121 @@
-/* ==== DASHBOARD STYLES ==== */
+/* ==== WORLD-CLASS DASHBOARD STYLES ==== */
 
-body {
-    background-color: var(--light-gray-bg);
+.dashboard-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
 .dashboard-header {
-    background-color: var(--light-text);
-    padding: 1rem 5%;
-    border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
 }
 
-.header-user {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-}
-
-#welcomeMessage {
-    font-family: var(--body-font);
-    font-size: 1rem;
+.dashboard-header h1 {
+    font-size: 1.8rem;
     font-weight: 600;
-    color: var(--dark-text);
+    color: var(--text-primary);
 }
 
 #logoutButton {
-    background: transparent;
-    border: 1px solid #ddd;
-    color: var(--primary-color);
-    padding: 8px 16px;
-    border-radius: 5px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    transition: background-color 0.3s, color 0.3s;
+    transition: all 0.3s ease;
 }
 
 #logoutButton:hover {
     background-color: var(--primary-color);
-    color: var(--light-text);
+    color: var(--background-color);
+    border-color: var(--primary-color);
 }
 
-.dashboard-container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 0 5%;
-}
-
-.my-investments-card, 
-.user-details-card, 
-.investment-plans-section {
-    background-color: var(--light-text);
+.card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
     padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* For Safari */
+}
+
+.chart-card {
     margin-bottom: 2rem;
-    /* Animation Applied Here */
-    opacity: 0; /* Start hidden for animation */
-    animation: fadeInUp 0.5s ease-out forwards;
 }
 
-/* Stagger the animation for each card */
-.user-details-card {
-    animation-delay: 0.2s;
-}
-.investment-plans-section {
-    animation-delay: 0.4s;
+.chart-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
 }
 
-h2 {
-    text-align: left;
+.chart-placeholder {
+    height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.card h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
     margin-bottom: 1.5rem;
-    font-size: 1.8rem;
 }
 
-.user-details-card p { font-size: 1.1rem; }
-.user-details-card span { font-weight: 600; color: var(--primary-color); }
-
+/* My Investments Card Styles */
 .investment-item {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 1rem 0; border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
 }
 .investment-item:last-child { border-bottom: none; }
-.investment-item:first-child { padding-top: 0; }
-.investment-item h4 { font-family: var(--body-font); font-size: 1.1rem; font-weight: 600; color: var(--primary-color); }
-.investment-item p { margin-bottom: 0; font-size: 0.9rem; color: #555; }
 
+.investment-item h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.investment-item p { color: var(--primary-color); font-weight: 600; margin: 0; }
+.investment-item small { color: var(--text-secondary); margin: 0; }
+
+/* Available Plans Card Styles */
 .plans-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .plan-card {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    background-color: #fafafa;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
+.plan-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.plan-card p { font-size: 1rem; color: var(--text-secondary); margin: 0; }
+.plan-card .btn-cta { padding: 8px 16px; }
 
-.plan-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-}
-
-.plan-card h3 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-}
-
-/* --- NEW: Animation Definition --- */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+/* Responsive Styles */
+@media (max-width: 900px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
     }
 }
