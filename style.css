@@ -1,13 +1,14 @@
-/* ==== GLOBAL STYLES & VARIABLES ==== */
+/* ==== GLOBAL STYLES & VARIABLES (DARK THEME) ==== */
 :root {
-    --primary-color: #800020; /* Deep Burgundy/Maroon */
-    --secondary-color: #D4AF37; /* Gold */
-    --dark-text: #333333;
-    --light-text: #ffffff;
-    --background-color: #fdfdfd;
-    --light-gray-bg: #f7f7f7;
-    --heading-font: 'Playfair Display', serif;
-    --body-font: 'Poppins', sans-serif;
+    --primary-color: #E0C56E; /* A rich, elegant Gold */
+    --background-color: #121212; /* Deep Charcoal/Off-black */
+    --card-background: rgba(30, 30, 30, 0.6); /* Semi-transparent for glassmorphism */
+    --text-primary: #EAEAEA; /* Light gray for main text */
+    --text-secondary: #9E9E9E; /* Muted gray for secondary text */
+    --border-color: rgba(224, 197, 110, 0.2); /* Faint gold for borders */
+    
+    --heading-font: 'Inter', sans-serif; /* A clean, modern UI font */
+    --body-font: 'Inter', sans-serif;
 }
 
 * {
@@ -19,7 +20,7 @@
 body {
     font-family: var(--body-font);
     background-color: var(--background-color);
-    color: var(--dark-text);
+    color: var(--text-primary);
     line-height: 1.6;
 }
 
@@ -33,4 +34,22 @@ body {
 a {
     text-decoration: none;
     color: var(--primary-color);
+}
+
+.btn-cta {
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    padding: 12px 28px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: inline-block;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-cta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(224, 197, 110, 0.2);
 }
