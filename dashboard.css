@@ -1,82 +1,18 @@
 /* ==== WORLD-CLASS DASHBOARD STYLES ==== */
 
-.dashboard-wrapper {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
-}
+.dashboard-wrapper { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.dashboard-header h1 { font-size: 1.8rem; font-weight: 600; color: var(--text-primary); }
+#logoutButton { background: var(--card-background); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; }
+#logoutButton:hover { background-color: var(--primary-color); color: var(--background-color); border-color: var(--primary-color); }
+.card { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.chart-card { margin-bottom: 2rem; }
+.chart-card h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-secondary); }
+.chart-placeholder { height: 250px; display: flex; align-items: center; justify-content: center; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.card h2 { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1.5rem; }
 
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.dashboard-header h1 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-#logoutButton {
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-#logoutButton:hover {
-    background-color: var(--primary-color);
-    color: var(--background-color);
-    border-color: var(--primary-color);
-}
-
-.card {
-    background: var(--card-background);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2rem;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* For Safari */
-}
-
-.chart-card {
-    margin-bottom: 2rem;
-}
-
-.chart-card h3 {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--text-secondary);
-}
-
-.chart-placeholder {
-    height: 250px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-}
-
-.card h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 1.5rem;
-}
-
-/* My Investments Card Styles */
+/* --- UPDATED STYLES for My Investments Section --- */
 .investment-item {
     display: flex;
     justify-content: space-between;
@@ -85,37 +21,15 @@
     border-bottom: 1px solid var(--border-color);
 }
 .investment-item:last-child { border-bottom: none; }
+.investment-item .investment-details h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+.investment-item .investment-details small { color: var(--text-secondary); }
+.investment-item .investment-value p { color: var(--primary-color); font-weight: 600; margin: 0; font-size: 1.1rem; }
+/* --- END OF UPDATED STYLES --- */
 
-.investment-item h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-.investment-item p { color: var(--primary-color); font-weight: 600; margin: 0; }
-.investment-item small { color: var(--text-secondary); margin: 0; }
-
-/* Available Plans Card Styles */
-.plans-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.plan-card {
-    background: rgba(0,0,0,0.2);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+.plans-grid { display: flex; flex-direction: column; gap: 1rem; }
+.plan-card { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
 .plan-card h3 { font-size: 1.1rem; font-weight: 600; margin: 0; }
 .plan-card p { font-size: 1rem; color: var(--text-secondary); margin: 0; }
 .plan-card .btn-cta { padding: 8px 16px; }
 
-/* Responsive Styles */
-@media (max-width: 900px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-}
+@media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
