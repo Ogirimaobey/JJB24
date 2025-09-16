@@ -4,49 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Skate Winery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-    <header class="dashboard-header">
-        <div class="logo">SKATE WINERY</div>
-        <div class="header-user">
-            <span id="welcomeMessage">Loading...</span>
+    <div class="dashboard-wrapper">
+        <header class="dashboard-header">
+            <h1 id="welcomeMessage">Loading...</h1>
             <button id="logoutButton">Logout</button>
-        </div>
-    </header>
+        </header>
 
-    <main class="dashboard-container">
-        <section class="my-investments-card">
-            <h2>My Active Investments</h2>
-            <div id="myInvestmentsContainer">
-                <p>Loading your investments...</p>
-            </div>
-        </section>
-
-        <section class="user-details-card">
-            <h2>Your Details</h2>
-            <p><strong>Phone:</strong> <span id="phoneDetail">-</span></p>
-            <p><strong>Your Referral Code:</strong> <span id="referralCodeDetail">-</span></p>
-        </section>
-
-        <section class="investment-plans-section">
-            <h2>Available Investment Plans</h2>
-            <div class="plans-grid" id="plansContainer">
+        <main class="dashboard-main">
+            <div class="card chart-card">
+                <h3>Portfolio Overview</h3>
+                <div class="chart-placeholder">
+                    <svg width="100%" height="100%" viewBox="0 0 300 100" preserveAspectRatio="none"><path d="M0,70 Q50,20 100,50 T200,80 T300,40" stroke="#E0C56E" fill="none" stroke-width="2"/></svg>
                 </div>
-        </section>
-    </main>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card my-investments-card">
+                    <h2>My Active Investments</h2>
+                    <div id="myInvestmentsContainer">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+
+                <div class="card available-plans-card">
+                    <h2>Available Plans</h2>
+                    <div class="plans-grid" id="plansContainer">
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
+        // The JavaScript is the same, just targeting the new structure
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
-            // Get references to all our elements
             const welcomeMessage = document.getElementById('welcomeMessage');
-            const phoneDetail = document.getElementById('phoneDetail');
-            const referralCodeDetail = document.getElementById('referralCodeDetail');
+            const myInvestmentsContainer = document.getElementById('myInvestmentsContainer');
             const plansContainer = document.getElementById('plansContainer');
             const logoutButton = document.getElementById('logoutButton');
-            const myInvestmentsContainer = document.getElementById('myInvestmentsContainer');
 
             if (!token) { window.location.href = 'login.html'; return; }
 
@@ -54,7 +59,6 @@
                 const response = await fetch('http://localhost:3000/api/dashboard', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-
                 if (!response.ok) {
                     localStorage.removeItem('token');
                     window.location.href = 'login.html';
@@ -62,46 +66,34 @@
                 }
                 const data = await response.json();
 
-                // --- Populate User Details ---
+                // Populate user name in the header
                 welcomeMessage.textContent = `Welcome, ${data.user.full_name}!`;
-                phoneDetail.textContent = data.user.phone_number;
-                referralCodeDetail.textContent = data.user.own_referral_code;
 
-                // --- NEW: Populate "My Active Investments" section ---
-                myInvestmentsContainer.innerHTML = ''; // Clear loading text
+                // Populate "My Active Investments"
+                myInvestmentsContainer.innerHTML = '';
                 if (data.investments.length === 0) {
-                    myInvestmentsContainer.innerHTML = '<p>You have no active investments. Choose a plan below to get started!</p>';
+                    myInvestmentsContainer.innerHTML = '<p>You have no active investments.</p>';
                 } else {
                     data.investments.forEach(inv => {
-                        const investmentItem = document.createElement('div');
-                        investmentItem.className = 'investment-item'; // We will need to add styles for this
-                        
+                        const item = document.createElement('div');
+                        item.className = 'investment-item';
                         const startDate = new Date(inv.start_date).toLocaleDateString();
-                        const endDate = new Date(inv.end_date).toLocaleDateString();
-
-                        investmentItem.innerHTML = `
-                            <h4>${inv.plan_name}</h4>
-                            <p><strong>Amount:</strong> ₦${Number(inv.investment_amount).toLocaleString()}</p>
-                            <p><strong>Started:</strong> ${startDate}</p>
-                            <p><strong>Ends:</strong> ${endDate}</p>
-                        `;
-                        myInvestmentsContainer.appendChild(investmentItem);
+                        item.innerHTML = `<h4>${inv.plan_name}</h4><p>₦${Number(inv.investment_amount).toLocaleString()}</p><small>${startDate}</small>`;
+                        myInvestmentsContainer.appendChild(item);
                     });
                 }
 
-
-                // --- Populate Available Plans section ---
+                // Populate "Available Plans"
                 plansContainer.innerHTML = '';
                 data.plans.forEach(plan => {
-                    const planCard = document.createElement('div');
-                    planCard.className = 'plan-card';
-                    planCard.innerHTML = `
+                    const card = document.createElement('div');
+                    card.className = 'plan-card';
+                    card.innerHTML = `
                         <h3>${plan.name}</h3>
-                        <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                        <p><strong>Daily Revenue:</strong> ₦${plan.daily_revenue.toLocaleString()}</p>
-                        <button class="btn-cta invest-button" data-plan-id="${plan.id}" style="margin-top: 1rem;">Invest</button>
+                        <p>₦${plan.price.toLocaleString()}</p>
+                        <button class="btn-cta invest-button" data-plan-id="${plan.id}">Invest</button>
                     `;
-                    plansContainer.appendChild(planCard);
+                    plansContainer.appendChild(card);
                 });
 
             } catch (error) {
@@ -109,8 +101,8 @@
                 localStorage.removeItem('token');
                 window.location.href = 'login.html';
             }
-
-            // Event Listeners for buttons
+            
+            // Event Listeners remain the same
             plansContainer.addEventListener('click', async (event) => { /* ... existing invest button code ... */ });
             logoutButton.addEventListener('click', () => { /* ... existing logout button code ... */ });
         });
