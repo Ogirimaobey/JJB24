@@ -44,39 +44,25 @@
     </div>
 
     <script>
-        // Get a reference to the form
         const form = document.getElementById('registerForm');
-
-        // Add an event listener for when the form is submitted
         form.addEventListener('submit', async (event) => {
-            // Prevent the default form submission (page reload)
             event.preventDefault();
-
-            // Get the data from the form inputs
             const fullName = document.getElementById('fullname').value;
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
             const referralCode = document.getElementById('referral').value;
-
-            // Create a data object to send to the server
             const userData = { fullName, phone, password, referralCode };
 
             try {
-                // Send the data to our backend server using the Fetch API
                 const response = await fetch('http://localhost:3000/api/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
-
                 const result = await response.json();
-
                 if (response.ok) {
                     alert('Success: ' + result.message);
-                    // In a real app, you would redirect the user to the login page or dashboard
-                    // window.location.href = 'login.html';
+                    window.location.href = 'login.html';
                 } else {
                     alert('Error: ' + result.message);
                 }
