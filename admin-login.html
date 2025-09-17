@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Skate Winery</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../auth-style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="logo auth-logo">
+                <a>SKATE WINERY | ADMIN</a>
+            </div>
+            <h2>Administrator Login</h2>
+            <p>Please log in to manage the platform.</p>
+            <form class="auth-form" id="adminLoginForm">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn-auth">Login as Admin</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('adminLoginForm');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const phone = document.getElementById('phone').value;
+            const password = document.getElementById('password').value;
+            const loginData = { phone, password };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(loginData)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Save the admin token separately from the user token
+                    localStorage.setItem('adminToken', result.token);
+                    // Redirect to the admin dashboard (which we will build next)
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Admin login error:', error);
+                alert('An error occurred. Please check your connection.');
+            }
+        });
+    </script>
+</body>
+</html>
