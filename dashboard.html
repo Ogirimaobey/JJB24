@@ -16,6 +16,7 @@
             <h1 id="welcomeMessage">Loading...</h1>
             <button id="logoutButton">Logout</button>
         </header>
+
         <main class="dashboard-main">
             <div class="card chart-card">
                 <h3>Portfolio Overview</h3>
@@ -23,6 +24,7 @@
                     <svg width="100%" height="100%" viewBox="0 0 300 100" preserveAspectRatio="none"><path d="M0,70 Q50,20 100,50 T200,80 T300,40" stroke="#E0C56E" fill="none" stroke-width="2"/></svg>
                 </div>
             </div>
+            
             <div class="dashboard-grid">
                 <div class="card my-investments-card">
                     <h2>My Active Investments</h2>
@@ -39,12 +41,10 @@
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('token');
-            // ... getElementById calls are the same ...
             const welcomeMessage = document.getElementById('welcomeMessage');
             const myInvestmentsContainer = document.getElementById('myInvestmentsContainer');
             const plansContainer = document.getElementById('plansContainer');
             const logoutButton = document.getElementById('logoutButton');
-
 
             if (!token) { window.location.href = 'login.html'; return; }
 
@@ -53,11 +53,8 @@
                 if (!response.ok) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; }
                 const data = await response.json();
                 
-                // ** THIS IS THE NEW DEBUGGING LINE **
-                console.log('Data received from server:', data);
-
-                // ... the rest of the script is the same ...
                 welcomeMessage.textContent = `Welcome, ${data.user.full_name}!`;
+
                 myInvestmentsContainer.innerHTML = '';
                 if (data.investments.length === 0) {
                     myInvestmentsContainer.innerHTML = '<p>You have no active investments.</p>';
@@ -70,18 +67,50 @@
                         myInvestmentsContainer.appendChild(item);
                     });
                 }
+
                 plansContainer.innerHTML = '';
                 data.plans.forEach(plan => {
                     const card = document.createElement('div');
                     card.className = 'plan-card';
-                    card.innerHTML = `<h3 >${plan.name}</h3><p>₦${plan.price.toLocaleString()}</p><button class="btn-cta invest-button" data-plan-id="${plan.id}">Invest</button>`;
+                    // ** THIS LINE IS NOW CORRECTED **
+                    card.innerHTML = `<h3>${plan.name}</h3><p>₦${plan.price.toLocaleString()}</p><button class="btn-cta invest-button" data-plan-id="${plan.id}">Invest</button>`;
                     plansContainer.appendChild(card);
                 });
 
-            } catch (error) { /* ... */ }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            }
             
-            plansContainer.addEventListener('click', async (event) => { /* ... */ });
-            logoutButton.addEventListener('click', () => { /* ... */ });
+            plansContainer.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('invest-button')) {
+                    const planId = event.target.dataset.planId;
+                    if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+                    try {
+                        const response = await fetch('http://localhost:3000/api/invest', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                            body: JSON.stringify({ planId: planId })
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            alert('Success: ' + result.message);
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Investment error:', error);
+                        alert('An investment error occurred. Please try again.');
+                    }
+                }
+            });
+
+            logoutButton.addEventListener('click', () => {
+                localStorage.removeItem('token');
+                window.location.href = 'login.html';
+            });
         });
     </script>
 </body>
