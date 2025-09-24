@@ -3,74 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Skate Winery</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="auth-style.css">
+    <title>JJB24</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="auth-box">
-            <div class="logo auth-logo">
-                <a href="index.html">SKATE WINERY</a>
-            </div>
-            <h2>Create Your Account</h2>
-            <p>Start your investment journey with us today.</p>
-            <form class="auth-form" id="registerForm">
-                <div class="form-group">
-                    <label for="fullname">Full Name</label>
-                    <input type="text" id="fullname" name="fullname" required>
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="referral">Referral Code (Optional)</label>
-                    <input type="text" id="referral" name="referral">
-                </div>
-                <button type="submit" class="btn-auth">Register</button>
-            </form>
-            <div class="auth-footer">
-                <p>Already have an account? <a href="login.html">Login here</a></p>
-            </div>
-        </div>
-    </div>
 
-    <script>
-        const form = document.getElementById('registerForm');
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const fullName = document.getElementById('fullname').value;
-            const phone = document.getElementById('phone').value;
-            const password = document.getElementById('password').value;
-            const referralCode = document.getElementById('referral').value;
-            const userData = { fullName, phone, password, referralCode };
+    <main id="app-content">
+        </main>
 
-            try {
-                const response = await fetch('http://localhost:3000/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userData)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    alert('Success: ' + result.message);
-                    window.location.href = 'login.html';
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (error) {
-                console.error('There was an error sending the data:', error);
-                alert('An error occurred. Please try again.');
-            }
-        });
-    </script>
+    <nav class="bottom-nav">
+        <a href="#home" class="nav-link active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="#task" class="nav-link">
+            <i class="fas fa-tasks"></i>
+            <span>Task</span>
+        </a>
+        <a href="#promotion" class="nav-link">
+            <i class="fas fa-gift"></i>
+            <span>Promotion</span>
+        </a>
+        <a href="#me" class="nav-link">
+            <i class="fas fa-user"></i>
+            <span>Me</span>
+        </a>
+    </nav>
+
+    <script src="main.js"></script>
+
 </body>
 </html>
