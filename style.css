@@ -1,15 +1,20 @@
 :root {
     --primary-color: #FACC15; /* Gold/Yellow Accent */
-    --background-gradient: linear-gradient(135deg, #4c1d95, #1e40af);
-    --card-background: rgba(255, 255, 255, 0.1);
+    --background-color: #0c0a24; /* Deep, dark blue/purple */
+    --card-background: rgba(255, 255, 255, 0.05);
     --text-primary: #FFFFFF;
-    --text-secondary: #E5E7EB;
+    --text-secondary: #E5E7EB; /* Light Gray */
+    --border-color: rgba(255, 255, 255, 0.2);
     --font-family: 'Inter', sans-serif;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: var(--font-family);
-    background: var(--background-gradient);
+    background-color: var(--background-color);
+    /* New Mesh Gradient Background */
+    background-image:
+        radial-gradient(at 80% 20%, hsla(284, 70%, 25%, 1) 0px, transparent 50%),
+        radial-gradient(at 20% 90%, hsla(220, 70%, 35%, 1) 0px, transparent 50%);
     color: var(--text-primary);
     padding-bottom: 80px; 
     max-width: 480px;
@@ -27,8 +32,7 @@ body {
     height: 70px;
     background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -39,11 +43,12 @@ body {
 
 /* --- Auth Screen Styles --- */
 .auth-container { padding: 2rem; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
-.auth-container h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+.auth-logo { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 2.5rem; margin-bottom: 1rem; color: var(--primary-color); }
+.auth-container h2 { font-size: 1.8rem; margin-bottom: 0.5rem; font-weight: 600; }
 .auth-container p { color: var(--text-secondary); margin-bottom: 2rem; }
 .form-group { text-align: left; margin-bottom: 1.5rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
 .form-group input { width: 100%; padding: 1rem; border: 1px solid var(--border-color); background: var(--card-background); border-radius: 0.5rem; color: var(--text-primary); font-size: 1rem; }
 .auth-link { margin-top: 1.5rem; }
 .auth-link a { font-weight: 600; cursor: pointer; }
-.btn-auth { width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; background: var(--primary-color); color: #1E40AF; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+.btn-auth { width: 100%; padding: 1rem; border: none; border-radius: 0.5rem; background: var(--primary-color); color: #1E40AF; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 1rem; }
