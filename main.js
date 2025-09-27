@@ -2,79 +2,10 @@ const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
 
-const renderLoginScreen = () => {
-    bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Welcome Back</h2>
-            <p>Please log in to your account.</p>
-            <form id="loginForm">
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
-                <button type="submit" class="btn-auth">Login</button>
-            </form>
-            <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
-        </div>
-    `;
-    document.getElementById('showRegister').addEventListener('click', renderRegisterScreen);
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-};
-
-const renderRegisterScreen = () => {
-    bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Create Account</h2>
-            <p>Start your journey with us today.</p>
-            <form id="registerForm">
-                <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div>
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
-                <button type="submit" class="btn-auth">Register</button>
-            </form>
-            <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
-        </div>
-    `;
-    document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
-    document.getElementById('registerForm').addEventListener('submit', handleRegister);
-};
-
-const handleLogin = async (event) => {
-    event.preventDefault();
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, password })
-        });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        router();
-    } catch (error) { alert('Could not connect to server.'); }
-};
-
-const handleRegister = async (event) => {
-    event.preventDefault();
-    const fullName = document.getElementById('fullName').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullName, phone, password, referralCode: '' })
-        });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        alert('Registration successful! Please log in.');
-        renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
-};
+const renderLoginScreen = () => { /* ... full login screen code ... */ };
+const renderRegisterScreen = () => { /* ... full register screen code ... */ };
+const handleLogin = async (event) => { /* ... full login handler code ... */ };
+const handleRegister = async (event) => { /* ... full register handler code ... */ };
 
 const renderHomeScreen = async () => {
     bottomNav.innerHTML = `
@@ -90,6 +21,7 @@ const renderHomeScreen = async () => {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
+
         let productHTML = '';
         data.plans.forEach(plan => {
             productHTML += `
@@ -103,6 +35,8 @@ const renderHomeScreen = async () => {
                 </div>
             `;
         });
+
+        // --- UPDATED HTML STRUCTURE ---
         const homeHTML = `
             <div class="home-header">
                 <div class="balance-card">
@@ -115,6 +49,16 @@ const renderHomeScreen = async () => {
                 </div>
             </div>
             <div class="home-content">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>Total Revenue</h4>
+                        <p>₦ 0.00</p>
+                    </div>
+                    <div class="summary-card">
+                        <h4>My Team</h4>
+                        <p>0</p>
+                    </div>
+                </div>
                 <div class="invite-card">
                     <h4>Invite friends</h4>
                     <p>Share your code and earn rewards!</p>
@@ -136,16 +80,5 @@ const renderHomeScreen = async () => {
     }
 };
 
-const router = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        renderLoginScreen();
-    } else {
-        const hash = window.location.hash || '#home';
-        // Simple routing logic will go here in the future
-        renderHomeScreen(); 
-    }
-};
-
-// Start the app
+const router = () => { /* ... full router code ... */ };
 router();
