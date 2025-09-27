@@ -17,16 +17,25 @@ body {
     font-family: var(--font-family);
     background: var(--background-gradient);
     color: var(--text-primary);
-    /* This ensures the nav bar doesn't cover content */
     padding-bottom: 80px; 
+    
+    /* --- NEW CODE FOR DESKTOP VIEW --- */
+    max-width: 480px; /* Constrain width on larger screens */
+    margin: 0 auto; /* Center the app on the page */
+    box-shadow: 0 10px 50px rgba(0,0,0,0.3); /* Add a subtle shadow */
+    min-height: 100vh;
 }
 
 /* --- BOTTOM NAVIGATION BAR --- */
 .bottom-nav {
     position: fixed;
     bottom: 0;
-    left: 0;
-    right: 0;
+    /* Adjust for the new centered layout */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px; /* Match the body's max-width */
+
     height: 70px;
     background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
