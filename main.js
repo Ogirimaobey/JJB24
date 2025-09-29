@@ -77,17 +77,61 @@ const handleRegister = async (event) => {
 };
 
 const renderHomeScreen = async () => {
+    bottomNav.innerHTML = `
+        <a href="#home" class="nav-link active"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="#products" class="nav-link"><i class="fas fa-wine-bottle"></i><span>Products</span></a>
+        <a href="#promotion" class="nav-link"><i class="fas fa-gift"></i><span>Promotion</span></a>
+        <a href="#me" class="nav-link"><i class="fas fa-user"></i><span>Me</span></a>
+    `;
+    bottomNav.style.display = 'flex';
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token');
     try {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
-        let productHTML = '';
-        data.plans.slice(0, 3).forEach(plan => {
-            productHTML += `<div class="product-card"><div class="product-info"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p></div><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div>`;
-        });
-        const homeHTML = `<div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div><div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ 0.00</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div><div class="home-content"><div class="invite-card"><h4>Invite friends</h4><p>Share code: <strong>${data.user.own_refer_code}</strong></p></div><h3>Investment Products</h3><div class="product-list">${productHTML}</div></div>`;
+        
+        let activityHTML = '';
+        if (data.investments.length === 0) {
+            activityHTML = '<p>No recent activity.</p>';
+        } else {
+            data.investments.slice(0, 3).forEach(inv => {
+                const startDate = new Date(inv.start_date).toLocaleDateString();
+                activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
+            });
+        }
+
+        const homeHTML = `
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${data.user.full_name.split(' ')[0]}</h4>
+                    <p>Welcome back!</p>
+                </div>
+                <div class="profile-icon"><i class="fas fa-user"></i></div>
+            </div>
+            <div class="balance-card">
+                <small>Total Assets (NGN)</small>
+                <h2>₦ 0.00</h2>
+                <div class="header-buttons">
+                    <button class="btn-deposit">Deposit</button>
+                    <button class="btn-withdraw">Withdraw</button>
+                </div>
+            </div>
+            <div class="home-content">
+                <div class="quick-actions">
+                    <a href="#" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                </div>
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">
+                        ${activityHTML}
+                    </div>
+                </div>
+            </div>
+        `;
         appContent.innerHTML = homeHTML;
     } catch (error) {
         console.error('Failed to render home page:', error);
@@ -102,10 +146,12 @@ const renderProductsPage = async () => {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
+        
         let productHTML = '';
         data.plans.forEach(plan => {
             productHTML += `<div class="product-card-large"><img src="${plan.image}" alt="${plan.name}"><div class="product-details"><h4>${plan.name}</h4><p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p><p><strong>Daily Income:</strong> ₦${plan.daily_income.toLocaleString()}</p><p><strong>Duration:</strong> ${plan.duration} days</p></div><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div>`;
         });
+
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid">${productHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
