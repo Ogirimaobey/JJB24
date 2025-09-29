@@ -1,22 +1,73 @@
-.top-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; }
-.user-greeting h4 { font-size: 1.2rem; font-weight: 600; }
-.user-greeting p { font-size: 0.9rem; color: var(--text-secondary); }
-.profile-icon { width: 45px; height: 45px; background-color: var(--card-background); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary-color); }
-
-.balance-card { background: var(--card-background); border-radius: 1rem; padding: 1.5rem; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin: 0 1.5rem; }
-.balance-card small { font-size: 0.9rem; color: var(--text-secondary); }
-.balance-card h2 { font-size: 2.5rem; color: var(--text-primary); margin: 0.5rem 0 1.5rem 0; }
-.header-buttons { display: flex; gap: 1rem; justify-content: center; }
-.header-buttons button { flex-grow: 1; padding: 0.8rem; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 1rem; cursor: pointer; }
-.btn-deposit { background-color: var(--primary-color); color: #1E40AF; }
-.btn-withdraw { background-color: var(--card-background); color: var(--text-primary); }
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
+.user-greeting h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+.user-greeting p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.profile-icon {
+    width: 45px;
+    height: 45px;
+    background-color: var(--card-background);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+.balance-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    margin: 0 1.5rem;
+}
+.balance-card small {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.balance-card h2 {
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin: 0.5rem 0 1.5rem 0;
+}
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+.header-buttons button {
+    flex-grow: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+}
+.btn-deposit {
+    background-color: var(--primary-color);
+    color: #1E40AF;
+}
+.btn-withdraw {
+    background-color: var(--card-background);
+    color: var(--text-primary);
+}
 
 .home-content { padding: 1.5rem; }
 
-/* --- NEW STYLES --- */
 .quick-actions {
     display: grid;
-    grid-template-columns: repeat(4, 1fr); /* Four columns */
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
     text-align: center;
@@ -35,13 +86,15 @@
     margin-bottom: 0.5rem;
     color: var(--primary-color);
 }
-
 .activity-card {
     background: var(--card-background);
     border-radius: 1rem;
     padding: 1.5rem;
 }
-.activity-card h3 { font-size: 1.2rem; margin-bottom: 1rem; }
+.activity-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
 .activity-item {
     display: flex;
     align-items: center;
