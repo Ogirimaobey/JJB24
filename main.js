@@ -77,13 +77,6 @@ const handleRegister = async (event) => {
 };
 
 const renderHomeScreen = async () => {
-    bottomNav.innerHTML = `
-        <a href="#home" class="nav-link active"><i class="fas fa-home"></i><span>Home</span></a>
-        <a href="#products" class="nav-link"><i class="fas fa-wine-bottle"></i><span>Products</span></a>
-        <a href="#promotion" class="nav-link"><i class="fas fa-gift"></i><span>Promotion</span></a>
-        <a href="#me" class="nav-link"><i class="fas fa-user"></i><span>Me</span></a>
-    `;
-    bottomNav.style.display = 'flex';
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token');
     try {
@@ -102,21 +95,8 @@ const renderHomeScreen = async () => {
         }
 
         const homeHTML = `
-            <div class="top-header">
-                <div class="user-greeting">
-                    <h4>Hello, ${data.user.full_name.split(' ')[0]}</h4>
-                    <p>Welcome back!</p>
-                </div>
-                <div class="profile-icon"><i class="fas fa-user"></i></div>
-            </div>
-            <div class="balance-card">
-                <small>Total Assets (NGN)</small>
-                <h2>₦ 0.00</h2>
-                <div class="header-buttons">
-                    <button class="btn-deposit">Deposit</button>
-                    <button class="btn-withdraw">Withdraw</button>
-                </div>
-            </div>
+            <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ 0.00</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div>
             <div class="home-content">
                 <div class="quick-actions">
                     <a href="#" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
@@ -124,14 +104,8 @@ const renderHomeScreen = async () => {
                     <a href="#" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                     <a href="#" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
                 </div>
-                <div class="activity-card">
-                    <h3>Recent Activity</h3>
-                    <div class="activity-list">
-                        ${activityHTML}
-                    </div>
-                </div>
-            </div>
-        `;
+                <div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div>
+            </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
         console.error('Failed to render home page:', error);
@@ -149,10 +123,19 @@ const renderProductsPage = async () => {
         
         let productHTML = '';
         data.plans.forEach(plan => {
-            productHTML += `<div class="product-card-large"><img src="${plan.image}" alt="${plan.name}"><div class="product-details"><h4>${plan.name}</h4><p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p><p><strong>Daily Income:</strong> ₦${plan.daily_income.toLocaleString()}</p><p><strong>Duration:</strong> ${plan.duration} days</p></div><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div>`;
+            productHTML += `
+                <div class="product-card-pro">
+                    <div class="product-image-container"><img src="${plan.image}" alt="${plan.name}"></div>
+                    <div class="product-details-pro">
+                        <h4>${plan.name}</h4>
+                        <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                        <p><strong>Daily Income:</strong> ₦${plan.daily_income.toLocaleString()}</p>
+                    </div>
+                    <div class="product-action"><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div>
+                </div>
+            `;
         });
-
-        const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid">${productHTML}</div></div>`;
+        const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-list-pro">${productHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
         console.error('Failed to render products page:', error);
@@ -162,10 +145,7 @@ const renderProductsPage = async () => {
 
 const router = () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-        renderLoginScreen();
-        return;
-    }
+    if (!token) { renderLoginScreen(); return; }
     bottomNav.style.display = 'flex';
     const hash = window.location.hash || '#home';
     document.querySelectorAll('.nav-link').forEach(link => {
