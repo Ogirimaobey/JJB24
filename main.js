@@ -77,8 +77,38 @@ const handleRegister = async (event) => {
 };
 
 const renderHomeScreen = async () => {
-    // This is a placeholder for the real home screen. We will build this next.
-    appContent.innerHTML = `<h1>Home Screen</h1>`;
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) { throw new Error('Failed to load data.'); }
+        const data = await response.json();
+        let activityHTML = '';
+        if (data.investments.length === 0) {
+            activityHTML = '<p>No recent activity.</p>';
+        } else {
+            data.investments.slice(0, 3).forEach(inv => {
+                const startDate = new Date(inv.start_date).toLocaleDateString();
+                activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
+            });
+        }
+        const homeHTML = `
+            <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ 0.00</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div>
+            <div class="home-content">
+                <div class="quick-actions">
+                    <a href="#" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                    <a href="#" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                </div>
+                <div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div>
+            </div>`;
+        appContent.innerHTML = homeHTML;
+    } catch (error) {
+        console.error('Failed to render home page:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen.</p>';
+    }
 };
 
 const renderProductsPage = async () => {
@@ -90,21 +120,12 @@ const renderProductsPage = async () => {
         const data = await response.json();
         let productHTML = '';
         data.plans.forEach(plan => {
-            productHTML += `
-                <div class="product-card-wc">
-                    <div class="product-image-wc"><img src="${plan.image}" alt="${plan.name}"></div>
-                    <div class="product-info-wc">
-                        <h4>${plan.name}</h4>
-                        <p>Price: ₦${plan.price.toLocaleString()}</p>
-                        <p>Daily Income: ₦${plan.daily_income.toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-                    </div>
-                </div>
-            `;
+            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
         });
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
+        console.error('Failed to render products page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
@@ -118,14 +139,24 @@ const renderPromotionsPage = async () => {
         const vipPlans = await response.json();
         let vipHTML = '';
         vipPlans.forEach(plan => {
-            vipHTML += `<div class="product-card-wc">... similar card structure for VIPs ...</div>`;
+            vipHTML += `
+                <div class="product-card-wc">
+                    <div class="product-info-wc">
+                        <h4>${plan.name}</h4>
+                        <p>Price: ₦${plan.price.toLocaleString()}</p>
+                        <p>Total Return: ₦${plan.total_return.toLocaleString()}</p>
+                        <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+                    </div>
+                </div>
+            `;
         });
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
+        console.error('Failed to render promotions page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load promotions.</p>';
     }
-}
+};
 
 const router = () => {
     const token = localStorage.getItem('token');
