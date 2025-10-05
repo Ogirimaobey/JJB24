@@ -128,11 +128,51 @@ const renderPromotionsPage = async () => {
         const vipPlans = await response.json();
         let vipHTML = '';
         vipPlans.forEach(plan => {
-            vipHTML += `<div class="product-card-wc"><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p><p>Total Return: ₦${plan.total_return.toLocaleString()}</p><p>Duration: ${plan.duration} days</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+            vipHTML += `
+                <div class="product-card-wc">
+                    <div class="product-info-wc">
+                        <h4>${plan.name}</h4>
+                        <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                        <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
+                        <p><strong>Duration:</strong> ${plan.duration} days</p>
+                        <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+                    </div>
+                </div>
+            `;
         });
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load promotions.</p>'; }
+};
+
+const renderMePage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const data = await response.json();
+        const pageHTML = `
+            <div class="page-container">
+                <div class="profile-header-card">
+                    <div class="profile-icon"><i class="fas fa-user"></i></div>
+                    <h3>${data.user.full_name}</h3>
+                    <p>${data.user.phone_number}</p>
+                </div>
+                <div class="action-list-card">
+                    <a href="#" class="action-list-item"><i class="fas fa-wallet"></i><span>Deposit History</span></a>
+                    <a href="#" class="action-list-item"><i class="fas fa-receipt"></i><span>Withdrawal History</span></a>
+                    <a href="#" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span></a>
+                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                </div>
+            </div>
+        `;
+        appContent.innerHTML = pageHTML;
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            router();
+        });
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
 };
 
 const router = () => {
@@ -150,7 +190,7 @@ const router = () => {
     switch (hash) {
         case '#products': renderProductsPage(); break;
         case '#promotion': renderPromotionsPage(); break;
-        case '#me': appContent.innerHTML = `<div class="page-container"><h1>Me Page</h1></div>`; break;
+        case '#me': renderMePage(); break;
         case '#home': default: renderHomeScreen();
     }
 };
