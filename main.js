@@ -2,6 +2,8 @@ const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// --- RENDER FUNCTIONS (Build the HTML for each page) ---
+
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -41,48 +43,14 @@ const renderRegisterScreen = () => {
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
-const handleLogin = async (event) => {
-    event.preventDefault();
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, password })
-        });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        router();
-    } catch (error) { alert('Could not connect to server.'); }
-};
-
-const handleRegister = async (event) => {
-    event.preventDefault();
-    const fullName = document.getElementById('fullName').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullName, phone, password, referralCode: '' })
-        });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        alert('Registration successful! Please log in.');
-        renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
-};
-
 const renderHomeScreen = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     const token = localStorage.getItem('token');
     try {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) { throw new Error('Failed to load data.'); }
+        if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
+        
         let activityHTML = '';
         if (data.investments.length === 0) {
             activityHTML = '<p>No recent activity.</p>';
@@ -92,6 +60,7 @@ const renderHomeScreen = async () => {
                 activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
             });
         }
+
         const homeHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
             <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ 0.00</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div>
@@ -106,8 +75,7 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        console.error('Failed to render home page:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen.</p>';
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
     }
 };
 
@@ -116,7 +84,7 @@ const renderProductsPage = async () => {
     const token = localStorage.getItem('token');
     try {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) { throw new Error('Failed to load data.'); }
+        if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let productHTML = '';
         data.plans.forEach(plan => {
@@ -125,7 +93,6 @@ const renderProductsPage = async () => {
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        console.error('Failed to render products page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
@@ -145,6 +112,7 @@ const renderPromotionsPage = async () => {
                         <h4>${plan.name}</h4>
                         <p>Price: ₦${plan.price.toLocaleString()}</p>
                         <p>Total Return: ₦${plan.total_return.toLocaleString()}</p>
+                        <p>Duration: ${plan.duration} days</p>
                         <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
                     </div>
                 </div>
@@ -153,10 +121,40 @@ const renderPromotionsPage = async () => {
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        console.error('Failed to render promotions page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load promotions.</p>';
     }
+}
+
+// --- ACTION HANDLERS (for form submissions, etc.) ---
+
+const handleLogin = async (event) => {
+    event.preventDefault();
+    const phone = document.getElementById('phone').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, password }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        localStorage.setItem('token', result.token);
+        router();
+    } catch (error) { alert('Could not connect to server.'); }
 };
+
+const handleRegister = async (event) => {
+    event.preventDefault();
+    const fullName = document.getElementById('fullName').value;
+    const phone = document.getElementById('phone').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, password, referralCode: '' }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        alert('Registration successful! Please log in.');
+        renderLoginScreen();
+    } catch (error) { alert('Could not connect to server.'); }
+};
+
+// --- ROUTER (The "Brain" of the App) ---
 
 const router = () => {
     const token = localStorage.getItem('token');
@@ -173,7 +171,7 @@ const router = () => {
     switch (hash) {
         case '#products': renderProductsPage(); break;
         case '#promotion': renderPromotionsPage(); break;
-        case '#me': appContent.innerHTML = `<h1>Me Page</h1>`; break;
+        case '#me': appContent.innerHTML = `<div class="page-container"><h1>Me Page</h1></div>`; break;
         case '#home': default: renderHomeScreen();
     }
 };
