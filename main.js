@@ -98,7 +98,6 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        console.error('Failed to render home page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
     }
 };
@@ -128,17 +127,7 @@ const renderPromotionsPage = async () => {
         const vipPlans = await response.json();
         let vipHTML = '';
         vipPlans.forEach(plan => {
-            vipHTML += `
-                <div class="product-card-wc">
-                    <div class="product-info-wc">
-                        <h4>${plan.name}</h4>
-                        <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                        <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                        <p><strong>Duration:</strong> ${plan.duration} days</p>
-                        <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-                    </div>
-                </div>
-            `;
+            vipHTML += `<div class="product-card-wc"><div class="product-info-wc"><h4>${plan.name}</h4><p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p><p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p><p><strong>Duration:</strong> ${plan.duration} days</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
         });
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
@@ -150,7 +139,7 @@ const renderMePage = async () => {
     const token = localStorage.getItem('token');
     try {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) throw new Error('Failed to load data.');
+        if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         const pageHTML = `
             <div class="page-container">
@@ -160,15 +149,15 @@ const renderMePage = async () => {
                     <p>${data.user.phone_number}</p>
                 </div>
                 <div class="action-list-card">
-                    <a href="#" class="action-list-item"><i class="fas fa-wallet"></i><span>Deposit History</span></a>
-                    <a href="#" class="action-list-item"><i class="fas fa-receipt"></i><span>Withdrawal History</span></a>
-                    <a href="#" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span></a>
+                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>Transaction History</span></a>
+                    <a href="#settings" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span></a>
                     <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
                 </div>
             </div>
         `;
         appContent.innerHTML = pageHTML;
-        document.getElementById('logoutButton').addEventListener('click', () => {
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
             localStorage.removeItem('token');
             router();
         });
@@ -177,10 +166,7 @@ const renderMePage = async () => {
 
 const router = () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-        renderLoginScreen();
-        return;
-    }
+    if (!token) { renderLoginScreen(); return; }
     bottomNav.style.display = 'flex';
     const hash = window.location.hash || '#home';
     document.querySelectorAll('.nav-link').forEach(link => {
