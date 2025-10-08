@@ -102,72 +102,79 @@ const renderHomeScreen = async () => {
     }
 };
 
-const renderProductsPage = async () => { /* ... full products page code ... */ };
-const renderPromotionsPage = async () => { /* ... full promotions page code ... */ };
-const renderMePage = async () => { /* ... full me page code ... */ };
-
-const renderTaskPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
+const renderProductsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) throw new Error('Failed to load tasks.');
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
-        
+        let productHTML = '';
+        data.plans.forEach(plan => {
+            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+        });
+        const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+        appContent.innerHTML = pageHTML;
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>'; }
+};
+
+const renderPromotionsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Promotions...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/promotions`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const vipPlans = await response.json();
+        let vipHTML = '';
+        vipPlans.forEach(plan => {
+            vipHTML += `<div class="product-card-wc"><div class="product-info-wc"><h4>${plan.name}</h4><p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p><p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p><p><strong>Duration:</strong> ${plan.duration} days</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+        });
+        const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+        appContent.innerHTML = pageHTML;
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load promotions.</p>'; }
+};
+
+const renderMePage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) { throw new Error('Failed to load data.'); }
+        const data = await response.json();
         const pageHTML = `
-            <div class="page-container task-page">
-                <div class="page-header"><h2>Daily Tasks</h2></div>
-                <div class="task-progress-card">
-                    <h4>Tasks for Today</h4>
-                    <p id="task-counter">${data.tasksCompleted} / ${data.tasksRequired}</p>
-                    <div class="progress-bar-container"><div id="progress-bar-fill" style="width: ${(data.tasksCompleted / (data.tasksRequired || 1)) * 100}%;"></div></div>
+            <div class="page-container">
+                <div class="profile-header-card">
+                    <div class="profile-icon"><i class="fas fa-user"></i></div>
+                    <h3>${data.user.full_name}</h3>
+                    <p>${data.user.phone_number}</p>
                 </div>
-                <div class="task-action-card">
-                    <button id="completeTaskBtn" ${data.tasksCompleted >= data.tasksRequired ? 'disabled' : ''}>
-                        ${data.tasksCompleted >= data.tasksRequired ? 'All Tasks Completed' : 'Complete a Task'}
-                    </button>
-                </div>
-                <div class="earnings-summary-grid">
-                    <div class="summary-card"><h4>Today's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Yesterday's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Total Earnings</h4><p>₦ 0.00</p></div>
+                <div class="action-list-card">
+                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>Transaction History</span></a>
+                    <a href="#settings" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span></a>
+                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
                 </div>
             </div>
         `;
         appContent.innerHTML = pageHTML;
-
-        document.getElementById('completeTaskBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('completeTaskBtn');
-            btn.textContent = 'Processing...';
-            btn.disabled = true;
-            try {
-                const completeResponse = await fetch(`${API_BASE_URL}/tasks/complete`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-                const result = await completeResponse.json();
-                if (!completeResponse.ok) {
-                    alert('Error: ' + result.message);
-                    renderTaskPage(); 
-                    return;
-                }
-                document.getElementById('task-counter').textContent = `${result.tasksCompleted} / ${result.tasksRequired}`;
-                document.getElementById('progress-bar-fill').style.width = `${(result.tasksCompleted / (result.tasksRequired || 1)) * 100}%`;
-                if (result.tasksCompleted >= result.tasksRequired) {
-                    btn.textContent = 'All Tasks Completed';
-                } else {
-                    btn.textContent = 'Complete a Task';
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                alert('An error occurred while completing the task.');
-                renderTaskPage();
-            }
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            router();
         });
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks.</p>'; }
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
 };
 
+const renderTaskPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
+    // The logic for fetching and rendering the task page will go here in our next step
+};
 
 const router = () => {
     const token = localStorage.getItem('token');
-    if (!token) { renderLoginScreen(); return; }
+    if (!token) {
+        renderLoginScreen();
+        return;
+    }
     bottomNav.style.display = 'flex';
     const hash = window.location.hash || '#home';
     document.querySelectorAll('.nav-link').forEach(link => {
