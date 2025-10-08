@@ -76,9 +76,9 @@ const renderHomeScreen = async () => {
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let activityHTML = '';
-        if (data.investments.length === 0) {
+        if (data.investments && data.investments.length === 0) {
             activityHTML = '<p>No recent activity.</p>';
-        } else {
+        } else if (data.investments) {
             data.investments.slice(0, 3).forEach(inv => {
                 const startDate = new Date(inv.start_date).toLocaleDateString();
                 activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
@@ -164,11 +164,6 @@ const renderMePage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
 };
 
-const renderTaskPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
-    // The logic for fetching and rendering the task page will go here in our next step
-};
-
 const router = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -185,7 +180,6 @@ const router = () => {
         case '#products': renderProductsPage(); break;
         case '#promotion': renderPromotionsPage(); break;
         case '#me': renderMePage(); break;
-        case '#task': renderTaskPage(); break;
         case '#home': default: renderHomeScreen();
     }
 };
