@@ -2,6 +2,61 @@ const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+const handleLogin = async (event) => {
+    event.preventDefault();
+    const loginIdentifier = document.getElementById('loginIdentifier').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        localStorage.setItem('token', result.token);
+        router();
+    } catch (error) { alert('Could not connect to server.'); }
+};
+
+const handleRegister = async (event) => {
+    event.preventDefault();
+    const fullName = document.getElementById('fullName').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        alert('Registration successful! Please log in.');
+        renderLoginScreen();
+    } catch (error) { alert('Could not connect to server.'); }
+};
+
+const handleInvestClick = async (event) => {
+    if (event.target.classList.contains('btn-invest')) {
+        const planId = event.target.dataset.planId;
+        const token = localStorage.getItem('token');
+        if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+        try {
+            const response = await fetch(`${API_BASE_URL}/invest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ planId })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                alert('Success: ' + result.message);
+                window.location.hash = '#home';
+                router();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            alert('An investment error occurred.');
+        }
+    }
+};
+
+// --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -40,34 +95,6 @@ const renderRegisterScreen = () => {
     `;
     document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
-};
-
-const handleLogin = async (event) => {
-    event.preventDefault();
-    const loginIdentifier = document.getElementById('loginIdentifier').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        router();
-    } catch (error) { alert('Could not connect to server.'); }
-};
-
-const handleRegister = async (event) => {
-    event.preventDefault();
-    const fullName = document.getElementById('fullName').value;
-    const email = document.getElementById('email').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        alert('Registration successful! Please log in.');
-        renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
 };
 
 const renderHomeScreen = async () => {
@@ -173,12 +200,10 @@ const renderTaskPage = async () => {
         const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) throw new Error('Failed to load tasks.');
         const data = await response.json();
-        
         if (data.message) {
             appContent.innerHTML = `<div class="page-container task-page"><div class="page-header"><h2>Daily Tasks</h2></div><p style="text-align: center;">${data.message}</p></div>`;
             return;
         }
-
         const pageHTML = `
             <div class="page-container task-page">
                 <div class="page-header"><h2>Daily Tasks</h2></div>
@@ -192,15 +217,8 @@ const renderTaskPage = async () => {
                         ${data.tasksCompleted >= data.tasksRequired ? 'All Tasks Completed' : 'Complete a Task'}
                     </button>
                 </div>
-                <div class="earnings-summary-grid">
-                    <div class="summary-card"><h4>Today's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Yesterday's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Total Earnings</h4><p>₦ 0.00</p></div>
-                </div>
-            </div>
-        `;
+            </div>`;
         appContent.innerHTML = pageHTML;
-
         document.getElementById('completeTaskBtn').addEventListener('click', async () => {
             const btn = document.getElementById('completeTaskBtn');
             btn.textContent = 'Processing...';
@@ -226,9 +244,7 @@ const renderTaskPage = async () => {
                 renderTaskPage();
             }
         });
-    } catch (error) {
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>';
-    }
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
 };
 
 const router = () => {
@@ -252,5 +268,7 @@ const router = () => {
     }
 };
 
+// --- GLOBAL EVENT LISTENERS ---
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', router);
+appContent.addEventListener('click', handleInvestClick);
