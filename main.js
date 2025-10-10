@@ -10,14 +10,8 @@ const renderLoginScreen = () => {
             <h2>Welcome Back</h2>
             <p>Please log in to your account.</p>
             <form id="loginForm">
-                <div class="form-group">
-                    <label>Email or Phone Number</label>
-                    <input type="text" id="loginIdentifier" required />
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" required />
-                </div>
+                <div class="form-group"><label>Email or Phone Number</label><input type="text" id="loginIdentifier" required /></div>
+                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
             <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
@@ -53,11 +47,7 @@ const handleLogin = async (event) => {
     const loginIdentifier = document.getElementById('loginIdentifier').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ loginIdentifier, password })
-        });
+        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
@@ -72,11 +62,7 @@ const handleRegister = async (event) => {
     const phone = document.getElementById('phone').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullName, phone, email, password })
-        });
+        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         alert('Registration successful! Please log in.');
@@ -180,6 +166,71 @@ const renderMePage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
 };
 
+const renderTaskPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load tasks.');
+        const data = await response.json();
+        
+        if (data.message) {
+            appContent.innerHTML = `<div class="page-container task-page"><div class="page-header"><h2>Daily Tasks</h2></div><p style="text-align: center;">${data.message}</p></div>`;
+            return;
+        }
+
+        const pageHTML = `
+            <div class="page-container task-page">
+                <div class="page-header"><h2>Daily Tasks</h2></div>
+                <div class="task-progress-card">
+                    <h4>Tasks for Today</h4>
+                    <p id="task-counter">${data.tasksCompleted} / ${data.tasksRequired}</p>
+                    <div class="progress-bar-container"><div id="progress-bar-fill" style="width: ${((data.tasksCompleted / (data.tasksRequired || 1)) * 100)}%;"></div></div>
+                </div>
+                <div class="task-action-card">
+                    <button id="completeTaskBtn" ${data.tasksCompleted >= data.tasksRequired ? 'disabled' : ''}>
+                        ${data.tasksCompleted >= data.tasksRequired ? 'All Tasks Completed' : 'Complete a Task'}
+                    </button>
+                </div>
+                <div class="earnings-summary-grid">
+                    <div class="summary-card"><h4>Today's Earning</h4><p>₦ 0.00</p></div>
+                    <div class="summary-card"><h4>Yesterday's Earning</h4><p>₦ 0.00</p></div>
+                    <div class="summary-card"><h4>Total Earnings</h4><p>₦ 0.00</p></div>
+                </div>
+            </div>
+        `;
+        appContent.innerHTML = pageHTML;
+
+        document.getElementById('completeTaskBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('completeTaskBtn');
+            btn.textContent = 'Processing...';
+            btn.disabled = true;
+            try {
+                const completeResponse = await fetch(`${API_BASE_URL}/tasks/complete`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+                const result = await completeResponse.json();
+                if (!completeResponse.ok) {
+                    alert('Error: ' + result.message);
+                    renderTaskPage(); 
+                    return;
+                }
+                document.getElementById('task-counter').textContent = `${result.tasksCompleted} / ${result.tasksRequired}`;
+                document.getElementById('progress-bar-fill').style.width = `${((result.tasksCompleted / (result.tasksRequired || 1)) * 100)}%`;
+                if (result.tasksCompleted >= result.tasksRequired) {
+                    btn.textContent = 'All Tasks Completed';
+                } else {
+                    btn.textContent = 'Complete a Task';
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('An error occurred while completing the task.');
+                renderTaskPage();
+            }
+        });
+    } catch (error) {
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>';
+    }
+};
+
 const router = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -196,6 +247,7 @@ const router = () => {
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
+        case '#task': renderTaskPage(); break;
         case '#home': default: renderHomeScreen();
     }
 };
