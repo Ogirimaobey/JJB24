@@ -44,7 +44,7 @@ const handleInvestClick = async (event) => {
             });
             const result = await response.json();
             if (response.ok) {
-                alert('Success: ' + result.message);
+                alert('Success: ' + result.message); // This will be replaced by the modal
                 window.location.hash = '#home';
                 router();
             } else {
