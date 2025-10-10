@@ -10,8 +10,14 @@ const renderLoginScreen = () => {
             <h2>Welcome Back</h2>
             <p>Please log in to your account.</p>
             <form id="loginForm">
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
+                <div class="form-group">
+                    <label>Email or Phone Number</label>
+                    <input type="text" id="loginIdentifier" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required />
+                </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
             <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
@@ -44,10 +50,14 @@ const renderRegisterScreen = () => {
 
 const handleLogin = async (event) => {
     event.preventDefault();
-    const phone = document.getElementById('phone').value;
+    const loginIdentifier = document.getElementById('loginIdentifier').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, password }) });
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginIdentifier, password })
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
