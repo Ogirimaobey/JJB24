@@ -24,6 +24,12 @@ body {
     color: #111;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
 #adminLogoutButton, .nav-button {
     background-color: #fff;
     color: #333;
@@ -35,8 +41,15 @@ body {
     text-decoration: none;
     transition: background-color 0.2s ease;
 }
+
 #adminLogoutButton:hover, .nav-button:hover {
     background-color: #f8f8f8;
+}
+
+#adminLogoutButton {
+    background-color: #e63946;
+    color: white;
+    border-color: #e63946;
 }
 
 .stats-grid {
