@@ -2,6 +2,25 @@ const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// --- MODAL HELPER ELEMENTS & FUNCTIONS ---
+const successModal = document.getElementById('successModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const modalMessage = document.getElementById('modalMessage');
+
+const showSuccessModal = (message) => {
+    modalMessage.textContent = message;
+    successModal.style.display = 'flex';
+};
+
+const closeModal = () => {
+    successModal.style.display = 'none';
+    if(window.location.hash !== '#home') {
+        window.location.hash = '#home';
+    } else {
+        router();
+    }
+};
+
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
 const handleLogin = async (event) => {
     event.preventDefault();
@@ -44,9 +63,7 @@ const handleInvestClick = async (event) => {
             });
             const result = await response.json();
             if (response.ok) {
-                alert('Success: ' + result.message); // This will be replaced by the modal
-                window.location.hash = '#home';
-                router();
+                showSuccessModal(result.message);
             } else {
                 alert('Error: ' + result.message);
             }
@@ -115,7 +132,7 @@ const renderHomeScreen = async () => {
         }
         const homeHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><a href="#deposit" class="btn-deposit">Deposit</a><a href="#withdraw" class="btn-withdraw">Withdraw</a></div></div>
             <div class="home-content">
                 <div class="quick-actions">
                     <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
@@ -247,6 +264,44 @@ const renderTaskPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
 };
 
+const renderWithdrawPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const data = await response.json();
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>Request Withdrawal</h2></div>
+                <div class="withdraw-card">
+                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(data.user.balance).toLocaleString()}</p></div>
+                    <form id="withdrawForm">
+                        <div class="form-group"><label for="amount">Amount</label><input type="number" id="amount" required /></div>
+                        <div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required /></div>
+                        <div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required /></div>
+                        <div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required /></div>
+                        <button type="submit" class="btn-auth">Submit Request</button>
+                    </form>
+                </div>
+            </div>`;
+        appContent.innerHTML = pageHTML;
+        document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
+            if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
+            try {
+                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const result = await withdrawResponse.json();
+                if (!withdrawResponse.ok) return alert('Error: ' + result.message);
+                showSuccessModal(result.message);
+            } catch (error) { alert('An error occurred.'); }
+        });
+    } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
+};
+
+
 const router = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -264,6 +319,7 @@ const router = () => {
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
+        case '#withdraw': renderWithdrawPage(); break;
         case '#home': default: renderHomeScreen();
     }
 };
@@ -272,3 +328,7 @@ const router = () => {
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', router);
 appContent.addEventListener('click', handleInvestClick);
+closeModalBtn.addEventListener('click', closeModal);
+successModal.addEventListener('click', (e) => {
+    if (e.target === successModal) { closeModal(); }
+});
