@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - JJB24</title>
-    <link rel="stylesheet" href="../style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="admin-dashboard.css">
 </head>
 <body>
     <div class="admin-wrapper">
         <header class="admin-header">
-            <h1>Admin Dashboard</h1>
+            <h1>Dashboard</h1>
             <div class="header-actions">
-                <a href="users.html" class="nav-button">View All Users</a>
+                <a href="users.html" class="nav-button">Manage Users</a>
+                <a href="investments.html" class="nav-button">Manage Investments</a>
                 <button id="adminLogoutButton">Logout</button>
             </div>
         </header>
@@ -20,21 +24,33 @@
         <main class="admin-main">
             <section class="stats-grid">
                 <div class="stat-card">
-                    <h2>Total Users</h2>
+                    <div class="stat-header">
+                        <i class="fas fa-users"></i>
+                        <h2>Total Users</h2>
+                    </div>
                     <p id="totalUsersStat">0</p>
                 </div>
                 <div class="stat-card">
-                    <h2>Total Investments</h2>
+                    <div class="stat-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h2>Total Investments</h2>
+                    </div>
                     <p id="totalInvestmentsStat">0</p>
                 </div>
                 <div class="stat-card">
-                    <h2>Total Amount Invested</h2>
+                    <div class="stat-header">
+                        <i class="fas fa-wallet"></i>
+                        <h2>Total Amount Invested</h2>
+                    </div>
                     <p>₦<span id="totalAmountStat">0</span></p>
                 </div>
             </section>
 
             <section class="data-card">
-                <h2>Recent Users</h2>
+                <div class="stat-header">
+                    <i class="fas fa-user-clock"></i>
+                    <h2>Recent Users</h2>
+                </div>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
@@ -60,12 +76,10 @@
                 window.location.href = 'admin-login.html';
                 return;
             }
-
             try {
                 const response = await fetch('http://localhost:3000/api/admin/stats', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-
                 if (!response.ok) {
                     localStorage.removeItem('adminToken');
                     window.location.href = 'admin-login.html';
@@ -73,32 +87,23 @@
                 }
                 const data = await response.json();
 
-                // Populate stat cards
                 document.getElementById('totalUsersStat').textContent = data.totalUsers;
                 document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments;
                 document.getElementById('totalAmountStat').textContent = Number(data.totalAmountInvested).toLocaleString();
-
-                // Populate recent users table
+                
                 const usersTableBody = document.getElementById('recentUsersTable');
-                usersTableBody.innerHTML = ''; // Clear loading text
+                usersTableBody.innerHTML = '';
                 if (data.recentUsers.length === 0) {
                     usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
                 } else {
                     data.recentUsers.forEach(user => {
                         const row = document.createElement('tr');
                         const registrationDate = new Date(user.created_at).toLocaleString();
-                        row.innerHTML = `
-                            <td>${user.full_name}</td>
-                            <td>${user.phone_number}</td>
-                            <td>${registrationDate}</td>
-                        `;
+                        row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
                         usersTableBody.appendChild(row);
                     });
                 }
-
-            } catch (error) {
-                console.error('Error fetching admin data:', error);
-            }
+            } catch (error) { console.error('Error fetching admin data:', error); }
 
             document.getElementById('adminLogoutButton').addEventListener('click', () => {
                 localStorage.removeItem('adminToken');
