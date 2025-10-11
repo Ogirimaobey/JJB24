@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Investments - Admin</title>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body>
+    <div class="admin-wrapper">
+        <header class="admin-header">
+            <h1>Manage Investments</h1>
+            <a href="admin-dashboard.html" class="nav-button">← Back to Dashboard</a>
+        </header>
+
+        <main class="admin-main">
+            <section class="data-card">
+                <h2>All Investments</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Inv. ID</th>
+                                <th>User Name</th>
+                                <th>Plan Name</th>
+                                <th>Amount (NGN)</th>
+                                <th>Start Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="investmentsTableBody">
+                            <tr><td colspan="5">Loading investments...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/investments', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) { throw new Error('Failed to fetch investments.'); }
+                const investments = await response.json();
+
+                const tableBody = document.getElementById('investmentsTableBody');
+                tableBody.innerHTML = ''; 
+
+                if (investments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5">No investments found.</td></tr>';
+                } else {
+                    investments.forEach(inv => {
+                        const row = document.createElement('tr');
+                        const startDate = new Date(inv.start_date).toLocaleString();
+                        const amount = Number(inv.investment_amount).toLocaleString();
+                        row.innerHTML = `
+                            <td>${inv.id}</td>
+                            <td>${inv.full_name}</td>
+                            <td>${inv.plan_name}</td>
+                            <td>₦${amount}</td>
+                            <td>${startDate}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching investments:', error);
+                const tableBody = document.getElementById('investmentsTableBody');
+                tableBody.innerHTML = '<tr><td colspan="5">Error loading investments.</td></tr>';
+            }
+        });
+    </script>
+</body>
+</html>
