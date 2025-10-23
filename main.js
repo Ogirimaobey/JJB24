@@ -14,7 +14,7 @@ const showSuccessModal = (message) => {
 
 const closeModal = () => {
     successModal.style.display = 'none';
-    if(window.location.hash !== '#home') {
+    if (window.location.hash !== '#home') {
         window.location.hash = '#home';
     } else {
         router();
@@ -27,7 +27,11 @@ const handleLogin = async (event) => {
     const loginIdentifier = document.getElementById('loginIdentifier').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginIdentifier, password })
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
@@ -37,12 +41,18 @@ const handleLogin = async (event) => {
 
 const handleRegister = async (event) => {
     event.preventDefault();
-    const fullName = document.getElementById('fullName').value;
-    const email = document.getElementById('email').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
+
+    const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
+    const email = (document.getElementById('email') || {}).value?.trim() || '';
+    const phone = (document.getElementById('phone') || {}).value?.trim() || '';
+    const password = (document.getElementById('password') || {}).value || '';
+    const cpassword = (document.getElementById('cpassword') || {}).value || '';
+    const referral = (document.getElementById('referral') || {}).value?.trim() || '';
+    if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
+    if (password !== cpassword) return alert('Passwords do not match.');
+
     try {
-        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
+        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password, referral }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         alert('Registration successful! Please log in.');
@@ -82,8 +92,14 @@ const renderLoginScreen = () => {
             <h2>Welcome Back</h2>
             <p>Please log in to your account.</p>
             <form id="loginForm">
-                <div class="form-group"><label>Email or Phone Number</label><input type="text" id="loginIdentifier" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
+                <div class="form-group">
+                <label>Email or Phone Number</label>
+                <input type="text" id="loginIdentifier" required />
+                </div>
+                <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required />
+                </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
             <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
@@ -101,10 +117,30 @@ const renderRegisterScreen = () => {
             <h2>Create Account</h2>
             <p>Start your journey with us today.</p>
             <form id="registerForm">
-                <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div>
-                <div class="form-group"><label>Email Address</label><input type="email" id="email" required /></div>
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" required />
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" required />
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="phone" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required />
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="cpassword"  required />
+                </div>
+                <div class="form-group">
+                     <label>Referral Code (Optional)</label>
+                     <input type="text" id="referral" />
+                 </div>
                 <button type="submit" class="btn-auth">Register</button>
             </form>
             <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
@@ -245,7 +281,7 @@ const renderTaskPage = async () => {
                 const result = await completeResponse.json();
                 if (!completeResponse.ok) {
                     alert('Error: ' + result.message);
-                    renderTaskPage(); 
+                    renderTaskPage();
                     return;
                 }
                 document.getElementById('task-counter').textContent = `${result.tasksCompleted} / ${result.tasksRequired}`;
