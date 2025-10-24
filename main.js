@@ -27,7 +27,7 @@ const handleLogin = async (event) => {
     const loginIdentifier = document.getElementById('loginIdentifier').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
@@ -42,7 +42,7 @@ const handleRegister = async (event) => {
     const phone = document.getElementById('phone').value;
     const password = document.getElementById('password').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         alert('Registration successful! Please log in.');
