@@ -2,6 +2,88 @@ const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// --- MODAL HELPER ELEMENTS & FUNCTIONS ---
+const successModal = document.getElementById('successModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const modalMessage = document.getElementById('modalMessage');
+
+const showSuccessModal = (message) => {
+    modalMessage.textContent = message;
+    successModal.style.display = 'flex';
+};
+
+const closeModal = () => {
+    successModal.style.display = 'none';
+    if (window.location.hash !== '#home') {
+        window.location.hash = '#home';
+    } else {
+        router();
+    }
+};
+
+// --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+const handleLogin = async (event) => {
+    event.preventDefault();
+    const loginIdentifier = document.getElementById('loginIdentifier').value;
+    const password = document.getElementById('password').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginIdentifier, password })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        localStorage.setItem('token', result.token);
+        router();
+    } catch (error) { alert('Could not connect to server.'); }
+};
+
+const handleRegister = async (event) => {
+    event.preventDefault();
+
+    const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
+    const email = (document.getElementById('email') || {}).value?.trim() || '';
+    const phone = (document.getElementById('phone') || {}).value?.trim() || '';
+    const password = (document.getElementById('password') || {}).value || '';
+    const cpassword = (document.getElementById('cpassword') || {}).value || '';
+    const referral = (document.getElementById('referral') || {}).value?.trim() || '';
+    if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
+    if (password !== cpassword) return alert('Passwords do not match.');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password, referral }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        alert('Registration successful! Please log in.');
+        renderLoginScreen();
+    } catch (error) { alert('Could not connect to server.'); }
+};
+
+const handleInvestClick = async (event) => {
+    if (event.target.classList.contains('btn-invest')) {
+        const planId = event.target.dataset.planId;
+        const token = localStorage.getItem('token');
+        if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+        try {
+            const response = await fetch(`${API_BASE_URL}/invest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ planId })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                showSuccessModal(result.message);
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            alert('An investment error occurred.');
+        }
+    }
+};
+
+// --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -10,8 +92,14 @@ const renderLoginScreen = () => {
             <h2>Welcome Back</h2>
             <p>Please log in to your account.</p>
             <form id="loginForm">
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
+                <div class="form-group">
+                <label>Email or Phone Number</label>
+                <input type="text" id="loginIdentifier" required />
+                </div>
+                <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required />
+                </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
             <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
@@ -29,9 +117,30 @@ const renderRegisterScreen = () => {
             <h2>Create Account</h2>
             <p>Start your journey with us today.</p>
             <form id="registerForm">
-                <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div>
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" required />
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" required />
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="phone" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required />
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="cpassword"  required />
+                </div>
+                <div class="form-group">
+                     <label>Referral Code (Optional)</label>
+                     <input type="text" id="referral" />
+                 </div>
                 <button type="submit" class="btn-auth">Register</button>
             </form>
             <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
@@ -39,33 +148,6 @@ const renderRegisterScreen = () => {
     `;
     document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
-};
-
-const handleLogin = async (event) => {
-    event.preventDefault();
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, password }) });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        router();
-    } catch (error) { alert('Could not connect to server.'); }
-};
-
-const handleRegister = async (event) => {
-    event.preventDefault();
-    const fullName = document.getElementById('fullName').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    try {
-        const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, password, referralCode: '' }) });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        alert('Registration successful! Please log in.');
-        renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
 };
 
 const renderHomeScreen = async () => {
@@ -86,7 +168,7 @@ const renderHomeScreen = async () => {
         }
         const homeHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ 0.00</h2><div class="header-buttons"><button class="btn-deposit">Deposit</button><button class="btn-withdraw">Withdraw</button></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><a href="#deposit" class="btn-deposit">Deposit</a><a href="#withdraw" class="btn-withdraw">Withdraw</a></div></div>
             <div class="home-content">
                 <div class="quick-actions">
                     <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
@@ -118,8 +200,8 @@ const renderProductsPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>'; }
 };
 
-const renderPromotionsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Promotions...</p>';
+const renderVipPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
     const token = localStorage.getItem('token');
     try {
         const response = await fetch(`${API_BASE_URL}/promotions`, { headers: { 'Authorization': 'Bearer ' + token } });
@@ -171,6 +253,10 @@ const renderTaskPage = async () => {
         const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) throw new Error('Failed to load tasks.');
         const data = await response.json();
+        if (data.message) {
+            appContent.innerHTML = `<div class="page-container task-page"><div class="page-header"><h2>Daily Tasks</h2></div><p style="text-align: center;">${data.message}</p></div>`;
+            return;
+        }
         const pageHTML = `
             <div class="page-container task-page">
                 <div class="page-header"><h2>Daily Tasks</h2></div>
@@ -184,13 +270,7 @@ const renderTaskPage = async () => {
                         ${data.tasksCompleted >= data.tasksRequired ? 'All Tasks Completed' : 'Complete a Task'}
                     </button>
                 </div>
-                <div class="earnings-summary-grid">
-                    <div class="summary-card"><h4>Today's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Yesterday's Earning</h4><p>₦ 0.00</p></div>
-                    <div class="summary-card"><h4>Total Earnings</h4><p>₦ 0.00</p></div>
-                </div>
-            </div>
-        `;
+            </div>`;
         appContent.innerHTML = pageHTML;
         document.getElementById('completeTaskBtn').addEventListener('click', async () => {
             const btn = document.getElementById('completeTaskBtn');
@@ -201,7 +281,7 @@ const renderTaskPage = async () => {
                 const result = await completeResponse.json();
                 if (!completeResponse.ok) {
                     alert('Error: ' + result.message);
-                    renderTaskPage(); 
+                    renderTaskPage();
                     return;
                 }
                 document.getElementById('task-counter').textContent = `${result.tasksCompleted} / ${result.tasksRequired}`;
@@ -220,6 +300,44 @@ const renderTaskPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
 };
 
+const renderWithdrawPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    const token = localStorage.getItem('token');
+    try {
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const data = await response.json();
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>Request Withdrawal</h2></div>
+                <div class="withdraw-card">
+                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(data.user.balance).toLocaleString()}</p></div>
+                    <form id="withdrawForm">
+                        <div class="form-group"><label for="amount">Amount</label><input type="number" id="amount" required /></div>
+                        <div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required /></div>
+                        <div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required /></div>
+                        <div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required /></div>
+                        <button type="submit" class="btn-auth">Submit Request</button>
+                    </form>
+                </div>
+            </div>`;
+        appContent.innerHTML = pageHTML;
+        document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const amount = document.getElementById('amount').value;
+            const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
+            if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
+            try {
+                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const result = await withdrawResponse.json();
+                if (!withdrawResponse.ok) return alert('Error: ' + result.message);
+                showSuccessModal(result.message);
+            } catch (error) { alert('An error occurred.'); }
+        });
+    } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
+};
+
+
 const router = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -234,12 +352,19 @@ const router = () => {
     });
     switch (hash) {
         case '#products': renderProductsPage(); break;
-        case '#promotion': renderPromotionsPage(); break;
+        case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
+        case '#withdraw': renderWithdrawPage(); break;
         case '#home': default: renderHomeScreen();
     }
 };
 
+// --- GLOBAL EVENT LISTENERS ---
 window.addEventListener('hashchange', router);
 window.addEventListener('DOMContentLoaded', router);
+appContent.addEventListener('click', handleInvestClick);
+closeModalBtn.addEventListener('click', closeModal);
+successModal.addEventListener('click', (e) => {
+    if (e.target === successModal) { closeModal(); }
+});

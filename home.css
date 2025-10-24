@@ -1,61 +1,342 @@
 /* --- SHARED STYLES --- */
-.page-container { padding: 1.5rem; }
-.page-header { text-align: center; margin-bottom: 1.5rem; }
-.page-header h2 { font-size: 1.5rem; }
+.page-container {
+    padding: 1.5rem;
+}
+
+.page-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-header h2 {
+    font-size: 1.5rem;
+}
 
 /* --- HOME SCREEN STYLES --- */
-.top-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; }
-.user-greeting h4 { font-size: 1.2rem; font-weight: 600; }
-.user-greeting p { font-size: 0.9rem; color: var(--text-secondary); }
-.profile-icon { width: 45px; height: 45px; background-color: var(--card-background); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary-color); }
-.balance-card { background: var(--card-background); border-radius: 1rem; padding: 1.5rem; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin: 0 1.5rem; }
-.balance-card small { font-size: 0.9rem; color: var(--text-secondary); }
-.balance-card h2 { font-size: 2.5rem; color: var(--text-primary); margin: 0.5rem 0 1.5rem 0; }
-.header-buttons { display: flex; gap: 1rem; justify-content: center; }
-.header-buttons button { flex-grow: 1; padding: 0.8rem; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 1rem; cursor: pointer; }
-.btn-deposit { background-color: var(--primary-color); color: #1E40AF; }
-.btn-withdraw { background-color: var(--card-background); color: var(--text-primary); }
-.home-content { padding: 1.5rem; }
-.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center; }
-.action-button { background: var(--card-background); border-radius: 1rem; padding: 1rem; color: var(--text-secondary); text-decoration: none; font-size: 0.8rem; }
-.action-button i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--primary-color); }
-.activity-card { background: var(--card-background); border-radius: 1rem; padding: 1.5rem; }
-.activity-card h3 { font-size: 1.2rem; margin-bottom: 1rem; }
-.activity-item { display: flex; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border-color); }
-.activity-item:last-child { border-bottom: none; }
-.activity-item i { font-size: 1.2rem; margin-right: 1rem; color: var(--primary-color); }
-.activity-details p { font-weight: 600; }
-.activity-details small { color: var(--text-secondary); }
+.top-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
+
+.user-greeting h4 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.user-greeting p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.profile-icon {
+    width: 45px;
+    height: 45px;
+    background-color: var(--card-background);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.balance-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    margin: 0 1.5rem;
+}
+
+.balance-card small {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.balance-card h2 {
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin: 0.5rem 0 1.5rem 0;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.header-buttons button {
+    flex-grow: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.btn-deposit {
+    background-color: var(--primary-color);
+    color: #1E40AF;
+}
+
+.btn-withdraw {
+    background-color: var(--card-background);
+    color: var(--text-primary);
+}
+
+.home-content {
+    padding: 1.5rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.action-button {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.8rem;
+}
+
+.action-button i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.activity-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.activity-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item i {
+    font-size: 1.2rem;
+    margin-right: 1rem;
+    color: var(--primary-color);
+}
+
+.activity-details p {
+    font-weight: 600;
+}
+
+.activity-details small {
+    color: var(--text-secondary);
+}
 
 /* --- PRODUCTS & PROMOTIONS PAGE STYLES --- */
-.product-grid-wc { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.product-card-wc { background: var(--card-background); border: 1px solid var(--border-color); border-radius: 1rem; overflow: hidden; backdrop-filter: blur(10px); }
-.product-image-wc img { width: 100%; height: 100px; object-fit: cover; }
-.product-info-wc { padding: 1rem; }
-.product-info-wc h4 { font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.product-info-wc p { font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 1rem 0; }
-.btn-invest { width: 100%; font-size: 0.9rem; padding: 0.8rem; border: none; border-radius: 0.5rem; background: var(--primary-color); color: #1E40AF; font-weight: 600; cursor: pointer; }
+.product-grid-wc {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.product-card-wc {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 1rem;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.product-image-wc img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+}
+
+.product-info-wc {
+    padding: 1rem;
+}
+
+.product-info-wc h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-info-wc p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 1rem 0;
+}
+
+.btn-invest {
+    width: 100%;
+    font-size: 0.9rem;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--primary-color);
+    color: #1E40AF;
+    font-weight: 600;
+    cursor: pointer;
+}
 
 /* --- ME PAGE STYLES --- */
-.profile-header-card { text-align: center; padding: 2rem 1rem; background: var(--card-background); border-radius: 1rem; margin-bottom: 1.5rem; }
-.profile-header-card .profile-icon { margin: 0 auto 1rem auto; width: 60px; height: 60px; font-size: 2rem; }
-.profile-header-card h3 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-.profile-header-card p { color: var(--text-secondary); }
-.action-list-card { background: var(--card-background); border-radius: 1rem; overflow: hidden; }
-.action-list-item { display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color); color: var(--text-primary); text-decoration: none; transition: background-color 0.2s ease; }
-.action-list-item:last-child { border-bottom: none; }
-.action-list-item:hover { background-color: rgba(255, 255, 255, 0.1); }
-.action-list-item i { font-size: 1.2rem; color: var(--primary-color); width: 40px; }
-.action-list-item span { font-weight: 500; }
-#logoutButton span, #logoutButton i { color: #ff5252; }
+.profile-header-card {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: var(--card-background);
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-header-card .profile-icon {
+    margin: 0 auto 1rem auto;
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+}
+
+.profile-header-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.profile-header-card p {
+    color: var(--text-secondary);
+}
+
+.action-list-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.action-list-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.action-list-item:last-child {
+    border-bottom: none;
+}
+
+.action-list-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.action-list-item i {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    width: 40px;
+}
+
+.action-list-item span {
+    font-weight: 500;
+}
+
+#logoutButton span,
+#logoutButton i {
+    color: #ff5252;
+}
 
 /* --- TASK PAGE STYLES --- */
-.task-page .page-header h2 { color: var(--primary-color); }
-.task-progress-card, .task-action-card { background: var(--card-background); border-radius: 1rem; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
-.task-progress-card h4 { font-size: 1rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
-.task-progress-card p { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); }
-.progress-bar-container { background: rgba(0,0,0,0.2); border-radius: 1rem; height: 10px; margin-top: 1rem; overflow: hidden; }
-#progress-bar-fill { background-color: var(--primary-color); height: 100%; border-radius: 1rem; transition: width 0.5s ease; }
-#completeTaskBtn { width: 100%; font-size: 1.2rem; padding: 1rem; border: none; border-radius: 0.5rem; background: var(--primary-color); color: #1E40AF; font-weight: 700; cursor: pointer; }
-#completeTaskBtn:disabled { background-color: #555; color: #999; cursor: not-allowed; }
-.earnings-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.task-page .page-header h2 {
+    color: var(--primary-color);
+}
+
+.task-progress-card,
+.task-action-card,
+.earnings-summary-grid .summary-card {
+    background: var(--card-background);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.task-progress-card h4 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.task-progress-card p {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.progress-bar-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+    height: 10px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+#progress-bar-fill {
+    background-color: var(--primary-color);
+    height: 100%;
+    border-radius: 1rem;
+    transition: width 0.5s ease;
+}
+
+#completeTaskBtn {
+    width: 100%;
+    font-size: 1.2rem;
+    padding: 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--primary-color);
+    color: #1E40AF;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#completeTaskBtn:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+
+.earnings-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.earnings-summary-grid .summary-card h4 {
+    font-size: 0.8rem;
+}
+
+.earnings-summary-grid .summary-card p {
+    font-size: 1.2rem;
+}
