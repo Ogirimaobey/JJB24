@@ -48,12 +48,35 @@ const handleRegister = async (event) => {
     if (password !== cpassword) return alert('Passwords do not match.');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
+        const payload = { fullName, phone, email, password };
+        if (referral) {
+            try {
+
+                const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referral })
+                });
+                const result = await response.json();
+                if (!response.ok) return alert(`Referral Error: ${result.message}`);
+                payload.referral = referral;
+                
+            } catch (error) {
+                return alert('Could not validate referral code.');
+            }
+        }
+        const response = await fetch(`${API_BASE_URL}/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         alert('Registration successful! Please log in.');
         renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
+    } catch (error) {
+        alert('Could not connect to server.');
+    }
 };
 
 const handleInvestClick = async (event) => {
