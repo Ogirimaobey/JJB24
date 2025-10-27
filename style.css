@@ -123,6 +123,18 @@ body {
     font-size: 1rem;
 }
 
+/* OTP Input Styling */
+.otp-input {
+    font-size: 2rem;
+    text-align: center;
+    letter-spacing: 0.5rem;
+    font-weight: 600;
+}
+.otp-input::placeholder {
+    letter-spacing: 0.5rem;
+    opacity: 0.5;
+}
+
 .auth-link {
     margin-top: 1.5rem;
 }
