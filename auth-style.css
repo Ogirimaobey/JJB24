@@ -29,6 +29,19 @@
 .form-group input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 5px rgba(128,0,32,0.2); }
 .form-options { text-align: right; margin-top: -1rem; margin-bottom: 1.5rem; }
 .form-options a { font-size: 0.9rem; }
-.btn-auth { width: 100%; padding: 15px; border: none; border-radius: 5px; background-color: var(--primary-color); color: var(--light-text); font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.3s ease; }
-.btn-auth:hover { background-color: #600018; }
+.btn-auth { width: 100%; padding: 15px; border: none; border-radius: 5px; background-color: var(--primary-color); color: var(--light-text); font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background-color 0.03s ease; }
+
 .auth-footer { margin-top: 2rem; }
+
+.Login-register{
+    
+    transition: background-color 0.8s ease;
+}
+.Login-register:hover {
+    background-color: #161618cb;
+    font-weight: 600;
+    
+}
+.Login-register:active { background-color: #40568bcf;}
+
+
