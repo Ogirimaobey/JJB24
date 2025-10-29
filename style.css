@@ -126,13 +126,23 @@ body {
 .auth-link {
     margin-top: 1.5rem;
 }
+.Login-register{
+    
+    transition: background-color 0.8s ease;
+}
+.Login-register:hover {
+    background-color: #161618cb;
+    font-weight: 600;
+    
+}
+.Login-register:active { background-color: #40568bcf;}
+
 
 .auth-link a {
     font-weight: 600;
-    cursor: pointer;
-}
+    cursor: pointer;}
 
-.btn-auth {
+.btn-auth  {
     width: 100%;
     padding: 1rem;
     border: none;
@@ -143,8 +153,10 @@ body {
     font-weight: 700;
     cursor: pointer;
     margin-top: 1rem;
+    transition: background-color 0.5s ease;
 }
-
+.btn-auth:hover { background-color: #fac105fb; }
+.btn-auth:active { background-color: #1E40AF; }
 .btn-cta {
     background-color: var(--primary-color);
     color: var(--background-color);
@@ -210,4 +222,6 @@ body {
 #closeModalBtn {
     width: 100%;
 }
+
+
 
