@@ -60,7 +60,7 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-                
+
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
@@ -172,9 +172,13 @@ const renderRegisterScreen = () => {
 
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-  
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
     try {
-        const response = await fetch(`${API_BASE_URL}/api/users/login`, { method :"GET", credentials: "include"});
+        /*
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { 
+            headers: { 'Authorization': 'Bearer ' + token } 
+        });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let activityHTML = '';
@@ -186,17 +190,63 @@ const renderHomeScreen = async () => {
                 activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
             });
         }
+            */
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ userId })
+        });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const data = await response.json();
+
+        if (!data.success) throw new Error('Invalid Response.');
+
+        const fullName = data.balance.full_name || 'User';
+        const balance = data.balance.balance || 0;
+
+
         const homeHTML = `
-            <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><a href="#deposit" class="btn-deposit">Deposit</a><a href="#withdraw" class="btn-withdraw">Withdraw</a></div></div>
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
+                    <p>Welcome back!</p>
+                </div>
+                <div class="profile-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="balance-card">
+                <small>Total Assets (NGN)</small>
+                <h2>₦ ${balance}</h2>
+                <div class="header-buttons">
+                    <a href="#deposit" class="btn-deposit">Deposit</a>
+                    <a href="#withdraw" class="btn-withdraw">Withdraw</a>
+                </div>
+            </div>
+
             <div class="home-content">
                 <div class="quick-actions">
-                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
-                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
-                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
-                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                    <a href="#team" class="action-button">
+                        <i class="fas fa-users"></i>
+                        <span>My Team</span>
+                    </a>
+                    <a href="#history" class="action-button">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                    <a href="#support" class="action-button">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </a>
+                    <a href="#rewards" class="action-button">
+                        <i class="fas fa-gift"></i>
+                        <span>Rewards</span>
+                    </a>
                 </div>
-                <div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div>
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">${activityHTML}</div>
+                </div>
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
