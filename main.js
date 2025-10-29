@@ -122,10 +122,10 @@ const renderLoginScreen = () => {
                 </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
-            <p class="auth-link">Don't have an account? <a  class="Login-register">Register here</a></p>
+            <p class="auth-link">Don't have an account? <a  class="Login-register" id="ShowLogin">Register here</a></p>
         </div>
     `;
-    document.getElementById('showRegister').addEventListener('click', renderRegisterScreen);
+    document.getElementById('ShowLogin').addEventListener('click', renderRegisterScreen);
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
@@ -163,10 +163,10 @@ const renderRegisterScreen = () => {
                  </div>
                 <button type="submit" class="btn-auth">Register</button>
             </form>
-            <p class="auth-link">Already have an account? <a class="Login-register" >Login here</a></p>
+            <p class="auth-link">Already have an account? <a class="Login-register" id="ShowRegister">Login here</a></p>
         </div>
     `;
-    document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
+    document.getElementById('ShowRegister').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
