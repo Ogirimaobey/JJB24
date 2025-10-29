@@ -1,6 +1,8 @@
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'http://localhost:3000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -184,12 +186,15 @@ const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/users/allItems`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let productHTML = '';
         data.plans.forEach(plan => {
-            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" 
+            alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: 
+            ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}
+            </p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
         });
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
