@@ -1,6 +1,6 @@
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'http://localhost:3000'; // Adjust as needed
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -24,15 +24,36 @@ const closeModal = () => {
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
 const handleLogin = async (event) => {
     event.preventDefault();
-    const email = document.getElementById('email').value;
+    const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
+    
+    if (!loginIdentifier || !password) {
+        return alert('Please provide email or phone and password.');
+    }
+    
+    // Detect if it's an email or phone number
+    const isEmail = loginIdentifier.includes('@');
+    const loginData = { password };
+    
+    if (isEmail) {
+        loginData.email = loginIdentifier;
+    } else {
+        loginData.phone = loginIdentifier;
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/api/users/login`, { method: 'POST',credentials:"include", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        renderHomeScreen();
-        
-    } catch (error) { alert('Could not connect to server.'); }
+        localStorage.setItem('token', result.token);
+        router();
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
@@ -73,13 +94,50 @@ const handleRegister = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
 
-        renderOTPScreen(email);
+        // Backend sends OTP implicitly during registration.
+        // Show OTP screen and verify using the email + code.
+        alert(`OTP sent to ${email}. Please check your inbox.`);
+        renderOTPVerificationScreen(email);
     } catch (error) {
         console.error(error.message)
     }
 };
 
+const handleOTPVerification = async (event, email) => {
+    event.preventDefault();
+    const otpCode = document.getElementById('otpCode').value;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp: otpCode })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('Phone verified successfully! Please log in.');
+        renderLoginScreen();
+    } catch (error) {
+        alert('Could not verify OTP. Please try again.');
+    }
+};
 
+const handleResendOTP = async (phone) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('New OTP sent to your phone!');
+    } catch (error) {
+        alert('Could not resend OTP. Please try again.');
+    }
+};
 
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
@@ -168,6 +226,47 @@ const renderRegisterScreen = () => {
     `;
     document.getElementById('ShowRegister').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
+};
+
+const renderOTPVerificationScreen = (email) => {
+    bottomNav.style.display = 'none';
+    appContent.innerHTML = `
+        <div class="auth-container">
+            <div class="auth-logo">JJB24</div>
+            <h2>Verify Your Phone</h2>
+            <p>Enter the 6-digit code sent to ${email}</p>
+            
+            <form id="otpForm">
+                <div class="form-group">
+                    <label>OTP Code</label>
+                    <input type="text" 
+                           id="otpCode" 
+                           maxlength="6" 
+                           pattern="[0-9]{6}" 
+                           placeholder="000000"
+                           class="otp-input"
+                           required 
+                           autocomplete="one-time-code" />
+                </div>
+                
+                <button type="submit" class="btn-auth">Verify</button>
+            </form>
+            
+            <p class="auth-link">
+                Didn't receive code? 
+                <a id="resendOTP">Resend OTP</a>
+            </p>
+            
+            <p class="auth-link">
+                <a id="backToLogin">Back to Login</a>
+            </p>
+        </div>
+    `;
+    
+    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    // Optional: keep phone-based resend if backend supports it; otherwise this can be wired to email.
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
+    document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
 };
 
 const renderHomeScreen = async () => {
