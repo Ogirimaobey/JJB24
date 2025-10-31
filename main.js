@@ -103,6 +103,7 @@ const handleRegister = async (event) => {
     }
 };
 
+
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
