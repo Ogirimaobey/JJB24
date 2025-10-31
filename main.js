@@ -24,15 +24,36 @@ const closeModal = () => {
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
 const handleLogin = async (event) => {
     event.preventDefault();
-    const loginIdentifier = document.getElementById('loginIdentifier').value;
+    const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
+    
+    if (!loginIdentifier || !password) {
+        return alert('Please provide email or phone and password.');
+    }
+    
+    // Detect if it's an email or phone number
+    const isEmail = loginIdentifier.includes('@');
+    const loginData = { password };
+    
+    if (isEmail) {
+        loginData.email = loginIdentifier;
+    } else {
+        loginData.phone = loginIdentifier;
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
         router();
-    } catch (error) { alert('Could not connect to server.'); }
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
