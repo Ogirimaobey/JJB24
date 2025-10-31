@@ -1,8 +1,6 @@
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'http://localhost:3000/api';
-// const API_BASE_URL = 'http://localhost:5000/api';
-
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -26,15 +24,36 @@ const closeModal = () => {
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
 const handleLogin = async (event) => {
     event.preventDefault();
-    const loginIdentifier = document.getElementById('loginIdentifier').value;
+    const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
+    
+    if (!loginIdentifier || !password) {
+        return alert('Please provide email or phone and password.');
+    }
+    
+    // Detect if it's an email or phone number
+    const isEmail = loginIdentifier.includes('@');
+    const loginData = { password };
+    
+    if (isEmail) {
+        loginData.email = loginIdentifier;
+    } else {
+        loginData.phone = loginIdentifier;
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loginIdentifier, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
         router();
-    } catch (error) { alert('Could not connect to server.'); }
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
@@ -50,23 +69,84 @@ const handleRegister = async (event) => {
     if (password !== cpassword) return alert('Passwords do not match.');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phone, email, password }) });
+        const payload = { fullName, phone, email, password };
+        if (referral) {
+            try {
+
+                const response = await fetch(`${API_BASE_URL}/api/users/validate-referral`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },credentials: "include" ,
+                    body: JSON.stringify({ referral })
+                });
+                const result = await response.json();
+                if (!response.ok) return alert(`Referral Error: ${result.message}`);
+                payload.referral = referral;
+
+            } catch (error) {
+                return alert('Could not validate referral code.');
+            }
+        }
+        const response = await fetch(`${API_BASE_URL}/api/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', },credentials: "include" ,
+            body: JSON.stringify(payload)
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        alert('Registration successful! Please log in.');
+
+        // Backend sends OTP implicitly during registration.
+        // Show OTP screen and verify using the email + code.
+        alert(`OTP sent to ${email}. Please check your inbox.`);
+        renderOTPVerificationScreen(email);
+    } catch (error) {
+        console.error(error.message)
+    }
+};
+
+const handleOTPVerification = async (event, email) => {
+    event.preventDefault();
+    const otpCode = document.getElementById('otpCode').value;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp: otpCode })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('Phone verified successfully! Please log in.');
         renderLoginScreen();
-    } catch (error) { alert('Could not connect to server.'); }
+    } catch (error) {
+        alert('Could not verify OTP. Please try again.');
+    }
+};
+
+const handleResendOTP = async (phone) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('New OTP sent to your phone!');
+    } catch (error) {
+        alert('Could not resend OTP. Please try again.');
+    }
 };
 
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const planId = event.target.dataset.planId;
-        const token = localStorage.getItem('token');
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         try {
-            const response = await fetch(`${API_BASE_URL}/invest`, {
+            const response = await fetch(`${API_BASE_URL}/api/payment/initialize`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 'Content-Type': 'application/json'},credentials: "include" ,
                 body: JSON.stringify({ planId })
             });
             const result = await response.json();
@@ -92,7 +172,7 @@ const renderLoginScreen = () => {
             <form id="loginForm">
                 <div class="form-group">
                 <label>Email or Phone Number</label>
-                <input type="text" id="loginIdentifier" required />
+                <input type="text" id="email" required />
                 </div>
                 <div class="form-group">
                 <label>Password</label>
@@ -100,10 +180,10 @@ const renderLoginScreen = () => {
                 </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
-            <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
+            <p class="auth-link">Don't have an account? <a  class="Login-register" id="ShowLogin">Register here</a></p>
         </div>
     `;
-    document.getElementById('showRegister').addEventListener('click', renderRegisterScreen);
+    document.getElementById('ShowLogin').addEventListener('click', renderRegisterScreen);
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
@@ -141,18 +221,63 @@ const renderRegisterScreen = () => {
                  </div>
                 <button type="submit" class="btn-auth">Register</button>
             </form>
-            <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
+            <p class="auth-link">Already have an account? <a class="Login-register" id="ShowRegister">Login here</a></p>
         </div>
     `;
-    document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
+    document.getElementById('ShowRegister').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
+};
+
+const renderOTPVerificationScreen = (email) => {
+    bottomNav.style.display = 'none';
+    appContent.innerHTML = `
+        <div class="auth-container">
+            <div class="auth-logo">JJB24</div>
+            <h2>Verify Your Phone</h2>
+            <p>Enter the 6-digit code sent to ${email}</p>
+            
+            <form id="otpForm">
+                <div class="form-group">
+                    <label>OTP Code</label>
+                    <input type="text" 
+                           id="otpCode" 
+                           maxlength="6" 
+                           pattern="[0-9]{6}" 
+                           placeholder="000000"
+                           class="otp-input"
+                           required 
+                           autocomplete="one-time-code" />
+                </div>
+                
+                <button type="submit" class="btn-auth">Verify</button>
+            </form>
+            
+            <p class="auth-link">
+                Didn't receive code? 
+                <a id="resendOTP">Resend OTP</a>
+            </p>
+            
+            <p class="auth-link">
+                <a id="backToLogin">Back to Login</a>
+            </p>
+        </div>
+    `;
+    
+    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    // Optional: keep phone-based resend if backend supports it; otherwise this can be wired to email.
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
+    document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
 };
 
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        /*
+        const response = await fetch(`${API_BASE_URL}/dashboard`, { 
+            headers: { 'Authorization': 'Bearer ' + token } 
+        });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let activityHTML = '';
@@ -164,17 +289,63 @@ const renderHomeScreen = async () => {
                 activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
             });
         }
+            */
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ userId })
+        });
+        if (!response.ok) throw new Error('Failed to load data.');
+        const data = await response.json();
+
+        if (!data.success) throw new Error('Invalid Response.');
+
+        const fullName = data.balance.full_name || 'User';
+        const balance = data.balance.balance || 0;
+
+
         const homeHTML = `
-            <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><a href="#deposit" class="btn-deposit">Deposit</a><a href="#withdraw" class="btn-withdraw">Withdraw</a></div></div>
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
+                    <p>Welcome back!</p>
+                </div>
+                <div class="profile-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="balance-card">
+                <small>Total Assets (NGN)</small>
+                <h2>₦ ${balance}</h2>
+                <div class="header-buttons">
+                    <a href="#deposit" class="btn-deposit">Deposit</a>
+                    <a href="#withdraw" class="btn-withdraw">Withdraw</a>
+                </div>
+            </div>
+
             <div class="home-content">
                 <div class="quick-actions">
-                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
-                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
-                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
-                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                    <a href="#team" class="action-button">
+                        <i class="fas fa-users"></i>
+                        <span>My Team</span>
+                    </a>
+                    <a href="#history" class="action-button">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                    <a href="#support" class="action-button">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </a>
+                    <a href="#rewards" class="action-button">
+                        <i class="fas fa-gift"></i>
+                        <span>Rewards</span>
+                    </a>
                 </div>
-                <div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div>
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">${activityHTML}</div>
+                </div>
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
@@ -182,11 +353,81 @@ const renderHomeScreen = async () => {
     }
 };
 
+const renderOTPScreen = (email, redirectOnSuccess = renderLoginScreen, resendCallback = null) => {
+    bottomNav.style.display = 'none';
+    appContent.innerHTML = `
+        <div class="auth-container">
+            <div class="auth-logo">JJB24</div>
+            <h2>Verify Your Account</h2>
+            <p>We've sent a 6-digit OTP to <strong>${email}</strong>. Please enter it below.</p>
+            <form id="otpForm">
+                <div class="form-group">
+                    <label>Enter OTP</label>
+                    <input type="text" id="otp" required maxlength="6" inputmode="numeric" pattern="[0-9]{6}" />
+                </div>
+                <button type="submit" class="btn-auth">Verify OTP</button>
+            </form>`;
+    
+    // Event listeners
+    const otpForm = document.getElementById('otpForm');
+    otpForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const otp = document.getElementById('otp').value.trim();
+        if (!otp || otp.length !== 6) {
+            return alert('Please enter a valid 6-digit OTP.');
+        }
+        
+        try {
+            // Backend endpoint for OTP verification, now including email
+            const response = await fetch(`${API_BASE_URL}/api/users/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // If session-based; otherwise, adjust
+                body: JSON.stringify({ email, otp })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                return alert(`Verification failed: ${result.message || 'Invalid OTP'}`);
+            }
+            alert('Registration was successful.You can login now');
+            if (redirectOnSuccess) {
+                redirectOnSuccess(); 
+            }
+        } catch (error) {
+            alert('Could not connect to server. Please try again.');
+        }
+    });
+    
+    // const resendLink = document.getElementById('resendOTP');
+    // if (resendCallback) {
+    //     resendLink.addEventListener('click', () => resendCallback(email));
+    // } else {
+    //     // Default resend handler, now including email
+    //     resendLink.addEventListener('click', async () => {
+    //         try {
+    //             const response = await fetch(`${API_BASE_URL}/api/users/resend-otp`, {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 credentials: 'include',
+    //                 body: JSON.stringify({ email })
+    //             });
+    //             const result = await response.json();
+    //             if (!response.ok) {
+    //                 return alert(`Resend failed: ${result.message}`);
+    //             }
+    //             alert('OTP resent successfully!');
+    //         } catch (error) {
+    //             alert('Could not resend OTP. Please try again.');
+    //         }
+    //     });}
+ 
+    
+    document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
+};
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
-    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/users/allItems`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include" });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         let productHTML = '';
@@ -203,9 +444,8 @@ const renderProductsPage = async () => {
 
 const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/promotions`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/promotions`, { method :"GET", credentials: "include"  });
         if (!response.ok) throw new Error('Failed to load data.');
         const vipPlans = await response.json();
         let vipHTML = '';
@@ -219,9 +459,9 @@ const renderVipPage = async () => {
 
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include"  });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         const pageHTML = `
@@ -239,19 +479,20 @@ const renderMePage = async () => {
             </div>
         `;
         appContent.innerHTML = pageHTML;
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
+        document.getElementById('logoutButton').addEventListener('click', async (e) => {
             e.preventDefault();
-            localStorage.removeItem('token');
+            await fetch(`${API_BASE_URL}/api/users/logout`, { method: 'POST', credentials: 'include' });
+            console.log('Logged out successfully.');
+            renderLoginScreen();
             router();
         });
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
-};
-
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; };
+}
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
-    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/tasks`, { method :"GET", credentials: "include"  });
         if (!response.ok) throw new Error('Failed to load tasks.');
         const data = await response.json();
         if (data.message) {
@@ -278,7 +519,7 @@ const renderTaskPage = async () => {
             btn.textContent = 'Processing...';
             btn.disabled = true;
             try {
-                const completeResponse = await fetch(`${API_BASE_URL}/tasks/complete`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+                const completeResponse = await fetch(`${API_BASE_URL}/api/users/tasks/complete`, { method: 'POST', credentials: "include"  });
                 const result = await completeResponse.json();
                 if (!completeResponse.ok) {
                     alert('Error: ' + result.message);
@@ -303,9 +544,9 @@ const renderTaskPage = async () => {
 
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
+   
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include" });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         const pageHTML = `
@@ -329,7 +570,7 @@ const renderWithdrawPage = async () => {
             const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
             if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
             try {
-                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const withdrawResponse = await fetch(`${API_BASE_URL}/api/payment/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
                 showSuccessModal(result.message);
@@ -339,25 +580,56 @@ const renderWithdrawPage = async () => {
 };
 
 
-const router = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+const router = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+            method: 'POST',
+            credentials: 'include'});
+
+        if (!response.ok) {
+            renderLoginScreen();
+            return;
+        }
+        // Proceed with app UI: Show bottom nav
+        bottomNav.style.display = 'flex';  
+
+        // Handle hash routing
+        const hash = window.location.hash || '#home'; 
+        document.querySelectorAll('.nav-link').forEach(link => {  
+            link.classList.remove('active');
+            if (link.getAttribute('href') === hash) { 
+                link.classList.add('active');  // Highlight matching link.
+            }
+        });
+
+        // Route to page based on hash
+        switch (hash) {
+            case '#products': 
+                renderProductsPage(); 
+                break; 
+            case '#vip': 
+                renderVipPage(); 
+                break;  
+            case '#me': 
+                renderMePage(); 
+                break; 
+            case '#task': 
+                renderTaskPage(); 
+                break;  
+            case '#withdraw': 
+                renderWithdrawPage(); 
+                break;  
+            case '#home': 
+            default: 
+                renderHomeScreen(); 
+                break;
+        }
+
+    } catch (error) {
+        // Network/JSON errors: Default to login (secure fallback)
+        console.error('Router auth check failed:', error);
         renderLoginScreen();
         return;
-    }
-    bottomNav.style.display = 'flex';
-    const hash = window.location.hash || '#home';
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === hash) { link.classList.add('active'); }
-    });
-    switch (hash) {
-        case '#products': renderProductsPage(); break;
-        case '#vip': renderVipPage(); break;
-        case '#me': renderMePage(); break;
-        case '#task': renderTaskPage(); break;
-        case '#withdraw': renderWithdrawPage(); break;
-        case '#home': default: renderHomeScreen();
     }
 };
 

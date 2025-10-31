@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="dashboard.css">
 </head>
+
 <body>
     <div class="dashboard-wrapper">
         <header class="dashboard-header">
@@ -21,18 +23,24 @@
             <div class="card chart-card">
                 <h3>Portfolio Overview</h3>
                 <div class="chart-placeholder">
-                    <svg width="100%" height="100%" viewBox="0 0 300 100" preserveAspectRatio="none"><path d="M0,70 Q50,20 100,50 T200,80 T300,40" stroke="#E0C56E" fill="none" stroke-width="2"/></svg>
+                    <svg width="100%" height="100%" viewBox="0 0 300 100" preserveAspectRatio="none">
+                        <path d="M0,70 Q50,20 100,50 T200,80 T300,40" stroke="#E0C56E" fill="none" stroke-width="2" />
+                    </svg>
                 </div>
             </div>
-            
+
             <div class="dashboard-grid">
                 <div class="card my-investments-card">
                     <h2>My Active Investments</h2>
-                    <div id="myInvestmentsContainer"><p>Loading...</p></div>
+                    <div id="myInvestmentsContainer">
+                        <p>Loading...</p>
+                    </div>
                 </div>
                 <div class="card available-plans-card">
                     <h2>Available Plans</h2>
-                    <div class="plans-grid" id="plansContainer"><p>Loading...</p></div>
+                    <div class="plans-grid" id="plansContainer">
+                        <p>Loading...</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -46,13 +54,13 @@
             const plansContainer = document.getElementById('plansContainer');
             const logoutButton = document.getElementById('logoutButton');
 
-            if (!token) { window.location.href = 'login.html'; return; }
+            if (!token) { window.location.href = 'index.html'; return; }
 
             try {
                 const response = await fetch('http://localhost:3000/api/dashboard', { headers: { 'Authorization': 'Bearer ' + token } });
-                if (!response.ok) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; }
+                if (!response.ok) { localStorage.removeItem('token'); window.location.href = 'index.html'; return; }
                 const data = await response.json();
-                
+
                 welcomeMessage.textContent = `Welcome, ${data.user.full_name}!`;
 
                 myInvestmentsContainer.innerHTML = '';
@@ -80,9 +88,9 @@
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
                 localStorage.removeItem('token');
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
             }
-            
+
             plansContainer.addEventListener('click', async (event) => {
                 if (event.target.classList.contains('invest-button')) {
                     const planId = event.target.dataset.planId;
@@ -114,4 +122,5 @@
         });
     </script>
 </body>
+
 </html>
