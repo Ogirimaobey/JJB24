@@ -1,6 +1,6 @@
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -72,22 +72,17 @@ const handleRegister = async (event) => {
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        
-        // OTP verification flow
-        if (result.tempToken) {
-            alert(`OTP sent to ${phone}`);
-            renderOTPVerificationScreen(phone, result.tempToken);
-        } else {
-            // Fallback for old backend without OTP
-            alert('Registration successful! Please log in.');
-            renderLoginScreen();
-        }
+
+        // Backend sends OTP implicitly during registration.
+        // Show OTP screen and verify using the email + code.
+        alert(`OTP sent to ${email}. Please check your inbox.`);
+        renderOTPVerificationScreen(email);
     } catch (error) {
         alert('Could not connect to server.');
     }
 };
 
-const handleOTPVerification = async (event, tempToken) => {
+const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
     
@@ -95,7 +90,7 @@ const handleOTPVerification = async (event, tempToken) => {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tempToken, otp: otpCode })
+            body: JSON.stringify({ email, otp: otpCode })
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
@@ -213,13 +208,13 @@ const renderRegisterScreen = () => {
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
-const renderOTPVerificationScreen = (phone, tempToken) => {
+const renderOTPVerificationScreen = (email) => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
         <div class="auth-container">
             <div class="auth-logo">JJB24</div>
             <h2>Verify Your Phone</h2>
-            <p>Enter the 6-digit code sent to ${phone}</p>
+            <p>Enter the 6-digit code sent to ${email}</p>
             
             <form id="otpForm">
                 <div class="form-group">
@@ -248,8 +243,9 @@ const renderOTPVerificationScreen = (phone, tempToken) => {
         </div>
     `;
     
-    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, tempToken));
-    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(phone));
+    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    // Optional: keep phone-based resend if backend supports it; otherwise this can be wired to email.
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
     document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
 };
 
