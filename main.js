@@ -166,6 +166,8 @@ const handleInvestClick = async (event) => {
     }
 };
 
+
+
 // --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
@@ -565,7 +567,11 @@ const router = () => {
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
-        case '#home': default: renderHomeScreen();
+        case '#login': renderLoginScreen(); break;
+        case '#home': renderHomeScreen(); break;
+        default: 
+            renderLoginScreen();
+
     }
 };
 
