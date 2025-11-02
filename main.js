@@ -35,13 +35,11 @@ const handleLogin = async (event) => {
     
     // Detect if it's an email or phone number
     const isEmail = loginIdentifier.includes('@');
-    const loginData = { password };
-    
-    if (isEmail) {
-        loginData.email = loginIdentifier;
-    } else {
-        loginData.phone = loginIdentifier;
-    }
+const loginData = {
+    password: password,
+    email: isEmail ? loginIdentifier : '',
+    phone: isEmail ? '' : loginIdentifier
+};
     
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
