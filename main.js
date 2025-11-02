@@ -52,7 +52,7 @@ const handleLogin = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
-        console.log('Login successful, token stored:' , result.token);
+        // console.log('Login successful, token stored:' , result.token);
         window.location.hash = '#home';
         router();
     } catch (error) { 
@@ -282,7 +282,7 @@ const renderHomeScreen = async () => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
 
-    console.log('Fetching login data with token:', token);
+    // console.log('Fetching login data with token:', token);
 
     if (!token) {
         alert("You are not logged in. Please log in again.");
@@ -299,7 +299,7 @@ const renderHomeScreen = async () => {
         },
         });
 
-        console.log('Response from user Balance backend:', response); 
+        // console.log('Response from user Balance backend:', response); 
 
         if (!response.ok) {
         const err = await response.text();
@@ -308,7 +308,7 @@ const renderHomeScreen = async () => {
         }
 
         const data = await response.json();
-        console.log('User Balance data:', data);
+        // console.log('User Balance data:', data);
 
         if (!data.success) throw new Error('Invalid Response.');
 
@@ -381,7 +381,7 @@ const renderProductsPage = async () => {
         if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        console.log('Products data from backend:', data);
+        // console.log('Products data from backend:', data);
 
         let productHTML = '';
         data.items.forEach(item => {
