@@ -77,22 +77,22 @@ const handleRegister = async (event) => {
         if (referral) {
             try {
 
-                const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
+                const response = await fetch(`${API_BASE_URL}/api/users/validate-referral`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },credentials: "include" ,
                     body: JSON.stringify({ referral })
                 });
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-                
+
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
         }
-        const response = await fetch(`${API_BASE_URL}/users/register`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/register`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', },credentials: "include" ,
             body: JSON.stringify(payload)
         });
         const result = await response.json();
@@ -103,7 +103,7 @@ const handleRegister = async (event) => {
         alert(`OTP sent to ${email}. Please check your inbox.`);
         renderOTPVerificationScreen(email);
     } catch (error) {
-        alert('Could not connect to server.');
+        console.error(error.message)
     }
 };
 
@@ -147,12 +147,11 @@ const handleResendOTP = async (phone) => {
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const planId = event.target.dataset.planId;
-        const token = localStorage.getItem('token');
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         try {
-            const response = await fetch(`${API_BASE_URL}/invest`, {
+            const response = await fetch(`${API_BASE_URL}/api/payment/initialize`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                headers: { 'Content-Type': 'application/json'},credentials: "include" ,
                 body: JSON.stringify({ planId })
             });
             const result = await response.json();
@@ -180,7 +179,7 @@ const renderLoginScreen = () => {
             <form id="loginForm">
                 <div class="form-group">
                 <label>Email or Phone Number</label>
-                <input type="text" id="loginIdentifier" required />
+                <input type="text" id="email" required />
                 </div>
                 <div class="form-group">
                 <label>Password</label>
@@ -188,10 +187,10 @@ const renderLoginScreen = () => {
                 </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
-            <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
+            <p class="auth-link">Don't have an account? <a  class="Login-register" id="ShowLogin">Register here</a></p>
         </div>
     `;
-    document.getElementById('showRegister').addEventListener('click', renderRegisterScreen);
+    document.getElementById('ShowLogin').addEventListener('click', renderRegisterScreen);
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
@@ -229,10 +228,10 @@ const renderRegisterScreen = () => {
                  </div>
                 <button type="submit" class="btn-auth">Register</button>
             </form>
-            <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
+            <p class="auth-link">Already have an account? <a class="Login-register" id="ShowRegister">Login here</a></p>
         </div>
     `;
-    document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
+    document.getElementById('ShowRegister').addEventListener('click', renderLoginScreen);
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
@@ -414,9 +413,8 @@ const renderProductsPage = async () => {
 
 const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/promotions`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/promotions`, { method :"GET", credentials: "include"  });
         if (!response.ok) throw new Error('Failed to load data.');
         const vipPlans = await response.json();
         let vipHTML = '';
@@ -430,9 +428,9 @@ const renderVipPage = async () => {
 
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include"  });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         const pageHTML = `
@@ -450,19 +448,20 @@ const renderMePage = async () => {
             </div>
         `;
         appContent.innerHTML = pageHTML;
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
+        document.getElementById('logoutButton').addEventListener('click', async (e) => {
             e.preventDefault();
-            localStorage.removeItem('token');
+            await fetch(`${API_BASE_URL}/api/users/logout`, { method: 'POST', credentials: 'include' });
+            console.log('Logged out successfully.');
+            renderLoginScreen();
             router();
         });
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
-};
-
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; };
+}
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
-    const token = localStorage.getItem('token');
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/tasks`, { method :"GET", credentials: "include"  });
         if (!response.ok) throw new Error('Failed to load tasks.');
         const data = await response.json();
         if (data.message) {
@@ -489,7 +488,7 @@ const renderTaskPage = async () => {
             btn.textContent = 'Processing...';
             btn.disabled = true;
             try {
-                const completeResponse = await fetch(`${API_BASE_URL}/tasks/complete`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+                const completeResponse = await fetch(`${API_BASE_URL}/api/users/tasks/complete`, { method: 'POST', credentials: "include"  });
                 const result = await completeResponse.json();
                 if (!completeResponse.ok) {
                     alert('Error: ' + result.message);
@@ -514,9 +513,9 @@ const renderTaskPage = async () => {
 
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
+   
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include" });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         const pageHTML = `
@@ -540,7 +539,7 @@ const renderWithdrawPage = async () => {
             const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
             if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
             try {
-                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const withdrawResponse = await fetch(`${API_BASE_URL}/api/payment/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
                 showSuccessModal(result.message);
@@ -550,9 +549,54 @@ const renderWithdrawPage = async () => {
 };
 
 
-const router = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+const router = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+            method: 'POST',
+            credentials: 'include'});
+
+        if (!response.ok) {
+            renderLoginScreen();
+            return;
+        }
+        // Proceed with app UI: Show bottom nav
+        bottomNav.style.display = 'flex';  
+
+        // Handle hash routing
+        const hash = window.location.hash || '#home'; 
+        document.querySelectorAll('.nav-link').forEach(link => {  
+            link.classList.remove('active');
+            if (link.getAttribute('href') === hash) { 
+                link.classList.add('active');  // Highlight matching link.
+            }
+        });
+
+        // Route to page based on hash
+        switch (hash) {
+            case '#products': 
+                renderProductsPage(); 
+                break; 
+            case '#vip': 
+                renderVipPage(); 
+                break;  
+            case '#me': 
+                renderMePage(); 
+                break; 
+            case '#task': 
+                renderTaskPage(); 
+                break;  
+            case '#withdraw': 
+                renderWithdrawPage(); 
+                break;  
+            case '#home': 
+            default: 
+                renderHomeScreen(); 
+                break;
+        }
+
+    } catch (error) {
+        // Network/JSON errors: Default to login (secure fallback)
+        console.error('Router auth check failed:', error);
         renderLoginScreen();
         return;
     }
