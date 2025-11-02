@@ -53,6 +53,7 @@ const handleLogin = async (event) => {
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
         console.log('Login successful, token stored:' , result.token);
+        window.location.hash = '#home';
         router();
     } catch (error) { 
         alert('Could not connect to server.'); 
