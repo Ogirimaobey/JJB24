@@ -52,6 +52,7 @@ const handleLogin = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
+        console.log('Login successful, token stored:' , result.token);
         router();
     } catch (error) { 
         alert('Could not connect to server.'); 
@@ -267,45 +268,50 @@ const renderOTPVerificationScreen = (email) => {
     `;
     
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
-    // Optional: keep phone-based resend if backend supports it; otherwise this can be wired to email.
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
     document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
 };
+
 
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
+
+    console.log('Fetching login data with token:', token);
+
+    if (!token) {
+        alert("You are not logged in. Please log in again.");
+        renderLoginScreen();
+        return;
+    }
+
     try {
-        /*
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { 
-            headers: { 'Authorization': 'Bearer ' + token } 
-        });
-        if (!response.ok) throw new Error('Failed to load data.');
-        const data = await response.json();
-        let activityHTML = '';
-        if (data.investments && data.investments.length === 0) {
-            activityHTML = '<p>No recent activity.</p>';
-        } else if (data.investments) {
-            data.investments.slice(0, 3).forEach(inv => {
-                const startDate = new Date(inv.start_date).toLocaleDateString();
-                activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
-            });
-        }
-            */
         const response = await fetch(`${API_BASE_URL}/users/balance`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-            body: JSON.stringify({ userId })
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, 
+        },
         });
-        if (!response.ok) throw new Error('Failed to load data.');
+
+        console.log('Response from user Balance backend:', response); 
+
+        if (!response.ok) {
+        const err = await response.text();
+        console.error('Backend error:', err);
+        throw new Error('Failed to load data.');
+        }
+
         const data = await response.json();
+        console.log('User Balance data:', data);
 
         if (!data.success) throw new Error('Invalid Response.');
 
         const fullName = data.balance.full_name || 'User';
         const balance = data.balance.balance || 0;
 
+        const activityHTML = "<p>No recent activity yet.</p>";
 
         const homeHTML = `
             <div class="top-header">
@@ -352,98 +358,55 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
+        console.log('Error loading home screen:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
     }
 };
 
-const renderOTPScreen = (email, redirectOnSuccess = renderLoginScreen, resendCallback = null) => {
-    bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Verify Your Account</h2>
-            <p>We've sent a 6-digit OTP to <strong>${email}</strong>. Please enter it below.</p>
-            <form id="otpForm">
-                <div class="form-group">
-                    <label>Enter OTP</label>
-                    <input type="text" id="otp" required maxlength="6" inputmode="numeric" pattern="[0-9]{6}" />
-                </div>
-                <button type="submit" class="btn-auth">Verify OTP</button>
-            </form>`;
-    
-    // Event listeners
-    const otpForm = document.getElementById('otpForm');
-    otpForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const otp = document.getElementById('otp').value.trim();
-        if (!otp || otp.length !== 6) {
-            return alert('Please enter a valid 6-digit OTP.');
-        }
-        
-        try {
-            // Backend endpoint for OTP verification, now including email
-            const response = await fetch(`${API_BASE_URL}/api/users/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // If session-based; otherwise, adjust
-                body: JSON.stringify({ email, otp })
-            });
-            const result = await response.json();
-            if (!response.ok) {
-                return alert(`Verification failed: ${result.message || 'Invalid OTP'}`);
-            }
-            alert('Registration was successful.You can login now');
-            if (redirectOnSuccess) {
-                redirectOnSuccess(); 
-            }
-        } catch (error) {
-            alert('Could not connect to server. Please try again.');
-        }
-    });
-    
-    // const resendLink = document.getElementById('resendOTP');
-    // if (resendCallback) {
-    //     resendLink.addEventListener('click', () => resendCallback(email));
-    // } else {
-    //     // Default resend handler, now including email
-    //     resendLink.addEventListener('click', async () => {
-    //         try {
-    //             const response = await fetch(`${API_BASE_URL}/api/users/resend-otp`, {
-    //                 method: 'POST',
-    //                 headers: { 'Content-Type': 'application/json' },
-    //                 credentials: 'include',
-    //                 body: JSON.stringify({ email })
-    //             });
-    //             const result = await response.json();
-    //             if (!response.ok) {
-    //                 return alert(`Resend failed: ${result.message}`);
-    //             }
-    //             alert('OTP resent successfully!');
-    //         } catch (error) {
-    //             alert('Could not resend OTP. Please try again.');
-    //         }
-    //     });}
- 
-    
-    document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
-};
+
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
+    const token = localStorage.getItem('token');
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include" });
-        if (!response.ok) throw new Error('Failed to load data.');
-        const data = await response.json();
-        let productHTML = '';
-        data.plans.forEach(plan => {
-            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" 
-            alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: 
-            ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}
-            </p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+        const response = await fetch(`${API_BASE_URL}/users/allItems`, {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
-        const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+        console.log('Response from products backend:', response);
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+        console.log('Products data from backend:', data);
+
+        let productHTML = '';
+        data.items.forEach(item => {
+            productHTML += `
+                <div class="product-card-wc">
+                    <div class="product-image-wc">
+                        <img src="${item.itemimage}" alt="${item.itemname}">
+                    </div>
+                    <div class="product-info-wc">
+                        <h4>${item.itemname}</h4>
+                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                        <button class="btn-invest" data-plan-id="${item.id}">Invest</button>
+                    </div>
+                </div>`;
+        });
+
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>Investment Products</h2></div>
+                <div class="product-grid-wc">${productHTML}</div>
+            </div>`;
         appContent.innerHTML = pageHTML;
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>'; }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
+    }
 };
+
 
 const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
