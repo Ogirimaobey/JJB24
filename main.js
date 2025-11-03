@@ -579,6 +579,215 @@ const renderDepositPage = async () => {
     });
 };
 
+const renderHistoryPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        alert('Please log in to view history.');
+        renderLoginScreen();
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/payment/history`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!response.ok) throw new Error('Failed to load history.');
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to load history.');
+        }
+
+        const transactions = data.transactions || [];
+        let historyHTML = '';
+
+        if (transactions.length === 0) {
+            historyHTML = '<p style="text-align: center; color: var(--text-secondary);">No transaction history yet.</p>';
+        } else {
+            transactions.forEach(txn => {
+                const date = new Date(txn.created_at).toLocaleString();
+                const amount = Number(txn.amount).toLocaleString();
+                const typeIcon = txn.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+                const typeColor = txn.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+                const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
+                const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
+
+                historyHTML += `
+                    <div class="history-item" data-transaction-id="${txn.id}" style="background: var(--card-background); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 1.2rem;"></i>
+                                <div>
+                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${txn.type}</p>
+                                    <small style="color: var(--text-secondary);">${date}</small>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-weight: 700; font-size: 1.1rem; margin: 0; color: ${typeColor};">₦${amount}</p>
+                                <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize;">${txn.status}</span>
+                            </div>
+                        </div>
+                        <small style="color: var(--text-secondary);">Ref: ${txn.reference}</small>
+                    </div>
+                `;
+            });
+        }
+
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header">
+                    <h2>Transaction History</h2>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    ${historyHTML}
+                </div>
+            </div>
+        `;
+        
+        appContent.innerHTML = pageHTML;
+        
+        // Add click handlers to transaction items
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const transactionId = item.dataset.transactionId;
+                const transaction = transactions.find(t => t.id.toString() === transactionId);
+                if (transaction) {
+                    showTransactionDetails(transaction);
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error loading history:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
+    }
+};
+
+const showTransactionDetails = (transaction) => {
+    const date = new Date(transaction.created_at).toLocaleString();
+    const amount = Number(transaction.amount).toLocaleString();
+    const typeIcon = transaction.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+    const typeColor = transaction.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+    const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
+    
+    // Check if transaction has bank details (for withdrawals)
+    const bankDetails = transaction.bank_name || transaction.account_number || transaction.account_name;
+    
+    let detailsHTML = `
+        <div style="text-align: left;">
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 2rem;"></i>
+                    <div>
+                        <h3 style="margin: 0; text-transform: capitalize;">${transaction.type}</h3>
+                        <span style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize; display: inline-block; margin-top: 0.5rem;">${transaction.status}</span>
+                    </div>
+                </div>
+                <p style="font-size: 2rem; font-weight: 700; color: ${typeColor}; margin: 0;">₦${amount}</p>
+            </div>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Transaction ID</small>
+                    <p style="margin: 0; font-weight: 600;">${transaction.id}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Reference</small>
+                    <p style="margin: 0; font-weight: 600;">${transaction.reference}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Date & Time</small>
+                    <p style="margin: 0; font-weight: 600;">${date}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${transaction.type}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Status</small>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize; color: ${statusColor};">${transaction.status}</p>
+                </div>
+    `;
+    
+    // Add bank details if available (for withdrawals)
+    if (bankDetails) {
+        detailsHTML += `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Bank Details</h4>
+                    ${transaction.bank_name ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Bank Name</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.bank_name}</p>
+                    </div>
+                    ` : ''}
+                    ${transaction.account_number ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Number</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.account_number}</p>
+                    </div>
+                    ` : ''}
+                    ${transaction.account_name ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Name</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.account_name}</p>
+                    </div>
+                    ` : ''}
+                </div>
+        `;
+    }
+    
+    detailsHTML += `
+            </div>
+        </div>
+    `;
+    
+    // Create modal overlay
+    const modalHTML = `
+        <div id="transactionDetailModal" class="modal-overlay" style="display: flex;">
+            <div class="modal-content" style="max-width: 400px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="margin: 0;">Transaction Details</h2>
+                    <button id="closeTransactionModal" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+                ${detailsHTML}
+                <button id="closeTransactionModalBtn" class="btn-cta" style="margin-top: 1.5rem; width: 100%;">Close</button>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('transactionDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Close handlers
+    document.getElementById('closeTransactionModal').addEventListener('click', () => {
+        document.getElementById('transactionDetailModal').remove();
+    });
+    
+    document.getElementById('closeTransactionModalBtn').addEventListener('click', () => {
+        document.getElementById('transactionDetailModal').remove();
+    });
+    
+    // Close on overlay click
+    document.getElementById('transactionDetailModal').addEventListener('click', (e) => {
+        if (e.target.id === 'transactionDetailModal') {
+            e.target.remove();
+        }
+    });
+};
+
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     const token = localStorage.getItem('token');
@@ -693,6 +902,7 @@ const router = () => {
         case '#task': renderTaskPage(); break;
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
+        case '#history': renderHistoryPage(); break;
         case '#login': renderLoginScreen(); break;
         case '#home': renderHomeScreen(); break;
         default:
