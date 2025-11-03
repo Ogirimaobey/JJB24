@@ -172,7 +172,7 @@ const handleInvestClick = async (event) => {
             if (response.ok) {
                 showSuccessModal(result.message);
             } else {
-                alert('Error: 'D + result.message);
+                alert('Error: ' + result.message);
             }
         } catch (error) {
             alert('An investment error occurred.');
@@ -1022,7 +1022,7 @@ const router = () => {
         case '#team': renderTeamPage(); break;
         case '#settings': renderSettingsPage(); break;
         case '#about': renderAboutPage(); break;
-g        case '#support': renderSupportPage(); break;
+        case '#support': renderSupportPage(); break;
         case '#rewards': renderRewardsPage(); break;
 
         // Default for logged-in users
@@ -1040,4 +1040,5 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target === successModal) { closeModal(); }
 });
+
 
