@@ -512,6 +512,73 @@ const renderTaskPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
 };
 
+const renderDepositPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to deposit.');
+        renderLoginScreen();
+        return;
+    }
+
+    // Decode token to get user info
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.id;
+    const email = tokenPayload.email;
+    const phone = tokenPayload.phone;
+
+    const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Deposit Funds</h2></div>
+            <div class="withdraw-card">
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="amount">Amount (NGN)</label>
+                        <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                    </div>
+                    <button type="submit" class="btn-auth">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>`;
+    appContent.innerHTML = pageHTML;
+
+    document.getElementById('depositForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const amount = document.getElementById('amount').value;
+        
+        if (!amount || parseFloat(amount) <= 0) {
+            return alert('Please enter a valid amount.');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/payment/initialize`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token 
+                },
+                body: JSON.stringify({ 
+                    userId,
+                    amount: parseFloat(amount),
+                    email,
+                    name: phone || 'User'
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok) return alert('Error: ' + result.message);
+
+            if (result.success && result.data && result.data.paymentLink) {
+                window.location.href = result.data.paymentLink;
+            } else {
+                alert('Failed to get payment link.');
+            }
+        } catch (error) {
+            alert('An error occurred. Please try again.');
+        }
+    });
+};
+
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     const token = localStorage.getItem('token');
@@ -567,6 +634,7 @@ const router = () => {
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
+        case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#login': renderLoginScreen(); break;
         case '#home': renderHomeScreen(); break;
