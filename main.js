@@ -332,8 +332,8 @@ const renderHomeScreen = async () => {
     }
 
     try {
-        // FIX: Changed to /dashboard to match other pages
-        const response = await fetch(`${API_BASE_URL}/dashboard`, {
+        // FIX: Reverted to /users/balance, as this was working.
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -352,9 +352,9 @@ const renderHomeScreen = async () => {
         const data = await response.json();
         // console.log('User Balance data:', data);
 
-        // FIX: Changed from data.balance to data.user
-        const fullName = data.user.full_name || 'User';
-        const balance = data.user.balance || 0;
+        // FIX: Reverted to data.balance, as this was working.
+        const fullName = data.balance.full_name || 'User';
+        const balance = data.balance.balance || 0;
 
         const activityHTML = "<p>No recent activity yet.</p>";
 
@@ -1040,5 +1040,6 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target === successModal) { closeModal(); }
 });
+
 
 
