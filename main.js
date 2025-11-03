@@ -28,35 +28,35 @@ const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
-    
+
     if (!loginIdentifier || !password) {
         return alert('Please provide email or phone and password.');
     }
-    
+
     // Detect if it's an email or phone number
     const isEmail = loginIdentifier.includes('@');
     const loginData = { password };
-    
+
     if (isEmail) {
         loginData.email = loginIdentifier;
     } else {
         loginData.phone = loginIdentifier;
     }
-    
+
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(loginData) 
+        const response = await fetch(`${API_BASE_URL}/users/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(loginData)
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token);
-        console.log('Login successful, token stored:' , result.token);
+        console.log('Login successful, token stored:', result.token);
         window.location.hash = '#home';
         router();
-    } catch (error) { 
-        alert('Could not connect to server.'); 
+    } catch (error) {
+        alert('Could not connect to server.');
     }
 };
 
@@ -85,7 +85,7 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-                
+
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
@@ -111,7 +111,7 @@ const handleRegister = async (event) => {
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
             method: 'POST',
@@ -120,7 +120,7 @@ const handleOTPVerification = async (event, email) => {
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        
+
         alert('Phone verified successfully! Please log in.');
         renderLoginScreen();
     } catch (error) {
@@ -137,7 +137,7 @@ const handleResendOTP = async (phone) => {
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        
+
         alert('New OTP sent to your phone!');
     } catch (error) {
         alert('Could not resend OTP. Please try again.');
@@ -270,7 +270,7 @@ const renderOTPVerificationScreen = (email) => {
             </p>
         </div>
     `;
-    
+
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
     document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
@@ -292,19 +292,19 @@ const renderHomeScreen = async () => {
 
     try {
         const response = await fetch(`${API_BASE_URL}/users/balance`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, 
-        },
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+            },
         });
 
-        console.log('Response from user Balance backend:', response); 
+        console.log('Response from user Balance backend:', response);
 
         if (!response.ok) {
-        const err = await response.text();
-        console.error('Backend error:', err);
-        throw new Error('Failed to load data.');
+            const err = await response.text();
+            console.error('Backend error:', err);
+            throw new Error('Failed to load data.');
         }
 
         const data = await response.json();
@@ -512,41 +512,165 @@ const renderTaskPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
 };
 
+const renderDepositPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to deposit.');
+        renderLoginScreen();
+        return;
+    }
+
+    // Decode token to get user info
+    const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+    const userId = tokenPayload.id;
+    const email = tokenPayload.email;
+    const phone = tokenPayload.phone;
+
+    const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Deposit Funds</h2></div>
+            <div class="withdraw-card">
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="amount">Amount (NGN)</label>
+                        <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                    </div>
+                    <button type="submit" class="btn-auth">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>`;
+    appContent.innerHTML = pageHTML;
+
+    document.getElementById('depositForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const amount = document.getElementById('amount').value;
+        
+        if (!amount || parseFloat(amount) <= 0) {
+            return alert('Please enter a valid amount.');
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/payment/initialize`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token 
+                },
+                body: JSON.stringify({ 
+                    userId,
+                    amount: parseFloat(amount),
+                    email,
+                    name: phone || 'User'
+                })
+            });
+
+            const result = await response.json();
+            if (!response.ok) return alert('Error: ' + result.message);
+
+            if (result.success && result.data && result.data.paymentLink) {
+                window.location.href = result.data.paymentLink;
+            } else {
+                alert('Failed to get payment link.');
+            }
+        } catch (error) {
+            alert('An error occurred. Please try again.');
+        }
+    });
+};
+
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to withdraw.');
+        renderLoginScreen();
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
+        const balance = data.balance?.balance || 0;
+        
         const pageHTML = `
             <div class="page-container">
                 <div class="page-header"><h2>Request Withdrawal</h2></div>
                 <div class="withdraw-card">
-                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(data.user.balance).toLocaleString()}</p></div>
+                    <div class="balance-display">
+                        <small>Available Balance</small>
+                        <p>₦ ${Number(balance).toLocaleString()}</p>
+                    </div>
                     <form id="withdrawForm">
-                        <div class="form-group"><label for="amount">Amount</label><input type="number" id="amount" required /></div>
-                        <div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required /></div>
-                        <div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required /></div>
-                        <div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required /></div>
+                        <div class="form-group">
+                            <label for="amount">Amount (NGN)</label>
+                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                        </div>
+                        <div class="form-group">
+                            <label for="bankName">Bank Name</label>
+                            <input type="text" id="bankName" required placeholder="Enter bank name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountNumber">Account Number</label>
+                            <input type="text" id="accountNumber" required placeholder="Enter account number" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountName">Account Name</label>
+                            <input type="text" id="accountName" required placeholder="Enter account name" />
+                        </div>
                         <button type="submit" class="btn-auth">Submit Request</button>
                     </form>
                 </div>
             </div>`;
         appContent.innerHTML = pageHTML;
+        
         document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const amount = document.getElementById('amount').value;
-            const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
-            if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const bankName = document.getElementById('bankName').value.trim();
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const accountName = document.getElementById('accountName').value.trim();
+
+            if (!amount || amount <= 0) {
+                return alert('Please enter a valid amount.');
+            }
+
+            if (amount > balance) {
+                return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
+            }
+
+            if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
+
             try {
-                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const withdrawResponse = await fetch(`${API_BASE_URL}/payment/withdraw`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        amount,
+                        bank_name: bankName,
+                        account_number: accountNumber,
+                        account_name: accountName
+                    })
+                });
+                
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
-                showSuccessModal(result.message);
-            } catch (error) { alert('An error occurred.'); }
+                
+                showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
+            } catch (error) {
+                alert('An error occurred. Please try again.');
+            }
         });
-    } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
+    } catch (error) {
+        console.error('Error loading withdrawal page:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
+    }
 };
 
 
@@ -567,10 +691,11 @@ const router = () => {
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
+        case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#login': renderLoginScreen(); break;
         case '#home': renderHomeScreen(); break;
-        default: 
+        default:
             renderLoginScreen();
 
     }
