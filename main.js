@@ -582,38 +582,95 @@ const renderDepositPage = async () => {
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Please log in to withdraw.');
+        renderLoginScreen();
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
+        const balance = data.balance?.balance || 0;
+        
         const pageHTML = `
             <div class="page-container">
                 <div class="page-header"><h2>Request Withdrawal</h2></div>
                 <div class="withdraw-card">
-                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(data.user.balance).toLocaleString()}</p></div>
+                    <div class="balance-display">
+                        <small>Available Balance</small>
+                        <p>₦ ${Number(balance).toLocaleString()}</p>
+                    </div>
                     <form id="withdrawForm">
-                        <div class="form-group"><label for="amount">Amount</label><input type="number" id="amount" required /></div>
-                        <div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required /></div>
-                        <div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required /></div>
-                        <div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required /></div>
+                        <div class="form-group">
+                            <label for="amount">Amount (NGN)</label>
+                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                        </div>
+                        <div class="form-group">
+                            <label for="bankName">Bank Name</label>
+                            <input type="text" id="bankName" required placeholder="Enter bank name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountNumber">Account Number</label>
+                            <input type="text" id="accountNumber" required placeholder="Enter account number" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountName">Account Name</label>
+                            <input type="text" id="accountName" required placeholder="Enter account name" />
+                        </div>
                         <button type="submit" class="btn-auth">Submit Request</button>
                     </form>
                 </div>
             </div>`;
         appContent.innerHTML = pageHTML;
+        
         document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const amount = document.getElementById('amount').value;
-            const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
-            if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const bankName = document.getElementById('bankName').value.trim();
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const accountName = document.getElementById('accountName').value.trim();
+
+            if (!amount || amount <= 0) {
+                return alert('Please enter a valid amount.');
+            }
+
+            if (amount > balance) {
+                return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
+            }
+
+            if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
+
             try {
-                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const withdrawResponse = await fetch(`${API_BASE_URL}/payment/withdraw`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        amount,
+                        bank_name: bankName,
+                        account_number: accountNumber,
+                        account_name: accountName
+                    })
+                });
+                
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
-                showSuccessModal(result.message);
-            } catch (error) { alert('An error occurred.'); }
+                
+                showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
+            } catch (error) {
+                alert('An error occurred. Please try again.');
+            }
         });
-    } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
+    } catch (error) {
+        console.error('Error loading withdrawal page:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
+    }
 };
 
 
