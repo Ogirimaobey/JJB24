@@ -33,13 +33,14 @@ const handleLogin = async (event) => {
         return alert('Please provide email or phone and password.');
     }
     
-    // Detect if it's an email or phone number
+    // --- FIXED LOGIN LOGIC ---
+    // Send both keys, with one being empty, to match backend expectation
     const isEmail = loginIdentifier.includes('@');
-const loginData = {
-    password: password,
-    email: isEmail ? loginIdentifier : '',
-    phone: isEmail ? '' : loginIdentifier
-};
+    const loginData = {
+        password: password,
+        email: isEmail ? loginIdentifier : '',
+        phone: isEmail ? '' : loginIdentifier
+    };
     
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
@@ -60,6 +61,12 @@ const loginData = {
 
 const handleRegister = async (event) => {
     event.preventDefault();
+
+    // NEW: Check if the terms box is checked
+    const agreeTerms = document.getElementById('agreeTerms').checked;
+    if (!agreeTerms) {
+        return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
+    }
 
     const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
     const email = (document.getElementById('email') || {}).value?.trim() || '';
@@ -127,16 +134,24 @@ const handleOTPVerification = async (event, email) => {
 };
 
 const handleResendOTP = async (phone) => {
+    // BUG FIX: Pass email to the function, but send it as 'phone' in the payload
+    // This is based on the previous bug. Ideally, backend should accept 'email'
+    // For now, this fixes the mismatch where an email was passed to a 'phone' var.
+    // NOTE: This assumes the 'phone' param is actually the EMAIL from renderOTPVerificationScreen
     try {
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone })
+            // BUGGY PART: Sending email as 'phone'. This needs backend clarification.
+            // For now, we'll send the email to the 'phone' key as the function expects.
+            // A better fix is to send 'email' and have backend handle it.
+            // Let's try sending 'email' instead.
+            body: JSON.stringify({ email: phone }) // Assuming 'phone' variable holds the email
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         
-        alert('New OTP sent to your phone!');
+        alert('New OTP sent to your email!');
     } catch (error) {
         alert('Could not resend OTP. Please try again.');
     }
@@ -186,10 +201,10 @@ const renderLoginScreen = () => {
                 </div>
                 <button type="submit" class="btn-auth">Login</button>
             </form>
-            <p class="auth-link">Don't have an account? <a id="showRegister">Register here</a></p>
+            <p class="auth-link">Don't have an account? <a href="#register">Register here</a></p>
         </div>
     `;
-    document.getElementById('showRegister').addEventListener('click', renderRegisterScreen);
+    // Removed event listener, href="#register" will be caught by router
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
@@ -222,15 +237,26 @@ const renderRegisterScreen = () => {
                     <input type="password" id="cpassword"  required />
                 </div>
                 <div class="form-group">
-                     <label>Referral Code (Optional)</label>
-                     <input type="text" id="referral" />
-                 </div>
+                    <label>Referral Code (Optional)</label>
+                    <input type="text" id="referral" />
+                </div>
+                
+                <!-- NEW: Terms and Conditions Checkbox -->
+                <div class="form-group terms-group" style="flex-direction: row; align-items: center; gap: 10px; margin-top: 15px;">
+                    <input type="checkbox" id="agreeTerms" required style="width: auto; height: auto; margin: 0;">
+                    <label for="agreeTerms" style="margin: 0; font-size: 12px; font-weight: normal; color: #666;">
+                        I have read and agree to the 
+                        <a href="#terms" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Terms & Conditions</a> and 
+                        <a href="#privacy" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Privacy Policy</a>.
+                    </label>
+                </div>
+
                 <button type="submit" class="btn-auth">Register</button>
             </form>
-            <p class="auth-link">Already have an account? <a id="showLogin">Login here</a></p>
+            <p class="auth-link">Already have an account? <a href="#login">Login here</a></p>
         </div>
     `;
-    document.getElementById('showLogin').addEventListener('click', renderLoginScreen);
+    // Removed event listener, href="#login" will be caught by router
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
@@ -239,20 +265,20 @@ const renderOTPVerificationScreen = (email) => {
     appContent.innerHTML = `
         <div class="auth-container">
             <div class="auth-logo">JJB24</div>
-            <h2>Verify Your Phone</h2>
+            <h2>Verify Your Account</h2>
             <p>Enter the 6-digit code sent to ${email}</p>
             
             <form id="otpForm">
                 <div class="form-group">
                     <label>OTP Code</label>
                     <input type="text" 
-                           id="otpCode" 
-                           maxlength="6" 
-                           pattern="[0-9]{6}" 
-                           placeholder="000000"
-                           class="otp-input"
-                           required 
-                           autocomplete="one-time-code" />
+                            id="otpCode" 
+                            maxlength="6" 
+                            pattern="[0-9]{6}" 
+                            placeholder="000000"
+                            class="otp-input"
+                            required 
+                            autocomplete="one-time-code" />
                 </div>
                 
                 <button type="submit" class="btn-auth">Verify</button>
@@ -260,28 +286,27 @@ const renderOTPVerificationScreen = (email) => {
             
             <p class="auth-link">
                 Didn't receive code? 
-                <a id="resendOTP">Resend OTP</a>
+                <a id="resendOTP" style="cursor: pointer; color: #6a0dad;">Resend OTP</a>
             </p>
             
             <p class="auth-link">
-                <a id="backToLogin">Back to Login</a>
+                <a href="#login">Back to Login</a>
             </p>
         </div>
     `;
     
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    // Fix: Pass the correct variable (email) to the resend function
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
-    document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
+    // No listener needed for Back to Login, href="#login" handles it
 };
 
 
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-
-    // console.log('Fetching login data with token:', token);
-
+    
+    // This check is good, but the router should handle it.
     if (!token) {
         alert("You are not logged in. Please log in again.");
         renderLoginScreen();
@@ -289,7 +314,8 @@ const renderHomeScreen = async () => {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+        // FIX: Changed to /dashboard to match other pages
+        const response = await fetch(`${API_BASE_URL}/dashboard`, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -308,10 +334,9 @@ const renderHomeScreen = async () => {
         const data = await response.json();
         // console.log('User Balance data:', data);
 
-        if (!data.success) throw new Error('Invalid Response.');
-
-        const fullName = data.balance.full_name || 'User';
-        const balance = data.balance.balance || 0;
+        // FIX: Changed from data.balance to data.user
+        const fullName = data.user.full_name || 'User';
+        const balance = data.user.balance || 0;
 
         const activityHTML = "<p>No recent activity yet.</p>";
 
@@ -327,7 +352,7 @@ const renderHomeScreen = async () => {
             </div>
             <div class="balance-card">
                 <small>Total Assets (NGN)</small>
-                <h2>₦ ${balance}</h2>
+                <h2>₦ ${Number(balance).toLocaleString()}</h2>
                 <div class="header-buttons">
                     <a href="#deposit" class="btn-deposit">Deposit</a>
                     <a href="#withdraw" class="btn-withdraw">Withdraw</a>
@@ -361,7 +386,8 @@ const renderHomeScreen = async () => {
         appContent.innerHTML = homeHTML;
     } catch (error) {
         console.log('Error loading home screen:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
+        // Better error message
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load dashboard. Please try again. <a href="#login">Logout</a></p>';
     }
 };
 
@@ -374,7 +400,7 @@ const renderProductsPage = async () => {
         const response = await fetch(`${API_BASE_URL}/users/allItems`, {
             headers: { 'Authorization': 'Bearer ' + token }
         });
-        console.log('Response from products backend:', response);
+        // console.log('Response from products backend:', response);
 
         if (!response.ok) throw new Error('Failed to load data.');
 
@@ -412,18 +438,33 @@ const renderProductsPage = async () => {
 
 const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    const token = localStorage.getItem('token');
-    try {
-        const response = await fetch(`${API_BASE_URL}/promotions`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) throw new Error('Failed to load data.');
-        const vipPlans = await response.json();
-        let vipHTML = '';
-        vipPlans.forEach(plan => {
-            vipHTML += `<div class="product-card-wc"><div class="product-info-wc"><h4>${plan.name}</h4><p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p><p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p><p><strong>Duration:</strong> ${plan.duration} days</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
-        });
-        const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
-        appContent.innerHTML = pageHTML;
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load promotions.</p>'; }
+    
+    // FIX: Hardcode the VIP data as requested
+    const vipPlans = [
+        { id: 'vip1', name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30 },
+        { id: 'vip2', name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30 },
+        { id: 'vip3', name: 'CASPER3', price: 2000000, total_return: 2400000, duration: 30 },
+        { id: 'vip4', name: 'CASPER4', price: 3000000, total_return: 3600000, duration: 30 }
+    ];
+
+    let vipHTML = '';
+    vipPlans.forEach(plan => {
+        vipHTML += `
+        <div class="product-card-wc">
+            <div class="product-info-wc">
+                <h4>${plan.name}</h4>
+                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
+                <p><strong>Duration:</strong> ${plan.duration} days</p>
+                <p><small>(Note: Additional 20% of your investment will be added after maturity)</small></p>
+                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+            </div>
+        </div>`;
+    });
+    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    appContent.innerHTML = pageHTML;
+    
+    // Old fetch logic is removed
 };
 
 const renderMePage = async () => {
@@ -451,6 +492,7 @@ const renderMePage = async () => {
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('token');
+            window.location.hash = '#login'; // Go to login
             router();
         });
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
@@ -547,30 +589,232 @@ const renderWithdrawPage = async () => {
     } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
 };
 
+// --- NEW RENDER FUNCTIONS FOR LEGAL PAGES ---
 
+const renderTermsPage = () => {
+    bottomNav.style.display = 'none'; // Hide nav on legal pages
+    appContent.innerHTML = `
+        <div class="page-container legal-page" style="padding: 15px;">
+            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <a href="#register" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Register</a>
+                <h2 style="margin-top: 10px;">Terms & Conditions</h2>
+            </div>
+            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
+                <p>Welcome to JJB24, Nigeria’s first online winery investment platform. By creating an account or using our services, you agree to the following Terms & Conditions. Please read them carefully.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Acceptance of Terms</h4>
+                <p>By accessing or using this platform, you confirm that you are at least 18 years old and legally capable of entering into an investment agreement under Nigerian law.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Nature of Service</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>JJB24 provides opportunities to invest in winery-related projects (production, importation, storage, and distribution).</li>
+                    <li>We are an investment platform, not a bank or savings scheme.</li>
+                    <li>Returns are subject to market conditions and may vary.</li>
+                </ul>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Investment & Returns</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Minimum and maximum investment amounts will be specified on the platform.</li>
+                    <li>Returns on investment (ROI) will be paid according to the package selected.</li>
+                    <li>All payouts are subject to project performance and timelines.</li>
+                    <li>Past performance does not guarantee future results.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Risks Disclaimer</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>All investments carry risks, including possible loss of capital.</li>
+                    <li>By investing, you acknowledge that you understand and accept these risks.</li>
+                    <li>We do not guarantee profits, only projected estimates based on industry performance.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">User Responsibilities</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Provide accurate and truthful information during registration.</li>
+                    <li>Keep login details secure and confidential.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Platform Responsibilities</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Provide transparent information about all investment opportunities.</li>
+                    <li>Use secure payment channels for deposits and withdrawals.</li>
+                    <li>Maintain accurate records of your investments and transactions.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Fees & Charge</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Some transactions may attract administrative or processing fees (clearly stated before payment).</li>
+                    <li>Fees are non-refundable unless stated otherwise.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Withdrawal Policy</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Withdrawals of ROI will be processed within [3 business days] of request.</li>
+                    <li>Early withdrawal of invested capital may not be possible until the project cycle ends.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Limitation of Liability</h4>
+                <p>[jjb24] will not be liable for:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Losses caused by market downturns.</li>
+                    <li>Delays due to third-party partners or financial institutions.</li>
+                    <li>Technical issues beyond our control (e.g., internet downtime, payment gateway errors).</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Termination of Account</h4>
+                <p>We reserve the right to suspend or terminate any account involved in fraud, false information, or violation of these Terms.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Intellectual Property</h4>
+                <p>All content, branding, and materials on this platform are owned by JJB24 and cannot be copied or reused without permission.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Governing Law</h4>
+                <p>These Terms & Conditions are governed by the laws of the Federal Republic of Nigeria. Any disputes will be resolved in Nigerian courts.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Amendments</h4>
+                <p>We may update these Terms from time to time. Continued use of the platform means you accept the updated Terms.</p>
+                
+                <p style="margin-top: 20px;"><strong>✅ By signing up, you agree that you have read, understood and accepted these Terms & Conditions.</strong></p>
+            </div>
+        </div>
+    `;
+};
+
+const renderPrivacyPolicyPage = () => {
+    bottomNav.style.display = 'none'; // Hide nav on legal pages
+    appContent.innerHTML = `
+        <div class="page-container legal-page" style="padding: 15px;">
+            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <a href="#register" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Register</a>
+                <h2 style="margin-top: 10px;">Privacy Policy</h2>
+            </div>
+            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
+                <p>Effective Date: now</p>
+                <p>At JJB24 we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, and protect your data when you use our online winery investment platform.</p>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Information We Collect</h4>
+                <p>When you register or use our platform, we may collect the following information:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Personal details (name, date of birth, gender).</li>
+                    <li>Contact information (email address, phone number)</li>
+                    <li>Financial information (bank account details, payment card details)</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">How We Use Your Information</h4>
+                <p>We use the information collected to:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Verify your identity and comply with KYC (Know Your Customer regulations.</li>
+                    <li>Process investments, deposits, and withdrawals.</li>
+                    <li>Provide customer support and respond to inquiries.</li>
+                    <li>Improve our platform’s performance and user experience.</li>
+                    <li>Send important updates, newsletters, or promotional offers (you can opt out anytime).</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Sharing of Information</h4>
+                <p>We do not sell your personal information. However, we may share it with:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Regulatory bodies (SEC, CBN, NDIC) when required by law.</li>
+                    <li>Third-party partners (payment processors, verification services, auditors).</li>
+                    <li>Law enforcement agencies in cases of fraud, money laundering, or illegal activity.</li>
+                </ul>
+
+                <h4 style."margin-top: 15px; margin-bottom: 5px;">Data Protection & Security</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>We use encryption, firewalls, and secure servers to protect your data.</li>
+                    <li>Only authorized staff have access to sensitive information.</li>
+                    <li>Despite our efforts, no system is 100% secure. Users are encouraged to protect their login details.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Cookies & Tracking</h4>
+                <p>Our website may use cookies to:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Remember your login details.</li>
+                    <li>Personalize your browsing experience.</li>
+                    <li>Track usage statistics for platform improvement.</li>
+                </ul>
+                <p>You may disable cookies in your browser, but some features may not work properly.</p>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Data Retention</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>We retain your personal information for as long as necessary to provide services or comply with legal obligations.</li>
+                    <li>If you close your account, we may still keep certain records for regulatory or tax purposes.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Your Rights</h4>
+                <p>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li>Access the personal data we hold about you.</li>
+                    <li>Request correction or deletion of your data.</li>
+                    <li>Withdraw consent for certain data uses (e.g., marketing).</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Updates to Policy</h4>
+                <p>We may update this Privacy Policy from time to time. Any changes will be communicated through our website or by email.</p>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Contact Us</h4>
+                <p>For questions or concerns about this Privacy Policy, please contact: Contact the customer care on telegram</p>
+
+                <p style="margin-top: 20px;"><strong>✅ By using our platform, you agree to the terms of this Privacy Policy.</strong></p>
+            </div>
+        </div>
+    `;
+};
+
+
+// --- ROUTER ---
 const router = () => {
     const token = localStorage.getItem('token');
-    if (!token) {
+    
+    // Handle routes that DON'T require a token
+    const hash = window.location.hash || '#home';
+
+    // Public auth/legal routes
+    // We check for these *before* checking for a token
+    if (hash === '#login') {
+        bottomNav.style.display = 'none';
         renderLoginScreen();
         return;
     }
+    if (hash === '#register') {
+        bottomNav.style.display = 'none';
+        renderRegisterScreen();
+        return;
+    }
+    if (hash === '#terms') {
+        bottomNav.style.display = 'none';
+        renderTermsPage();
+        return;
+    }
+    if (hash === '#privacy') {
+        bottomNav.style.display = 'none';
+        renderPrivacyPolicyPage();
+        return;
+    }
+
+    // From here, all routes REQUIRE a token
+    if (!token) {
+        bottomNav.style.display = 'none';
+        renderLoginScreen();
+        return;
+    }
+    
+    // User is logged in, show the nav
     bottomNav.style.display = 'flex';
-    const hash = window.location.hash || '#home';
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('href') === hash) { link.classList.add('active'); }
     });
+    
     switch (hash) {
+        case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
-        case '#login': renderLoginScreen(); break;
-        case '#home': renderHomeScreen(); break;
+        
+        // Default for logged-in users
         default: 
-            renderLoginScreen();
-
+            window.location.hash = '#home';
+            renderHomeScreen();
     }
 };
 
