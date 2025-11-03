@@ -172,7 +172,7 @@ const handleInvestClick = async (event) => {
             if (response.ok) {
                 showSuccessModal(result.message);
             } else {
-                alert('Error: ' + result.message);
+                alert('Error: 'D + result.message);
             }
         } catch (error) {
             alert('An investment error occurred.');
@@ -180,6 +180,24 @@ const handleInvestClick = async (event) => {
     }
 };
 
+// NEW: Handle copying referral code
+const handleCopyReferral = (event) => {
+    const code = event.target.dataset.code;
+    if (!code) return;
+
+    // Create a temporary textarea to copy from
+    const textArea = document.createElement('textarea');
+    textArea.value = code;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        alert('Referral code copied to clipboard!');
+    } catch (err) {
+        alert('Failed to copy code. Please copy it manually.');
+    }
+    document.body.removeChild(textArea);
+};
 
 
 // --- RENDER FUNCTIONS (Build the HTML for each page) ---
@@ -474,27 +492,70 @@ const renderMePage = async () => {
         const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
+        
+        // NEW: Get referral code, default if not present
+        const referralCode = data.user.referral_code || 'N/A';
+
         const pageHTML = `
-            <div class="page-container">
+            <div class="page-container me-page">
                 <div class="profile-header-card">
                     <div class="profile-icon"><i class="fas fa-user"></i></div>
                     <h3>${data.user.full_name}</h3>
                     <p>${data.user.phone_number}</p>
+                    
+                    <!-- NEW: Referral Code Display -->
+                    <div class="referral-card">
+                        <small>My Referral Code</small>
+                        <div class="referral-box">
+                            <span id="referralCode">${referralCode}</span>
+                            <button id="copyRefBtn" data-code="${referralCode}" ${referralCode === 'N/A' ? 'disabled' : ''}>Copy</button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- NEW: Standard Global Action List -->
                 <div class="action-list-card">
-                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>Transaction History</span></a>
-                    <a href="#settings" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span></a>
-                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                    <a href="#history" class="action-list-item">
+                        <i class="fas fa-history"></i>
+                        <span>Transaction History</span>
+                    </a>
+                    <a href="#team" class="action-list-item">
+                        <i class="fas fa-users"></i>
+                        <span>My Team</span>
+                    </a>
+                    <a href="#settings" class="action-list-item">
+                        <i class="fas fa-key"></i>
+                        <span>Change Password</span>
+                    </a>
+                    <a href="#about" class="action-list-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>About Us</span>
+                    </a>
+                    <a href="#support" class="action-list-item">
+                        <i class="fas fa-headset"></i>
+                        <span>Customer Support</span>
+                    </a>
+                    <a href="#" id="logoutButton" class="action-list-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
                 </div>
             </div>
         `;
         appContent.innerHTML = pageHTML;
+        
+        // Add event listeners for new buttons
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('token');
             window.location.hash = '#login'; // Go to login
             router();
         });
+        
+        if (referralCode !== 'N/A') {
+            document.getElementById('copyRefBtn').addEventListener('click', handleCopyReferral);
+        }
+
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
 };
 
@@ -596,7 +657,7 @@ const renderTermsPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page" style="padding: 15px;">
             <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="#register" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Register</a>
+                <a href="${localStorage.getItem('token') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
                 <h2 style="margin-top: 10px;">Terms & Conditions</h2>
             </div>
             <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
@@ -683,7 +744,7 @@ const renderPrivacyPolicyPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page" style="padding: 15px;">
             <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="#register" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Register</a>
+                <a href="${localStorage.getItem('token') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
                 <h2 style="margin-top: 10px;">Privacy Policy</h2>
             </div>
             <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
@@ -758,6 +819,141 @@ const renderPrivacyPolicyPage = () => {
     `;
 };
 
+// --- NEW PLACEHOLDER RENDER FUNCTIONS ---
+
+const renderHistoryPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Transaction History</h2></div>
+            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-history" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                <p>No transactions found.</p>
+                <p style="font-size: 14px; color: #999;">Your deposits, withdrawals, and earnings will appear here.</p>
+            </div>
+        </div>
+    `;
+};
+
+const renderTeamPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>My Team</h2></div>
+            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-users" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                <p>Your team referrals will appear here.</p>
+            </div>
+            <div class="info-card" style="margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+                <h4 style="margin-top: 0;">Referral Commission</h4>
+                <ul style="list-style-type: none; padding-left: 0;">
+                    <li>Level A: 6%</li>
+                    <li>Level B: 2%</li>
+                    <li>Level C: 1%</li>
+                </ul>
+                <h4>Team Commission (Daily)</h4>
+                <ul style="list-style-type: none; padding-left: 0;">
+                    <li>Level A: 5% Daily</li>
+                    <li>Level B: 3% Daily</li>
+                    <li>Level C: 2% Daily</li>
+                </ul>
+            </div>
+        </div>
+    `;
+};
+
+const renderSettingsPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Change Password</h2></div>
+            <div class="withdraw-card">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="oldPassword">Old Password</label>
+                        <input type="password" id="oldPassword" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" required />
+                    </div>
+                    <button type="submit" class="btn-auth">Update Password</button>
+                </form>
+            </div>
+        </div>
+    `;
+    // Add event listener for the form
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        alert('Password change functionality is not yet connected to the backend.');
+        // TODO: Implement the backend call for password change
+    });
+};
+
+const renderAboutPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container legal-page" style="padding: 15px;">
+            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                <a href="#me" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Profile</a>
+                <h2 style="margin-top: 10px;">About Us</h2>
+            </div>
+            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
+                <p>Wine is more than just a drink – it’s a growing global business worth billions of dollars. For decades, wine investments have been reserved for wealthy collectors and foreign investors. Today, we are changing that.</p>
+                <p><strong>JJB24 wines</strong> is Nigeria’s first online winery investment platform designed to give everyday people the chance to participate in the lucrative wine industry. Through our platform, you can invest in wine production, storage, and distribution, while earning attractive returns as the market grows.</p>
+                
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">Why Wine Investment?</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li>
+                    <li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li>
+                    <li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">🍷 Our Vision</h4>
+                <p>We believe Africa – and Nigeria in particular – can play a bigger role in the global wine market. By opening the doors of winery investment to Nigerians, we are not only creating wealth opportunities but also supporting the growth of a local wine culture and industry.</p>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">🔒 Why Trust Us?</h4>
+                <ul style="list-style-type: disc; padding-left: 20px;">
+                    <li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li>
+                    <li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li>
+                    <li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li>
+                </ul>
+
+                <h4 style="margin-top: 15px; margin-bottom: 5px;">🚀 Be Part of the Future</h4>
+                <p>With JJB24 you don’t need to be a billionaire or a wine expert to invest. Whether you are an entrepreneur, a professional, or someone simply looking for a smart passive income opportunity, this is your chance to take part in an exciting industry.</p>
+                <p>👉 Invest today, grow with us, and let’s put Nigeria on the global wine map.</p>
+            </div>
+        </div>
+    `;
+};
+
+const renderSupportPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Customer Support</h2></div>
+            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-headset" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                <p>For help with your account, deposits, or withdrawals, please contact our support team.</p>
+                <p style="font-size: 14px; color: #999; margin-top: 20px;">Our primary support channel is via <strong>Telegram</strong>.</p>
+                <a href="#" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px;" onclick="alert('Telegram link not yet available.')">Contact Support on Telegram</a>
+            </div>
+        </div>
+    `;
+};
+
+const renderRewardsPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Rewards</h2></div>
+            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
+                <i class="fas fa-gift" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                <p>Special rewards and bonuses will appear here.</p>
+                <p style="font-size: 14px; color: #999;">Keep an eye out for special promotions!</p>
+            </div>
+        </div>
+    `;
+};
+
 
 // --- ROUTER ---
 const router = () => {
@@ -798,11 +994,21 @@ const router = () => {
     
     // User is logged in, show the nav
     bottomNav.style.display = 'flex';
+    // Update active nav link
+    const activeLink = hash.startsWith('#home') ? '#home' :
+                       hash.startsWith('#products') ? '#products' :
+                       hash.startsWith('#task') ? '#task' :
+                       hash.startsWith('#vip') ? '#vip' :
+                       hash.startsWith('#me') ? '#me' : '#home'; // Default to home
+
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('href') === hash) { link.classList.add('active'); }
+        if (link.getAttribute('href') === activeLink) {
+            link.classList.add('active');
+        }
     });
     
+    // Main app router
     switch (hash) {
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
@@ -811,6 +1017,14 @@ const router = () => {
         case '#task': renderTaskPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         
+        // NEW: Routes for "Me" page and "Home" page links
+        case '#history': renderHistoryPage(); break;
+        case '#team': renderTeamPage(); break;
+        case '#settings': renderSettingsPage(); break;
+        case '#about': renderAboutPage(); break;
+g        case '#support': renderSupportPage(); break;
+        case '#rewards': renderRewardsPage(); break;
+
         // Default for logged-in users
         default: 
             window.location.hash = '#home';
@@ -826,3 +1040,4 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target === successModal) { closeModal(); }
 });
+
