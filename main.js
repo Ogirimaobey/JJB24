@@ -146,23 +146,43 @@ const handleResendOTP = async (phone) => {
 
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const planId = event.target.dataset.planId;
+        const itemId = event.target.dataset.planId; // planId is actually itemId from the items table
         const token = localStorage.getItem('token');
+        
+        if (!token) {
+            alert('Please log in to invest.');
+            renderLoginScreen();
+            return;
+        }
+        
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/invest`, {
+            // Backend endpoint: POST /api/investments/createInvestment/:itemId
+            const response = await fetch(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ planId })
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': 'Bearer ' + token 
+                }
             });
+            
             const result = await response.json();
-            if (response.ok) {
-                showSuccessModal(result.message);
+            
+            if (response.ok && result.success) {
+                showSuccessModal('Investment created successfully! Your balance has been updated.');
+                // Refresh the page to show updated balance
+                setTimeout(() => {
+                    window.location.hash = '#home';
+                    router();
+                }, 2000);
             } else {
-                alert('Error: ' + result.message);
+                const errorMsg = result.message || 'Failed to create investment. Please try again.';
+                alert('Error: ' + errorMsg);
             }
         } catch (error) {
-            alert('An investment error occurred.');
+            console.error('Investment error:', error);
+            alert('An investment error occurred. Please try again.');
         }
     }
 };
