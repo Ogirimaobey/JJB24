@@ -282,7 +282,7 @@ const renderHomeScreen = async () => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
 
-    console.log('Fetching login data with token:', token);
+    // console.log('Fetching login data with token:', token);
 
     if (!token) {
         alert("You are not logged in. Please log in again.");
@@ -299,7 +299,7 @@ const renderHomeScreen = async () => {
             },
         });
 
-        console.log('Response from user Balance backend:', response);
+        // console.log('Response from user Balance backend:', response);
 
         if (!response.ok) {
             const err = await response.text();
@@ -308,7 +308,7 @@ const renderHomeScreen = async () => {
         }
 
         const data = await response.json();
-        console.log('User Balance data:', data);
+        // console.log('User Balance data:', data);
 
         if (!data.success) throw new Error('Invalid Response.');
 
