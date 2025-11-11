@@ -1243,7 +1243,7 @@ const renderPrivacyPolicyPage = () => {
                 <a href="#register" class="back-link"><i class="fas fa-chevron-left"></i> Back</a>
                 <h2>Privacy Policy</h2>
             </div>
-            <div classs="legal-content">
+            <div class="legal-content">
                 <p>Effective Date: now</p>
                 <p>At JJB24 we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we
                     collect, use, store, and protect your data when you use our online winery investment platform.</p>
@@ -1319,7 +1319,7 @@ const router = () => {
     // All other routes require a token
     if (!token) {
         bottomNav.style.display = 'none'; // Hide nav
-        renderLoginScreen();
+        logoutUser(); // Use the central function
         return;
     }
 
