@@ -1,5 +1,5 @@
 // --- 1. IMPORTS AT THE VERY TOP ---
-import swProducts from './products.js';
+// Removed swProducts import - now using API fetch instead
 import vipProducts from './vip.js';
 
 const appContent = document.getElementById('app-content');
@@ -197,7 +197,19 @@ const handleResendOTP = async (email) => { // Changed param to 'email' for clari
 // --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const itemId = event.target.dataset.planId; // planId is actually itemId from the items table
+        const rawItemId = event.target.dataset.planId; // planId is actually itemId from the items table
+        console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
+        
+        // Ensure itemId is a number, not a string
+        let itemId = Number(rawItemId);
+        if (isNaN(itemId) || itemId <= 0) {
+            alert('Error: Invalid product ID. Please refresh the page and try again.');
+            console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
+            return;
+        }
+        
+        console.log('Sending investment request with itemId:', itemId);
+        
         const token = localStorage.getItem('token');
         
         if (!token) {
@@ -468,23 +480,44 @@ const renderHomeScreen = async () => {
 };
 
 
-// --- 9. FIXED renderProductsPage (uses import) (OURS) ---
-const renderProductsPage = () => {
+// --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
+const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
+    const token = localStorage.getItem('token');
     
     try {
+        const response = await fetch(`${API_BASE_URL}/users/allItems`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        console.log('Response from products backend:', response);
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+        console.log('Products data from backend:', data);
+        console.log('First item structure:', data.items[0]);
+
         let productHTML = '';
-        swProducts.forEach(item => {
+        data.items.forEach(item => {
+            // Debug: log what we're getting
+            console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
+            
+            // Ensure item.id is a number, not a string
+            const itemId = Number(item.id);
+            if (isNaN(itemId)) {
+                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+                return; // Skip this item if ID is not a number
+            }
             productHTML += `
                 <div class="product-card-wc">
                     <div class="product-image-wc">
-                        <img src="${item.itemimage}" alt="${item.name}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
                     </div>
                     <div class="product-info-wc">
-                        <h4>${item.name}</h4>
+                        <h4>${item.itemname}</h4>
                         <p>Price: ₦${Number(item.price).toLocaleString()}</p>
                         <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${item.id}">Invest</button>
+                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
                     </div>
                 </div>`;
         });
