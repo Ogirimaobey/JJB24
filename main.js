@@ -1,6 +1,6 @@
 // --- 1. IMPORTS AT THE VERY TOP ---
-import swProducts from './products.js';
-import vipProducts from './vip.js';
+// import swProducts from './products.js';  <-- DELETED THIS CONFLICTING LINE per Sahil's PR
+import vipProducts from './vip.js'; // We STILL need this one for the VIP page (workaround)
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
@@ -180,10 +180,12 @@ const handleOTPVerification = async (event, email) => {
 const handleResendOTP = async (email) => { // Changed param to 'email' for clarity
     // NOTE: We use the original 'fetch' here
     try {
+        // Sahil's audit says this endpoint is missing, but we will keep the code
+        // ready for when he builds it.
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }) // Sending email
+            body: JSON.stringify({ email: email }) // Sending email (Sahil's audit confirmed this is correct)
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
@@ -224,6 +226,8 @@ const handleInvestClick = async (event) => {
                 // No headers or body needed, already handled by fetchWithAuth and Babatunde's endpoint
             });
             
+            if (!response) return; // fetchWithAuth handled the logout
+            
             const result = await response.json();
             
             if (response.ok && result.success) {
@@ -238,6 +242,7 @@ const handleInvestClick = async (event) => {
                 alert('Error: ' + errorMsg);
             }
         } catch (error) {
+            if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
             console.error('Investment error:', error);
             alert('An investment error occurred. Please try again.');
         }
@@ -463,7 +468,7 @@ const renderHomeScreen = async () => {
         appContent.innerHTML = homeHTML;
     } catch (error) {
         // Don't log if it's an unfulfilled promise from logout
-        if (error.message.includes('Promise')) {
+        if (error.message && error.message.includes('Promise')) {
             console.log("Redirecting to login.");
             return;
         }
@@ -526,15 +531,15 @@ const renderProductsPage = async () => {
             </div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading products:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
 
 
-// --- 10. FIXED renderVipPage (SAHIL'S FIX) ---
-const renderVipPage = async () => {
+// --- 10. FIXED renderVipPage (OURS - Workaround) ---
+const renderVipPage = () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
 
     // Sahil's audit said /api/promotions does NOT exist.
@@ -567,7 +572,6 @@ const renderVipPage = async () => {
         const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading VIP products:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load VIP promotions.</p>';
     }
@@ -629,7 +633,7 @@ const renderMePage = async () => {
         document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
 
     } catch (error) { 
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
                 <p>Could not load profile. Please try again.</p>
@@ -691,7 +695,7 @@ const renderTaskPage = async () => {
         appContent.innerHTML = pageHTML;
 
     } catch (error) { 
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load earnings. Please try again.</p>'; 
     }
 };
@@ -768,7 +772,7 @@ const renderDepositPage = async () => {
                 alert('Failed to get payment link.');
             }
         } catch (error) {
-            if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+            if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
             alert('An error occurred. Please try again.');
         }
     });
@@ -802,8 +806,10 @@ const renderHistoryPage = async () => {
             transactions.forEach(txn => {
                 const date = new Date(txn.created_at).toLocaleString();
                 const amount = Number(txn.amount).toLocaleString();
-                const typeIcon = txn.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-                const typeColor = txn.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+                // Sahil's audit mentioned 'type' might be missing. We add a fallback.
+                const type = txn.type || 'transaction'; 
+                const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+                const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
                 const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
                 const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
 
@@ -813,7 +819,7 @@ const renderHistoryPage = async () => {
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 1.2rem;"></i>
                                 <div>
-                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${txn.type}</p>
+                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</p>
                                     <small style="color: var(--text-secondary);">${date}</small>
                                 </div>
                             </div>
@@ -852,7 +858,7 @@ const renderHistoryPage = async () => {
             });
         });
     } catch (error) {
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading history:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
     }
@@ -862,8 +868,9 @@ const renderHistoryPage = async () => {
 const showTransactionDetails = (transaction) => {
     const date = new Date(transaction.created_at).toLocaleString();
     const amount = Number(transaction.amount).toLocaleString();
-    const typeIcon = transaction.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-    const typeColor = transaction.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+    const type = transaction.type || 'transaction'; // Add fallback
+    const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+    const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
     const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
     
     // Check if transaction has bank details (for withdrawals)
@@ -875,7 +882,7 @@ const showTransactionDetails = (transaction) => {
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                     <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 2rem;"></i>
                     <div>
-                        <h3 style="margin: 0; text-transform: capitalize;">${transaction.type}</h3>
+                        <h3 style="margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</h3>
                         <span style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize; display: inline-block; margin-top: 0.5rem;">${transaction.status}</span>
                     </div>
                 </div>
@@ -900,7 +907,7 @@ const showTransactionDetails = (transaction) => {
                 
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
-                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${transaction.type}</p>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${type.replace('_', ' ')}</p>
                 </div>
                 
                 <div>
@@ -1067,12 +1074,12 @@ const renderWithdrawPage = async () => {
                 
                 showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
             } catch (error) {
-                if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+                if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
                 alert('An error occurred. Please try again.');
             }
         });
     } catch (error) {
-        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading withdrawal page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
     }
@@ -1389,6 +1396,10 @@ const router = () => {
         }
         // Handle "Me" page and its sub-pages
         else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
+            link.classList.add('active');
+        }
+        // Handle "Task" (Earnings) page
+        else if (link.getAttribute('href') === '#task' && hash.startsWith('#task')) {
             link.classList.add('active');
         }
     });
