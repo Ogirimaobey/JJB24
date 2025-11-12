@@ -194,10 +194,19 @@ const handleResendOTP = async (email) => { // Changed param to 'email' for clari
     }
 };
 
-// --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
+// --- 5. handleInvestClick (SAHIL'S FIX + Our Fix) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const itemId = event.target.dataset.planId; // planId is actually itemId from the items table
+        const rawItemId = event.target.dataset.planId; // planId is actually itemId from the items table
+        
+        // Ensure itemId is a number, not a string (Sahil's Fix)
+        let itemId = Number(rawItemId);
+        if (isNaN(itemId) || itemId <= 0) {
+            alert('Error: Invalid product ID. Please refresh the page and try again.');
+            console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
+            return;
+        }
+
         const token = localStorage.getItem('token');
         
         if (!token) {
@@ -243,11 +252,15 @@ const handleCopyReferral = (event) => {
         return;
     }
     
+    // Use a temporary textarea to copy the text
     const textArea = document.createElement('textarea');
     textArea.value = referralCode;
+    textArea.style.position = 'absolute';
+    textArea.style.left = '-9999px';
     document.body.appendChild(textArea);
     textArea.select();
     try {
+        // Use execCommand as a fallback for browser/iframe compatibility
         document.execCommand('copy');
         alert('Referral code copied to clipboard!');
     } catch (err) {
@@ -377,18 +390,14 @@ const renderOTPVerificationScreen = (email) => {
 // --- 8. FIXED renderHomeScreen (with Certificate Button) (OURS) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-        logoutUser(); // Use the central function
-        return;
-    }
-
+    
     try {
         // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
             method: "GET"
         });
+
+        if (!response) return; // fetchWithAuth will handle the error/redirect
 
         if (!response.ok) {
         const err = await response.text();
@@ -453,6 +462,11 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
+        // Don't log if it's an unfulfilled promise from logout
+        if (error.message.includes('Promise')) {
+            console.log("Redirecting to login.");
+            return;
+        }
         console.log('Error loading home screen:', error);
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
@@ -468,23 +482,39 @@ const renderHomeScreen = async () => {
 };
 
 
-// --- 9. FIXED renderProductsPage (uses import) (OURS) ---
-const renderProductsPage = () => {
+// --- 9. FIXED renderProductsPage (SAHIL'S FIX) ---
+const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     
     try {
+        // --- UPDATED to use fetchWithAuth ---
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, {
+            method: 'GET'
+        });
+        if (!response) return;
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+        
         let productHTML = '';
-        swProducts.forEach(item => {
+        data.items.forEach(item => {
+            // Ensure item.id is a number, not a string
+            const itemId = Number(item.id);
+            if (isNaN(itemId)) {
+                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+                return; // Skip this item if ID is not a number
+            }
             productHTML += `
                 <div class="product-card-wc">
                     <div class="product-image-wc">
-                        <img src="${item.itemimage}" alt="${item.name}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
                     </div>
                     <div class="product-info-wc">
-                        <h4>${item.name}</h4>
+                        <h4>${item.itemname}</h4>
                         <p>Price: ₦${Number(item.price).toLocaleString()}</p>
                         <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${item.id}">Invest</button>
+                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
                     </div>
                 </div>`;
         });
@@ -496,45 +526,65 @@ const renderProductsPage = () => {
             </div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        console.error('Error rendering products:', error);
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        console.error('Error loading products:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
 
 
-// --- 10. FIXED renderVipPage (uses import) (OURS) ---
-const renderVipPage = () => {
+// --- 10. FIXED renderVipPage (SAHIL'S FIX) ---
+const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    
-    let vipHTML = '';
-    vipProducts.forEach(plan => {
-        vipHTML += `
-        <div class="product-card-wc">
-            <div class="product-image-wc">
-                <img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-            </div>
-            <div class="product-info-wc">
-                <h4>${plan.name}</h4>
-                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration} days</p>
-                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
-                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-            </div>
-        </div>`;
-    });
-    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
-    appContent.innerHTML = pageHTML;
+
+    // Sahil's audit said /api/promotions does NOT exist.
+    // We will continue to use our imported vipProducts file as a workaround
+    // until he builds that endpoint.
+    try {
+        let vipHTML = '';
+        vipProducts.forEach(plan => {
+            // Ensure item.id is a number
+            const itemId = Number(plan.id);
+            if (isNaN(itemId)) {
+                console.error('Invalid item ID:', plan.id, 'for item:', plan.name);
+                return; // Skip
+            }
+            vipHTML += `
+            <div class="product-card-wc">
+                <div class="product-image-wc">
+                    <img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
+                </div>
+                <div class="product-info-wc">
+                    <h4>${plan.name}</h4>
+                    <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                    <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
+                    <p><strong>Duration:</strong> ${plan.duration} days</p>
+                    <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
+                    <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                </div>
+            </div>`;
+        });
+        const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+        appContent.innerHTML = pageHTML;
+    } catch (error) {
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        console.error('Error loading VIP products:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load VIP promotions.</p>';
+    }
 };
 
 
-// --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
+// --- 11. FIXED renderMePage (OURS + fetchWithAuth) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    const token = localStorage.getItem('token');
+    
     try {
         // --- UPDATED to use fetchWithAuth ---
+        // Sahil's audit says /api/dashboard is MISSING. We must continue
+        // to use /api/users/balance as our workaround.
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
+        if (!response) return; 
+        
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         
@@ -579,6 +629,7 @@ const renderMePage = async () => {
         document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
 
     } catch (error) { 
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
                 <p>Could not load profile. Please try again.</p>
@@ -595,16 +646,16 @@ const renderMePage = async () => {
 // --- 12. FIXED renderTaskPage (new Earnings Dashboard) (OURS) ---
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
-    const token = localStorage.getItem('token');
     
     try {
-        // --- TODO: When Babatunde provides the endpoint, we will use fetchWithAuth ---
-        // const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
+        // --- TODO: Sahil's audit says /api/tasks is MISSING ---
+        // We will keep using placeholder data until he builds it.
+        // const response = await fetchWithAuth(`${API_BASE_URL}/api/tasks`, { method: 'GET' });
         // if (!response.ok) throw new Error('Failed to load earnings.');
         // const earnings = await response.json();
         
         // --- PLACEHOLDER DATA ---
-        // We will use this until Babatunde's backend is ready.
+        // We will use this until Babatunde's/Sahil's backend is ready.
         const earnings = {
             today: 0.00,
             yesterday: 0.00,
@@ -640,6 +691,7 @@ const renderTaskPage = async () => {
         appContent.innerHTML = pageHTML;
 
     } catch (error) { 
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load earnings. Please try again.</p>'; 
     }
 };
@@ -647,16 +699,16 @@ const renderTaskPage = async () => {
 // --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
 const renderDepositPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in to deposit.');
-        logoutUser(); // Use the central function
-        return;
-    }
-
+    
     // Decode token to get user info
     let email, phone, userId;
     try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in to deposit.');
+            logoutUser(); // Use the central function
+            return;
+        }
         const tokenPayload = JSON.parse(atob(token.split('.')[1]));
         userId = tokenPayload.id;
         email = tokenPayload.email;
@@ -694,6 +746,8 @@ const renderDepositPage = async () => {
 
         try {
             // --- UPDATED to use fetchWithAuth ---
+            // Sahil's audit said this sends unnecessary data, but we will leave it
+            // until he confirms he has removed it from his backend.
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
                 method: 'POST',
                 body: JSON.stringify({ 
@@ -703,6 +757,7 @@ const renderDepositPage = async () => {
                     name: phone || 'User'
                 })
             });
+            if (!response) return;
 
             const result = await response.json();
             if (!response.ok) return alert('Error: ' + result.message);
@@ -713,6 +768,7 @@ const renderDepositPage = async () => {
                 alert('Failed to get payment link.');
             }
         } catch (error) {
+            if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
             alert('An error occurred. Please try again.');
         }
     });
@@ -721,19 +777,13 @@ const renderDepositPage = async () => {
 // --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
 const renderHistoryPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
-    const token = localStorage.getItem('token');
     
-    if (!token) {
-        alert('Please log in to view history.');
-        logoutUser(); // Use the central function
-        return;
-    }
-
     try {
         // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/payment/history`, {
             method: 'GET'
         });
+        if (!response) return;
 
         if (!response.ok) throw new Error('Failed to load history.');
 
@@ -802,6 +852,7 @@ const renderHistoryPage = async () => {
             });
         });
     } catch (error) {
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading history:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
     }
@@ -933,18 +984,14 @@ const showTransactionDetails = (transaction) => {
 // --- 16. renderWithdrawPage (BABATUNDE'S + Our Fix) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in to withdraw.');
-        logoutUser(); // Use the central function
-        return;
-    }
-
+    
     try {
         // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
             method: 'GET'
         });
+        if (!response) return;
+
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         const balance = data.balance?.balance || 0;
@@ -1013,16 +1060,19 @@ const renderWithdrawPage = async () => {
                         account_name: accountName
                     })
                 });
+                if (!withdrawResponse) return;
                 
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
                 
                 showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
             } catch (error) {
+                if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
                 alert('An error occurred. Please try again.');
             }
         });
     } catch (error) {
+        if (error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading withdrawal page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
     }
@@ -1117,8 +1167,8 @@ const renderRewardsPage = () => {
 
 // --- 18. NEW Certificate Page (OURS) ---
 const renderCertificatePage = () => {
-    // --- TODO: REPLACE THIS WITH YOUR REAL CERTIFICATE URL ---
-    const certificateUrl = 'https://placehold.co/600x850/ffffff/333333?text=Company+Registration+Certificate+(CAC)';
+    // --- UPDATED with your new filename ---
+    const certificateUrl = 'image.png';
     
     appContent.innerHTML = `
         <div class="page-container">
@@ -1296,7 +1346,7 @@ const renderPrivacyPolicyPage = () => {
 };
 
 
-// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
+// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S + SAHIL'S) ---
 const router = () => {
     const token = localStorage.getItem('token');
     
@@ -1319,7 +1369,7 @@ const router = () => {
     // All other routes require a token
     if (!token) {
         bottomNav.style.display = 'none'; // Hide nav
-        renderLoginScreen();
+        logoutUser(); // Call our new logout function
         return;
     }
 
@@ -1351,7 +1401,7 @@ const router = () => {
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
         
-        // Payment Routes from Babatunde
+        // Payment Routes from Babatunde/Sahil
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
