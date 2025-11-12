@@ -1,9 +1,10 @@
 // This file holds the data for the main "Products" page.
 // We are using placeholder images from placehold.co
+// FIX: Changed all string IDs (e.g., 'sw1') to integer IDs (e.g., 1)
 
 const swProducts = [
     { 
-        id: 'sw1', 
+        id: 1, // 'sw1'
         name: 'SW1. CHAMDOR', 
         price: 8000, 
         validDays: 35, 
@@ -12,7 +13,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW1.+CHAMDOR'
     },
     { 
-        id: 'sw2', 
+        id: 2, // 'sw2'
         name: 'SW2. ASCONIAGOR', 
         price: 15000, 
         validDays: 35, 
@@ -21,7 +22,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW2.+ASCONIAGOR'
     },
     { 
-        id: 'sw3', 
+        id: 3, // 'sw3'
         name: 'SW3. 4thSTREET', 
         price: 40000, 
         validDays: 40, 
@@ -30,7 +31,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW3.+4thSTREET'
     },
     { 
-        id: 'sw4', 
+        id: 4, // 'sw4'
         name: 'SW4. CARLO ROSSI', 
         price: 80000, 
         validDays: 40, 
@@ -39,7 +40,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW4.+CARLO+ROSSI'
     },
     { 
-        id: 'sw5', 
+        id: 5, // 'sw5'
         name: 'SW5. SANDEMAN RUBY PORTE', 
         price: 120000, 
         validDays: 50, 
@@ -48,7 +49,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW5.+SANDEMAN'
     },
     { 
-        id: 'sw6', 
+        id: 6, // 'sw6'
         name: 'SW6. VODKA', 
         price: 150000, 
         validDays: 50, 
@@ -57,7 +58,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW6.+VODKA'
     },
     { 
-        id: 'sw7', 
+        id: 7, // 'sw7'
         name: 'SW7. ANDRE', 
         price: 200000, 
         validDays: 60, 
@@ -66,7 +67,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW7.+ANDRE'
     },
     { 
-        id: 'sw8', 
+        id: 8, // 'sw8'
         name: 'SW8. IRISH CREAM', 
         price: 300000, 
         validDays: 90, 
@@ -75,7 +76,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW8.+IRISH+CREAM'
     },
     { 
-        id: 'sw9', 
+        id: 9, // 'sw9'
         name: 'SW9. GLENFFIDDICH', 
         price: 400000, 
         validDays: 90, 
@@ -84,7 +85,7 @@ const swProducts = [
         itemimage: 'https://placehold.co/300x200/6a0dad/ffffff?text=SW9.+GLENFFIDDICH'
     },
     { 
-        id: 'sw10', 
+        id: 10, // 'sw10'
         name: 'SW10. MATTEL', 
         price: 500000, 
         validDays: 90, 
