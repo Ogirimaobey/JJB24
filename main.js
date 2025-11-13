@@ -1,6 +1,6 @@
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'http://localhost:3000'; // Adjust as needed
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -21,18 +21,43 @@ const closeModal = () => {
     }
 };
 
+
+
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
 const handleLogin = async (event) => {
     event.preventDefault();
-    const email = document.getElementById('email').value;
+    const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
+    
+    if (!loginIdentifier || !password) {
+        return alert('Please provide email or phone and password.');
+    }
+    
+    // Detect if it's an email or phone number
+    const isEmail = loginIdentifier.includes('@');
+    const loginData = { password };
+    
+    if (isEmail) {
+        loginData.email = loginIdentifier;
+    } else {
+        loginData.phone = loginIdentifier;
+    }
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/api/users/login`, { method: 'POST',credentials:"include", headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        renderHomeScreen();
-        
-    } catch (error) { alert('Could not connect to server.'); }
+        localStorage.setItem('token', result.token);
+        console.log('Login successful, token stored:' , result.token);
+        window.location.hash = '#home';
+        router();
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
@@ -73,13 +98,51 @@ const handleRegister = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
 
-        renderOTPScreen(email);
+        // Backend sends OTP implicitly during registration.
+        // Show OTP screen and verify using the email + code.
+        alert(`OTP sent to ${email}. Please check your inbox.`);
+        renderOTPVerificationScreen(email);
     } catch (error) {
         console.error(error.message)
     }
 };
 
 
+const handleOTPVerification = async (event, email) => {
+    event.preventDefault();
+    const otpCode = document.getElementById('otpCode').value;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp: otpCode })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('Phone verified successfully! Please log in.');
+        renderLoginScreen();
+    } catch (error) {
+        alert('Could not verify OTP. Please try again.');
+    }
+};
+
+const handleResendOTP = async (phone) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        alert('New OTP sent to your phone!');
+    } catch (error) {
+        alert('Could not resend OTP. Please try again.');
+    }
+};
 
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
@@ -102,6 +165,8 @@ const handleInvestClick = async (event) => {
         }
     }
 };
+
+
 
 // --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
@@ -170,125 +235,181 @@ const renderRegisterScreen = () => {
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
-const renderHomeScreen = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-  
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/users/login`, { method :"GET", credentials: "include"});
-        if (!response.ok) throw new Error('Failed to load data.');
-        const data = await response.json();
-        let activityHTML = '';
-        if (data.investments && data.investments.length === 0) {
-            activityHTML = '<p>No recent activity.</p>';
-        } else if (data.investments) {
-            data.investments.slice(0, 3).forEach(inv => {
-                const startDate = new Date(inv.start_date).toLocaleDateString();
-                activityHTML += `<div class="activity-item"><i class="fas fa-chart-line"></i><div class="activity-details"><p>Investment in ${inv.plan_name}</p><small>${startDate}</small></div></div>`;
-            });
-        }
-        const homeHTML = `
-            <div class="top-header"><div class="user-greeting"><h4>Hello, ${data.user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(data.user.balance).toLocaleString()}</h2><div class="header-buttons"><a href="#deposit" class="btn-deposit">Deposit</a><a href="#withdraw" class="btn-withdraw">Withdraw</a></div></div>
-            <div class="home-content">
-                <div class="quick-actions">
-                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
-                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
-                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
-                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
-                </div>
-                <div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div>
-            </div>`;
-        appContent.innerHTML = homeHTML;
-    } catch (error) {
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
-    }
-};
-
-const renderOTPScreen = (email, redirectOnSuccess = renderLoginScreen, resendCallback = null) => {
+const renderOTPVerificationScreen = (email) => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
         <div class="auth-container">
             <div class="auth-logo">JJB24</div>
-            <h2>Verify Your Account</h2>
-            <p>We've sent a 6-digit OTP to <strong>${email}</strong>. Please enter it below.</p>
+            <h2>Verify Your Phone</h2>
+            <p>Enter the 6-digit code sent to ${email}</p>
+            
             <form id="otpForm">
                 <div class="form-group">
-                    <label>Enter OTP</label>
-                    <input type="text" id="otp" required maxlength="6" inputmode="numeric" pattern="[0-9]{6}" />
+                    <label>OTP Code</label>
+                    <input type="text" 
+                           id="otpCode" 
+                           maxlength="6" 
+                           pattern="[0-9]{6}" 
+                           placeholder="000000"
+                           class="otp-input"
+                           required 
+                           autocomplete="one-time-code" />
                 </div>
-                <button type="submit" class="btn-auth">Verify OTP</button>
-            </form>`;
+                
+                <button type="submit" class="btn-auth">Verify</button>
+            </form>
+            
+            <p class="auth-link">
+                Didn't receive code? 
+                <a id="resendOTP">Resend OTP</a>
+            </p>
+            
+            <p class="auth-link">
+                <a id="backToLogin">Back to Login</a>
+            </p>
+        </div>
+    `;
     
-    // Event listeners
-    const otpForm = document.getElementById('otpForm');
-    otpForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const otp = document.getElementById('otp').value.trim();
-        if (!otp || otp.length !== 6) {
-            return alert('Please enter a valid 6-digit OTP.');
-        }
-        
-        try {
-            // Backend endpoint for OTP verification, now including email
-            const response = await fetch(`${API_BASE_URL}/api/users/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // If session-based; otherwise, adjust
-                body: JSON.stringify({ email, otp })
-            });
-            const result = await response.json();
-            if (!response.ok) {
-                return alert(`Verification failed: ${result.message || 'Invalid OTP'}`);
-            }
-            alert('Registration was successful.You can login now');
-            if (redirectOnSuccess) {
-                redirectOnSuccess(); 
-            }
-        } catch (error) {
-            alert('Could not connect to server. Please try again.');
-        }
-    });
-    
-    // const resendLink = document.getElementById('resendOTP');
-    // if (resendCallback) {
-    //     resendLink.addEventListener('click', () => resendCallback(email));
-    // } else {
-    //     // Default resend handler, now including email
-    //     resendLink.addEventListener('click', async () => {
-    //         try {
-    //             const response = await fetch(`${API_BASE_URL}/api/users/resend-otp`, {
-    //                 method: 'POST',
-    //                 headers: { 'Content-Type': 'application/json' },
-    //                 credentials: 'include',
-    //                 body: JSON.stringify({ email })
-    //             });
-    //             const result = await response.json();
-    //             if (!response.ok) {
-    //                 return alert(`Resend failed: ${result.message}`);
-    //             }
-    //             alert('OTP resent successfully!');
-    //         } catch (error) {
-    //             alert('Could not resend OTP. Please try again.');
-    //         }
-    //     });}
- 
-    
+    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
     document.getElementById('backToLogin').addEventListener('click', renderLoginScreen);
 };
+
+
+const renderHomeScreen = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+
+    console.log('Fetching login data with token:', token);
+
+    if (!token) {
+        alert("You are not logged in. Please log in again.");
+        renderLoginScreen();
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/balance`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`, 
+        },
+        });
+
+        console.log('Response from user Balance backend:', response); 
+
+        if (!response.ok) {
+        const err = await response.text();
+        console.error('Backend error:', err);
+        throw new Error('Failed to load data.');
+        }
+
+        const data = await response.json();
+        console.log('User Balance data:', data);
+
+        if (!data.success) throw new Error('Invalid Response.');
+
+        const fullName = data.balance.full_name || 'User';
+        const balance = data.balance.balance || 0;
+
+        const activityHTML = "<p>No recent activity yet.</p>";
+
+        const homeHTML = `
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
+                    <p>Welcome back!</p>
+                </div>
+                <div class="profile-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <div class="balance-card">
+                <small>Total Assets (NGN)</small>
+                <h2>₦ ${balance}</h2>
+                <div class="header-buttons">
+                    <a href="#deposit" class="btn-deposit">Deposit</a>
+                    <a href="#withdraw" class="btn-withdraw">Withdraw</a>
+                </div>
+            </div>
+
+            <div class="home-content">
+                <div class="quick-actions">
+                    <a href="#team" class="action-button">
+                        <i class="fas fa-users"></i>
+                        <span>My Team</span>
+                    </a>
+                    <a href="#history" class="action-button">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                    <a href="#support" class="action-button">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </a>
+                    <a href="#rewards" class="action-button">
+                        <i class="fas fa-gift"></i>
+                        <span>Rewards</span>
+                    </a>
+                </div>
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">${activityHTML}</div>
+                </div>
+            </div>`;
+        appContent.innerHTML = homeHTML;
+    } catch (error) {
+        console.log('Error loading home screen:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load home screen. Please ensure your server is running.</p>';
+    }
+};
+
+
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
+    const token = localStorage.getItem('token');
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/users/dashboard`, { method :"GET", credentials: "include" });
-        if (!response.ok) throw new Error('Failed to load data.');
-        const data = await response.json();
-        let productHTML = '';
-        data.plans.forEach(plan => {
-            productHTML += `<div class="product-card-wc"><div class="product-image-wc"><img src="${plan.image}" alt="${plan.name}"></div><div class="product-info-wc"><h4>${plan.name}</h4><p>Price: ₦${plan.price.toLocaleString()}</p><p>Daily Income: ₦${plan.daily_income.toLocaleString()}</p><button class="btn-invest" data-plan-id="${plan.id}">Invest</button></div></div>`;
+        const response = await fetch(`${API_BASE_URL}/users/allItems`, {
+            headers: { 'Authorization': 'Bearer ' + token }
         });
-        const pageHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+        console.log('Response from products backend:', response);
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+        console.log('Products data from backend:', data);
+
+        let productHTML = '';
+        data.items.forEach(item => {
+            productHTML += `
+                <div class="product-card-wc">
+                    <div class="product-image-wc">
+                        <img src="${item.itemimage}" alt="${item.itemname}">
+                    </div>
+                    <div class="product-info-wc">
+                        <h4>${item.itemname}</h4>
+                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                        <button class="btn-invest" data-plan-id="${item.id}">Invest</button>
+                    </div>
+                </div>`;
+        });
+
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>Investment Products</h2></div>
+                <div class="product-grid-wc">${productHTML}</div>
+            </div>`;
         appContent.innerHTML = pageHTML;
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>'; }
+    } catch (error) {
+        console.error('Error loading products:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
+    }
 };
+
 
 const renderVipPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
@@ -478,6 +599,24 @@ const router = async () => {
         console.error('Router auth check failed:', error);
         renderLoginScreen();
         return;
+    }
+    bottomNav.style.display = 'flex';
+    const hash = window.location.hash || '#home';
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === hash) { link.classList.add('active'); }
+    });
+    switch (hash) {
+        case '#products': renderProductsPage(); break;
+        case '#vip': renderVipPage(); break;
+        case '#me': renderMePage(); break;
+        case '#task': renderTaskPage(); break;
+        case '#withdraw': renderWithdrawPage(); break;
+        case '#login': renderLoginScreen(); break;
+        case '#home': renderHomeScreen(); break;
+        default: 
+            renderLoginScreen();
+
     }
 };
 
