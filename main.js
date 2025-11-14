@@ -1411,3 +1411,5 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target.id === 'successModal') { closeModal(); }
 });
+
+
