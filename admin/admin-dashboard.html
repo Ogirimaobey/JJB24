@@ -15,6 +15,7 @@
         <header class="admin-header">
             <h1>Dashboard</h1>
             <div class="header-actions">
+                <a href="products.html" class="nav-button">Manage Products</a>
                 <a href="users.html" class="nav-button">Manage Users</a>
                 <a href="investments.html" class="nav-button">Manage Investments</a>
                 <button id="adminLogoutButton">Logout</button>
@@ -71,44 +72,101 @@
 
     <script>
         window.addEventListener('DOMContentLoaded', async () => {
+            // Check token first
             const token = localStorage.getItem('adminToken');
+            console.log('Token check:', token ? 'Token exists' : 'No token');
+            
             if (!token) {
+                console.log('No token found, redirecting to login');
                 window.location.href = 'admin-login.html';
                 return;
             }
-            try {
-                const response = await fetch('https://jjb24-backend.onrender.com/api/admin/stats', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!response.ok) {
-                    localStorage.removeItem('adminToken');
-                    window.location.href = 'admin-login.html';
-                    return;
-                }
-                const data = await response.json();
 
-                document.getElementById('totalUsersStat').textContent = data.totalUsers;
-                document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments;
-                document.getElementById('totalAmountStat').textContent = Number(data.totalAmountInvested).toLocaleString();
-                
-                const usersTableBody = document.getElementById('recentUsersTable');
-                usersTableBody.innerHTML = '';
-                if (data.recentUsers.length === 0) {
-                    usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
-                } else {
-                    data.recentUsers.forEach(user => {
-                        const row = document.createElement('tr');
-                        const registrationDate = new Date(user.created_at).toLocaleString();
-                        row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
-                        usersTableBody.appendChild(row);
-                    });
-                }
-            } catch (error) { console.error('Error fetching admin data:', error); }
+            // Use localhost for local testing, change to production URL when deploying
+            const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:3000/api'
+                : 'https://jjb24-backend.onrender.com/api';
 
+            // Set up logout button first (so it works even if stats fail)
             document.getElementById('adminLogoutButton').addEventListener('click', () => {
                 localStorage.removeItem('adminToken');
                 window.location.href = 'admin-login.html';
             });
+
+            // Try to verify token with a simple endpoint first
+            try {
+                // Use a simple endpoint that exists to verify token
+                const verifyResponse = await fetch(`${API_BASE_URL}/admin/vip`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                console.log('Token verification response status:', verifyResponse.status);
+                
+                if (verifyResponse.status === 401 || verifyResponse.status === 403) {
+                    // Token is invalid
+                    console.log('Token invalid, redirecting to login');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+
+                // Token is valid, continue loading dashboard
+                console.log('Token is valid, loading dashboard');
+                
+            } catch (error) {
+                console.error('Error verifying token:', error);
+                // If it's a network error, don't redirect - just show placeholder
+                if (error.message.includes('Failed to fetch')) {
+                    console.log('Network error, but keeping user logged in');
+                } else {
+                    // Other errors - might be token issue
+                    console.log('Unexpected error, redirecting to login');
+                    localStorage.removeItem('adminToken');
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
+            }
+
+            // Now try to load stats (optional)
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('totalUsersStat').textContent = data.totalUsers || 0;
+                    document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments || 0;
+                    document.getElementById('totalAmountStat').textContent = Number(data.totalAmountInvested || 0).toLocaleString();
+                    
+                    const usersTableBody = document.getElementById('recentUsersTable');
+                    usersTableBody.innerHTML = '';
+                    if (data.recentUsers && data.recentUsers.length > 0) {
+                        data.recentUsers.forEach(user => {
+                            const row = document.createElement('tr');
+                            const registrationDate = new Date(user.created_at).toLocaleString();
+                            row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
+                            usersTableBody.appendChild(row);
+                        });
+                    } else {
+                        usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
+                    }
+                } else {
+                    // Stats endpoint doesn't exist yet, show placeholder data
+                    console.log('Stats endpoint not available (status:', response.status, '), showing placeholder data');
+                    document.getElementById('totalUsersStat').textContent = '0';
+                    document.getElementById('totalInvestmentsStat').textContent = '0';
+                    document.getElementById('totalAmountStat').textContent = '0';
+                    document.getElementById('recentUsersTable').innerHTML = '<tr><td colspan="3">Stats endpoint not configured yet.</td></tr>';
+                }
+            } catch (error) { 
+                console.error('Error fetching admin stats:', error);
+                // Don't redirect on error, just show placeholder
+                document.getElementById('totalUsersStat').textContent = '0';
+                document.getElementById('totalInvestmentsStat').textContent = '0';
+                document.getElementById('totalAmountStat').textContent = '0';
+                document.getElementById('recentUsersTable').innerHTML = '<tr><td colspan="3">Unable to load stats.</td></tr>';
+            }
         });
     </script>
 </body>
