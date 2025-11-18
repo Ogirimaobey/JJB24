@@ -543,21 +543,23 @@ const renderVipPage = () => {
     let vipHTML = '';
     vipProducts.forEach(plan => {
         vipHTML += `
-        <div class="product-card-wc">
-            <div class="product-image-wc">
+        <div class="product-card-wc style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 15px;">
+            <div class="product-image-wc style="border-bottom: none;">
                 <img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
             </div>
-            <div class="product-info-wc">
-                <h4>${plan.name}</h4>
-                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration} days</p>
-                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
-                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+            <div class="product-info-wc style="color: white; padding: 15px;">
+                <h4 style="color: white; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">${plan.name}</h4>
+                <div style="margin-bottom: 5px; font-size: 0.9rem; color: #ccc; font-weight:bold;">Price: <span style="color:white;">₦${plan.price.toLocaleString()}</span></div>
+                <div style="margin-bottom: 5px; font-size: 0.9rem; color: #ccc;"> Total Return: <span style="color:white; font-weight:bold;">₦${plan.total_return.toLocaleString()}</span></div>
+                <div style="margin-bottom: 15px; font-size: 0.9rem; color: #ccc; font-weight:bold;">Duration: <span style="color:white; ">${plan.duration} days</span></div>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px">(Note: Additional 20% of your investment will be added after maturity)</p>
+                <button class="btn-invest" style="width: 100%; background-color: #ffd700; color: black; font-weight: bold; border: none data-plan-id="${plan.id}">Invest</button>
             </div>
         </div>`;
     });
-    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    const pageHTML = `<div class="page-container" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh;">>
+    <div class="page-header"><h2 style="color: white;>VIP Promotions</h2></div>
+    <div class="product-grid-wc" style="padding-bottom: 80px">${vipHTML}</div></div>`;
     appContent.innerHTML = pageHTML;
 };
 
