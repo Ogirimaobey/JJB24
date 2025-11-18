@@ -632,19 +632,16 @@ const renderTaskPage = async () => {
     const token = localStorage.getItem('token');
     
     try {
-        // --- TODO: When Babatunde provides the endpoint, we will use fetchWithAuth ---
-        // const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
-        // if (!response.ok) throw new Error('Failed to load earnings.');
-        // const earnings = await response.json();
+        // Fetch earnings summary from backend
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
+        if (!response.ok) throw new Error('Failed to load earnings.');
+        const data = await response.json();
         
-        // --- PLACEHOLDER DATA ---
-        // We will use this until Babatunde's backend is ready.
         const earnings = {
-            today: 0.00,
-            yesterday: 0.00,
-            total: 0.00
+            today: data.today || 0.00,
+            yesterday: data.yesterday || 0.00,
+            total: data.total || 0.00
         };
-        // --- END OF PLACEHOLDER ---
 
         const pageHTML = `
             <div class="page-container task-page">

@@ -137,7 +137,8 @@
                     const data = await response.json();
                     document.getElementById('totalUsersStat').textContent = data.totalUsers || 0;
                     document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments || 0;
-                    document.getElementById('totalAmountStat').textContent = Number(data.totalAmountInvested || 0).toLocaleString();
+                    const totalAmount = Number(data.totalAmountInvested || 0);
+                    document.getElementById('totalAmountStat').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     
                     const usersTableBody = document.getElementById('recentUsersTable');
                     usersTableBody.innerHTML = '';
