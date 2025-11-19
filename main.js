@@ -28,7 +28,6 @@ const closeModal = () => {
 
 // --- NEW: A central function to handle logging the user out ---
 const logoutUser = () => {
-    localStorage.removeItem('token');
     window.location.hash = '#login';
     // We call router() to make sure the login screen renders immediately
     router(); 
@@ -36,18 +35,17 @@ const logoutUser = () => {
 
 // --- NEW: A "smart" fetch function that handles expired tokens ---
 const fetchWithAuth = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
-
     // Prepare headers
     const headers = new Headers(options.headers || {});
-    if (token) {
-        headers.append('Authorization', `Bearer ${token}`);
-    }
     if (!headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
 
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { 
+        ...options, 
+        headers,
+        credentials: 'include'
+    });
 
     // THIS IS THE FIX:
     // If token is expired or invalid, the server sends 401
@@ -87,12 +85,11 @@ const handleLogin = async (event) => {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(loginData) 
+            body: JSON.stringify(loginData),
+            credentials: 'include'
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        // console.log('Login successful, token stored:' , result.token);
         window.location.hash = '#home';
         router();
     } catch (error) { 
@@ -210,13 +207,6 @@ const handleInvestClick = async (event) => {
         }
         
         console.log('Sending investment request with itemId:', itemId);
-        
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-            logoutUser(); // Use the central function
-            return;
-        }
         
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
@@ -390,12 +380,6 @@ const renderOTPVerificationScreen = (email) => {
 // --- 8. FIXED renderHomeScreen (with Certificate Button) (OURS) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-        logoutUser(); // Use the central function
-        return;
-    }
 
     try {
         // --- UPDATED to use fetchWithAuth ---
@@ -484,11 +468,10 @@ const renderHomeScreen = async () => {
 // --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
-    const token = localStorage.getItem('token');
     
     try {
         const response = await fetch(`${API_BASE_URL}/users/allItems`, {
-            headers: { 'Authorization': 'Bearer ' + token }
+            credentials: 'include'
         });
         console.log('Response from products backend:', response);
 
@@ -565,7 +548,6 @@ const renderVipPage = () => {
 // --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    const token = localStorage.getItem('token');
     try {
         // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
@@ -629,7 +611,6 @@ const renderMePage = async () => {
 // --- 12. FIXED renderTaskPage (new Earnings Dashboard) (OURS) ---
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
-    const token = localStorage.getItem('token');
     
     try {
         // Fetch earnings summary from backend
@@ -678,22 +659,22 @@ const renderTaskPage = async () => {
 // --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
 const renderDepositPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in to deposit.');
-        logoutUser(); // Use the central function
-        return;
-    }
 
-    // Decode token to get user info
+    // Get user info from API instead of decoding token
     let email, phone, userId;
     try {
-        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-        userId = tokenPayload.id;
-        email = tokenPayload.email;
-        phone = tokenPayload.phone;
+        const userResponse = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
+            method: 'GET'
+        });
+        if (!userResponse.ok) {
+            throw new Error('Failed to load user data');
+        }
+        const userData = await userResponse.json();
+        userId = userData.balance.id;
+        email = userData.balance.email;
+        phone = userData.balance.phone_number;
     } catch (e) {
-        console.error("Failed to decode token:", e);
+        console.error("Failed to get user info:", e);
         alert("Your session is invalid. Please log in again.");
         logoutUser(); // Use the central function
         return;
@@ -752,13 +733,6 @@ const renderDepositPage = async () => {
 // --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
 const renderHistoryPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        alert('Please log in to view history.');
-        logoutUser(); // Use the central function
-        return;
-    }
 
     try {
         // --- UPDATED to use fetchWithAuth ---
@@ -964,12 +938,6 @@ const showTransactionDetails = (transaction) => {
 // --- 16. renderWithdrawPage (BABATUNDE'S + Our Fix) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
-    if (!token) {
-        alert('Please log in to withdraw.');
-        logoutUser(); // Use the central function
-        return;
-    }
 
     try {
         // --- UPDATED to use fetchWithAuth ---
@@ -1329,8 +1297,6 @@ const renderPrivacyPolicyPage = () => {
 
 // --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
 const router = () => {
-    const token = localStorage.getItem('token');
-    
     const hash = window.location.hash || '#home';
     
     // Public routes that don't need a token
@@ -1347,12 +1313,8 @@ const router = () => {
         return;
     }
 
-    // All other routes require a token
-    if (!token) {
-        bottomNav.style.display = 'none'; // Hide nav
-        logoutUser(); // Use the central function
-        return;
-    }
+    // All other routes require authentication
+    // Authentication will be checked via API calls with credentials: 'include'
 
     // User is logged in, show the nav
     bottomNav.style.display = 'flex';
