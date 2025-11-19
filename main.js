@@ -52,6 +52,8 @@ const fetchWithAuth = async (url, options = {}) => {
 };
 
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+
+// --- 2. FIXED handleLogin (OURS) ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
@@ -104,7 +106,7 @@ const handleRegister = async (event) => {
     
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
-
+    // NOTE: We use the original 'fetch' here because we don't have a token yet.
     try {
         const payload = { fullName, phone, email, password };
         if (referral) {
@@ -117,11 +119,12 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-                
+
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
         }
+        // NOTE: We use the original 'fetch' here
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -159,6 +162,8 @@ const handleOTPVerification = async (event, email) => {
 // --- 4. FIXED handleResendOTP (uses email) (OURS) ---
 const handleResendOTP = async (email) => { 
     try {
+        // Sahil's audit says this endpoint is missing, but we will keep the code
+        // ready for when he builds it.
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -742,6 +747,7 @@ const renderDepositPage = async () => {
                     name: phone || 'User'
                 })
             });
+            if (!response) return;
 
             const result = await response.json();
             if (!response.ok) return alert('Error: ' + result.message);
@@ -752,6 +758,7 @@ const renderDepositPage = async () => {
                 alert('Failed to get payment link.');
             }
         } catch (error) {
+            if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
             alert('An error occurred. Please try again.');
         }
     });
@@ -783,8 +790,10 @@ const renderHistoryPage = async () => {
             transactions.forEach(txn => {
                 const date = new Date(txn.created_at).toLocaleString();
                 const amount = Number(txn.amount).toLocaleString();
-                const typeIcon = txn.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-                const typeColor = txn.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+                // Sahil's audit mentioned 'type' might be missing. We add a fallback.
+                const type = txn.type || 'transaction'; 
+                const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+                const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
                 const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
                 const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
 
@@ -794,7 +803,7 @@ const renderHistoryPage = async () => {
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 1.2rem;"></i>
                                 <div>
-                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${txn.type}</p>
+                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</p>
                                     <small style="color: var(--text-secondary);">${date}</small>
                                 </div>
                             </div>
@@ -832,6 +841,7 @@ const renderHistoryPage = async () => {
             });
         });
     } catch (error) {
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading history:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
     }
@@ -841,8 +851,9 @@ const renderHistoryPage = async () => {
 const showTransactionDetails = (transaction) => {
     const date = new Date(transaction.created_at).toLocaleString();
     const amount = Number(transaction.amount).toLocaleString();
-    const typeIcon = transaction.type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-    const typeColor = transaction.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+    const type = transaction.type || 'transaction'; // Add fallback
+    const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+    const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
     const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
     
     const bankDetails = transaction.bank_name || transaction.account_number || transaction.account_name;
@@ -853,7 +864,7 @@ const showTransactionDetails = (transaction) => {
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                     <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 2rem;"></i>
                     <div>
-                        <h3 style="margin: 0; text-transform: capitalize;">${transaction.type}</h3>
+                        <h3 style="margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</h3>
                         <span style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize; display: inline-block; margin-top: 0.5rem;">${transaction.status}</span>
                     </div>
                 </div>
@@ -878,7 +889,7 @@ const showTransactionDetails = (transaction) => {
                 
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
-                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${transaction.type}</p>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${type.replace('_', ' ')}</p>
                 </div>
                 
                 <div>
@@ -1006,6 +1017,11 @@ const renderWithdrawPage = async () => {
             if (!amount || amount <= 0) {
                 return alert('Please enter a valid amount.');
             }
+            
+            // --- TODO: We need the minimum withdrawal amount rule ---
+            // if (amount < 800) {
+            //     return alert('Minimum withdrawal is ₦800.');
+            // }
 
             if (amount > balance) {
                 return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
@@ -1023,16 +1039,19 @@ const renderWithdrawPage = async () => {
                         account_name: accountName
                     })
                 });
+                if (!withdrawResponse) return;
                 
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
                 
                 showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
             } catch (error) {
+                if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
                 alert('An error occurred. Please try again.');
             }
         });
     } catch (error) {
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
         console.error('Error loading withdrawal page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
     }
