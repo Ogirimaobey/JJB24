@@ -1,11 +1,8 @@
-// --- 1. IMPORTS AT THE VERY TOP ---
-// Removed swProducts import - now using API fetch instead
 import vipProducts from './vip.js';
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
-// const API_BASE_URL = 'http://localhost:3000/api';
 
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
@@ -30,13 +27,10 @@ const closeModal = () => {
 // --- NEW: A central function to handle logging the user out ---
 const logoutUser = () => {
     window.location.hash = '#login';
-    // We call router() to make sure the login screen renders immediately
     router(); 
 };
 
-// --- NEW: A "smart" fetch function that handles expired tokens ---
 const fetchWithAuth = async (url, options = {}) => {
-    // Prepare headers
     const headers = new Headers(options.headers || {});
     if (!headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
@@ -48,22 +42,16 @@ const fetchWithAuth = async (url, options = {}) => {
         credentials: 'include'
     });
 
-    // THIS IS THE FIX:
-    // If token is expired or invalid, the server sends 401
     if (response.status === 401 || response.status === 403) {
         alert('Your session has expired. Please log in again.');
         logoutUser();
-        // Return a new, unresolved promise to stop the calling function
-        // from continuing (which would cause another error)
         return new Promise(() => {}); 
     }
 
     return response;
 };
 
-
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
-// --- 2. FIXED handleLogin (OURS) ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
@@ -73,14 +61,14 @@ const handleLogin = async (event) => {
         return alert('Please provide email or phone and password.');
     }
     
-    // FIX: Send both email and phone, with one as an empty string.
+
     const isEmail = loginIdentifier.includes('@');
     const loginData = {
         password: password,
         email: isEmail ? loginIdentifier : '',
         phone: isEmail ? '' : loginIdentifier
     };
-    // NOTE: We use the original 'fetch' here because we don't have a token yet.
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
             method: 'POST', 
@@ -108,7 +96,7 @@ const handleRegister = async (event) => {
     const cpassword = (document.getElementById('cpassword') || {}).value || '';
     const referral = (document.getElementById('referral') || {}).value?.trim() || '';
     
-    // NEW: Check if the terms checkbox is agreed to
+
     const agreedToTerms = document.getElementById('termsCheckbox').checked;
     if (!agreedToTerms) {
         return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
@@ -116,12 +104,11 @@ const handleRegister = async (event) => {
     
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
-    // NOTE: We use the original 'fetch' here because we don't have a token yet.
+
     try {
         const payload = { fullName, phone, email, password };
         if (referral) {
             try {
-                // NOTE: We use the original 'fetch' here
                 const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -135,7 +122,6 @@ const handleRegister = async (event) => {
                 return alert('Could not validate referral code.');
             }
         }
-        // NOTE: We use the original 'fetch' here
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -144,8 +130,6 @@ const handleRegister = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
 
-        // Backend sends OTP implicitly during registration.
-        // Show OTP screen and verify using the email + code.
         alert(`OTP sent to ${email}. Please check your inbox.`);
         renderOTPVerificationScreen(email);
     } catch (error) {
@@ -153,11 +137,9 @@ const handleRegister = async (event) => {
     }
 };
 
-
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
-    // NOTE: We use the original 'fetch' here
     try {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
             method: 'POST',
@@ -175,13 +157,12 @@ const handleOTPVerification = async (event, email) => {
 };
 
 // --- 4. FIXED handleResendOTP (uses email) (OURS) ---
-const handleResendOTP = async (email) => { // Changed param to 'email' for clarity
-    // NOTE: We use the original 'fetch' here
+const handleResendOTP = async (email) => { 
     try {
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }) // Sending email
+            body: JSON.stringify({ email: email }) 
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
@@ -195,34 +176,29 @@ const handleResendOTP = async (email) => { // Changed param to 'email' for clari
 // --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const rawItemId = event.target.dataset.planId; // planId is actually itemId from the items table
-        console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
+        const rawItemId = event.target.dataset.planId; 
+        // console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
         
-        // Ensure itemId is a number, not a string
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) {
             alert('Error: Invalid product ID. Please refresh the page and try again.');
-            console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
+            // console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
             return;
         }
         
-        console.log('Sending investment request with itemId:', itemId);
+        // console.log('Sending investment request with itemId:', itemId);
         
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
         try {
-            // Backend endpoint: POST /api/investments/createInvestment/:itemId
-            // --- UPDATED to use fetchWithAuth ---
             const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
                 method: 'POST'
-                // No headers or body needed, already handled by fetchWithAuth and Babatunde's endpoint
             });
             
             const result = await response.json();
             
             if (response.ok && result.success) {
                 showSuccessModal('Investment created successfully! Your balance has been updated.');
-                // Refresh the page to show updated balance
                 setTimeout(() => {
                     window.location.hash = '#home';
                     router();
@@ -258,8 +234,6 @@ const handleCopyReferral = (event) => {
     }
     document.body.removeChild(textArea);
 };
-
-
 
 // --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
@@ -376,20 +350,18 @@ const renderOTPVerificationScreen = (email) => {
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
-
 // --- 8. FIXED renderHomeScreen (with Certificate Button) (OURS) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
 
     try {
-        // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
             method: "GET"
         });
 
         if (!response.ok) {
         const err = await response.text();
-        console.error('Backend error:', err);
+        // console.error('Backend error:', err);
         throw new Error('Failed to load data.');
         }
 
@@ -450,7 +422,7 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        console.log('Error loading home screen:', error);
+        // console.log('Error loading home screen:', error);
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
                 <p>Could not load dashboard. Please try again.</p>
@@ -459,11 +431,10 @@ const renderHomeScreen = async () => {
         `;
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
-            logoutUser(); // Use the central function
+            logoutUser(); 
         });
     }
 };
-
 
 // --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
 const renderProductsPage = async () => {
@@ -473,7 +444,7 @@ const renderProductsPage = async () => {
         const response = await fetch(`${API_BASE_URL}/users/allItems`, {
             credentials: 'include'
         });
-        console.log('Response from products backend:', response);
+        // console.log('Response from products backend:', response);
 
         if (!response.ok) throw new Error('Failed to load data.');
 
@@ -485,11 +456,10 @@ const renderProductsPage = async () => {
         data.items.forEach(item => {
         // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
             
-        // Ensure item.id is a number, not a string
         const itemId = Number(item.id);
         if (isNaN(itemId)) {
             console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
-            return; // Skip this item if ID is not a number
+            return; 
         }
         productHTML += `
             <div class="product-card-wc">
@@ -517,7 +487,6 @@ const renderProductsPage = async () => {
     }
 };
 
-
 // --- 10. FIXED renderVipPage (uses import) (OURS) ---
 const renderVipPage = async () => {
     appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
@@ -530,8 +499,8 @@ const renderVipPage = async () => {
         if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        console.log("VIP data:", data); 
-        console.log("VIP list:", data.vips); 
+        // console.log("VIP data:", data); 
+        // console.log("VIP list:", data.vips); 
 
         if (!data.vips || !Array.isArray(data.vips)) {
             throw new Error("VIP list missing from backend response");
@@ -581,69 +550,6 @@ const renderVipPage = async () => {
     }
 };
 
-
-// const renderVipPage = async () => {
-//     appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
-
-//     try {
-//         const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
-//             credentials: 'include'
-//         });
-//         console.log('Response from Investment backend:', response);
-
-//         if (!response.ok) throw new Error('Failed to load data.');
-
-//         const data = await response.json(); 
-
-//         console.log('VIP Investment data from backend:', data);
-
-//         let vipHTML = "";
-
-//         data.investments.forEach(plan => {
-//             vipHTML += `
-//             <div class="product-card-wc">
-//                 <div class="product-image-wc">
-//                     <img src="${vips.image}" alt="${vips.name}"
-//                     onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-//                 </div>
-//                 <div class="product-info-wc">
-//                     <h4>${vips.name}</h4>
-//                     <p><strong>Price:</strong> ₦${vips.price.toLocaleString()}</p>
-//                     <p><strong>Total Return:</strong> ₦${vips.total_returns.toLocaleString()}</p>
-//                     <p><strong>Duration:</strong> ${vips.duration_days} days</p>
-//                     <p style="font-size: 12px; color: #666;">
-//                         (Note: Additional 20% of your investment will be added after maturity)
-//                     </p>
-//                     <button class="btn-invest" data-plan-id="${vips.id}">Invest</button>
-//                 </div>
-//             </div>`;
-//         });
-
-
-//         const pageHTML = `
-//         <div class="page-container">
-//             <div class="page-header"><h2>VIP Promotions</h2></div>
-//             <div class="product-grid-wc">${vipHTML}</div>
-//         </div>`;
-
-//         appContent.innerHTML = pageHTML;
-
-//         // Handle invest button click
-//         document.querySelectorAll(".btn-invest").forEach(btn => {
-//             btn.addEventListener("click", async () => {
-//                 const planId = btn.getAttribute("data-plan-id");
-//                 console.log("Selected investment ID:", planId);
-//                 investInPlan(planId);  // call next function
-//             });
-//         });
-
-//     } catch (error) {
-//         console.error('Error rendering VIP plans:', error);
-//         appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
-//     }
-// };
-
-
 //Investment plan ID
 const investInPlan = async (planId) => {
     try {
@@ -657,7 +563,7 @@ const investInPlan = async (planId) => {
 
         if (data.success) {
             alert("Investment purchased successfully!");
-            router(); // go to dashboard/home after purchase
+            router(); 
         } else {
             alert(data.message || "Investment failed");
         }
@@ -668,14 +574,10 @@ const investInPlan = async (planId) => {
     }
 };
 
-
-
-
 // --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
-        // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/user_profile`, { method: 'GET' });
         if (!response.ok) { throw new Error('Failed to load data.'); }
         // console.log('Response from /users/balance:', response);
@@ -683,7 +585,6 @@ const renderMePage = async () => {
 
         // console.log('User profile data:', data);
         
-        // --- FIX: Switched to data.balance and provided defaults ---
         const referralCode = data.profile.referral_code || 'N/A';
         const email = data.profile.email || 'No email provided';
         const phone = data.profile.phone_number || 'No phone provided';
@@ -742,7 +643,6 @@ const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
     
     try {
-        // Fetch earnings summary from backend
         const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
         if (!response.ok) throw new Error('Failed to load earnings.');
         const data = await response.json();
@@ -789,7 +689,6 @@ const renderTaskPage = async () => {
 const renderDepositPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
 
-    // Get user info from API instead of decoding token
     let email, phone, userId;
     try {
         const userResponse = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
@@ -805,7 +704,7 @@ const renderDepositPage = async () => {
     } catch (e) {
         console.error("Failed to get user info:", e);
         alert("Your session is invalid. Please log in again.");
-        logoutUser(); // Use the central function
+        logoutUser(); 
         return;
     }
 
@@ -834,7 +733,6 @@ const renderDepositPage = async () => {
         }
 
         try {
-            // --- UPDATED to use fetchWithAuth ---
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
                 method: 'POST',
                 body: JSON.stringify({ 
@@ -864,7 +762,6 @@ const renderHistoryPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
 
     try {
-        // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/payment/history`, {
             method: 'GET'
         });
@@ -925,7 +822,6 @@ const renderHistoryPage = async () => {
         
         appContent.innerHTML = pageHTML;
         
-        // Add click handlers to transaction items
         document.querySelectorAll('.history-item').forEach(item => {
             item.addEventListener('click', () => {
                 const transactionId = item.dataset.transactionId;
@@ -949,7 +845,6 @@ const showTransactionDetails = (transaction) => {
     const typeColor = transaction.type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
     const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
     
-    // Check if transaction has bank details (for withdrawals)
     const bankDetails = transaction.bank_name || transaction.account_number || transaction.account_name;
     
     let detailsHTML = `
@@ -992,7 +887,6 @@ const showTransactionDetails = (transaction) => {
                 </div>
     `;
     
-    // Add bank details if available (for withdrawals)
     if (bankDetails) {
         detailsHTML += `
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
@@ -1024,7 +918,6 @@ const showTransactionDetails = (transaction) => {
         </div>
     `;
     
-    // Create modal overlay
     const modalHTML = `
         <div id="transactionDetailModal" class="modal-overlay" style="display: flex;">
             <div class="modal-content" style="max-width: 400px; width: 90%;">
@@ -1038,16 +931,13 @@ const showTransactionDetails = (transaction) => {
         </div>
     `;
     
-    // Remove existing modal if any
     const existingModal = document.getElementById('transactionDetailModal');
     if (existingModal) {
         existingModal.remove();
     }
     
-    // Add modal to body
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Close handlers
     document.getElementById('closeTransactionModal').addEventListener('click', () => {
         document.getElementById('transactionDetailModal').remove();
     });
@@ -1056,7 +946,6 @@ const showTransactionDetails = (transaction) => {
         document.getElementById('transactionDetailModal').remove();
     });
     
-    // Close on overlay click
     document.getElementById('transactionDetailModal').addEventListener('click', (e) => {
         if (e.target.id === 'transactionDetailModal') {
             e.target.remove();
@@ -1069,7 +958,6 @@ const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
 
     try {
-        // --- UPDATED to use fetchWithAuth ---
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
             method: 'GET'
         });
@@ -1118,11 +1006,6 @@ const renderWithdrawPage = async () => {
             if (!amount || amount <= 0) {
                 return alert('Please enter a valid amount.');
             }
-            
-            // --- TODO: We need the minimum withdrawal amount rule ---
-            // if (amount < 800) {
-            //     return alert('Minimum withdrawal is ₦800.');
-            // }
 
             if (amount > balance) {
                 return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
@@ -1131,7 +1014,6 @@ const renderWithdrawPage = async () => {
             if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
 
             try {
-                // --- UPDATED to use fetchWithAuth ---
                 const withdrawResponse = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1156,9 +1038,7 @@ const renderWithdrawPage = async () => {
     }
 };
 
-
 // --- 17. NEW "PLACEHOLDER" PAGES (OURS) ---
-
 const renderTeamPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -1209,7 +1089,6 @@ const renderSettingsPage = () => {
             </div>
         </div>
     `;
-    // Add event listener for the form
     document.getElementById('changePasswordForm').addEventListener('submit', (e) => {
         e.preventDefault();
         alert('Password change feature is in development.');
@@ -1245,7 +1124,6 @@ const renderRewardsPage = () => {
 
 // --- 18. NEW Certificate Page (OURS) ---
 const renderCertificatePage = () => {
-    // --- TODO: REPLACE THIS WITH YOUR REAL CERTIFICATE URL ---
     const certificateUrl = 'https://placehold.co/600x850/ffffff/333333?text=Company+Registration+Certificate+(CAC)';
     
     appContent.innerHTML = `
@@ -1261,9 +1139,7 @@ const renderCertificatePage = () => {
     `;
 };
 
-
 // --- 19. NEW LEGAL PAGES (OURS) ---
-
 const renderAboutPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page">
@@ -1297,7 +1173,7 @@ const renderAboutPage = () => {
 };
 
 const renderTermsPage = () => {
-    bottomNav.style.display = 'none'; // Hide nav for this page
+    bottomNav.style.display = 'none'; 
     appContent.innerHTML = `
         <div class="page-container legal-page">
             <div class="page-header">
@@ -1364,7 +1240,7 @@ const renderTermsPage = () => {
 };
 
 const renderPrivacyPolicyPage = () => {
-    bottomNav.style.display = 'none'; // Hide nav for this page
+    bottomNav.style.display = 'none'; 
     appContent.innerHTML = `
         <div class="page-container legal-page">
             <div class="page-header">
@@ -1417,18 +1293,16 @@ const renderPrivacyPolicyPage = () => {
                     <li>Withdraw consent for certain data uses (e.g., marketing).</li>
                 </ul>
                 
-                <p>✅ By using our platform, you agree to the terms of this Privacy Policy.</p>
+                <p> By using our platform, you agree to the terms of this Privacy Policy.</p>
             </div>
         </div>
     `;
 };
 
-
 // --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
 const router = () => {
     const hash = window.location.hash || '#home';
     
-    // Public routes that don't need a token
     if (['#login', '#register', '#terms', '#privacy'].includes(hash)) {
         bottomNav.style.display = 'none';
 
@@ -1442,43 +1316,32 @@ const router = () => {
         return;
     }
 
-    // All other routes require authentication
-    // Authentication will be checked via API calls with credentials: 'include'
-
-    // User is logged in, show the nav
     bottomNav.style.display = 'flex';
 
-    // Update active nav link
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        // Handle #home hash
         if (link.getAttribute('href') === '#home' && (hash === '#home' || hash === '')) {
             link.classList.add('active');
         } 
-        // Handle other hashes
         else if (link.getAttribute('href') === hash) { 
             link.classList.add('active'); 
         }
-        // Handle "Me" page and its sub-pages
         else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
             link.classList.add('active');
         }
     });
     
     switch (hash) {
-        // Main Nav
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
         
-        // Payment Routes from Babatunde
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
         
-        // "Me" page and "Home" page links (Ours)
         case '#team': renderTeamPage(); break;
         case '#settings': renderSettingsPage(); break;
         case '#about': renderAboutPage(); break;
@@ -1487,7 +1350,7 @@ const router = () => {
         case '#certificate': renderCertificatePage(); break;
 
         default: 
-            renderHomeScreen(); // Default to home for logged-in users
+            renderHomeScreen();
     }
 };
 
