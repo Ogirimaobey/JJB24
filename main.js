@@ -5,6 +5,7 @@ import vipProducts from './vip.js';
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+// const API_BASE_URL = 'http://localhost:3000/api';
 
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
@@ -62,7 +63,6 @@ const fetchWithAuth = async (url, options = {}) => {
 
 
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
-
 // --- 2. FIXED handleLogin (OURS) ---
 const handleLogin = async (event) => {
     event.preventDefault();
@@ -478,32 +478,31 @@ const renderProductsPage = async () => {
         if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        console.log('Products data from backend:', data);
-        console.log('First item structure:', data.items[0]);
+        // console.log('Products data from backend:', data);
+        // console.log('First item structure:', data.items[0]);
 
         let productHTML = '';
         data.items.forEach(item => {
-            // Debug: log what we're getting
-            console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
+        // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
             
-            // Ensure item.id is a number, not a string
-            const itemId = Number(item.id);
-            if (isNaN(itemId)) {
-                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
-                return; // Skip this item if ID is not a number
-            }
-            productHTML += `
-                <div class="product-card-wc">
-                    <div class="product-image-wc">
-                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
-                    </div>
-                    <div class="product-info-wc">
-                        <h4>${item.itemname}</h4>
-                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
-                    </div>
-                </div>`;
+        // Ensure item.id is a number, not a string
+        const itemId = Number(item.id);
+        if (isNaN(itemId)) {
+            console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+            return; // Skip this item if ID is not a number
+        }
+        productHTML += `
+            <div class="product-card-wc">
+                <div class="product-image-wc">
+                    <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                </div>
+                <div class="product-info-wc">
+                    <h4>${item.itemname}</h4>
+                    <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                    <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                    <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                </div>
+            </div>`;
         });
 
         const pageHTML = `
@@ -520,29 +519,156 @@ const renderProductsPage = async () => {
 
 
 // --- 10. FIXED renderVipPage (uses import) (OURS) ---
-const renderVipPage = () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    
-    let vipHTML = '';
-    vipProducts.forEach(plan => {
-        vipHTML += `
-        <div class="product-card-wc">
-            <div class="product-image-wc">
-                <img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-            </div>
-            <div class="product-info-wc">
-                <h4>${plan.name}</h4>
-                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration} days</p>
-                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
-                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-            </div>
+const renderVipPage = async () => {
+    appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
+            credentials: 'include'
+        });
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+        console.log("VIP data:", data); 
+        console.log("VIP list:", data.vips); 
+
+        if (!data.vips || !Array.isArray(data.vips)) {
+            throw new Error("VIP list missing from backend response");
+        }
+
+
+        let vipHTML = "";
+
+        data.vips.forEach(plan => {
+            vipHTML += `
+            <div class="product-card-wc">
+                <div class="product-image-wc">
+                    <img src="${plan.image}" alt="${plan.name}"
+                    onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
+                </div>
+                <div class="product-info-wc">
+                    <h4>${plan.name}</h4>
+                    <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
+                    <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
+                    <p><strong>Duration:</strong> ${plan.duration_days} days</p>
+                    <p style="font-size: 12px; color: #666;">
+                        (Note: Additional 20% of your investment will be added after maturity)
+                    </p>
+                    <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+                </div>
+            </div>`;
+        });
+
+        const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>VIP Promotions</h2></div>
+            <div class="product-grid-wc">${vipHTML}</div>
         </div>`;
-    });
-    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
-    appContent.innerHTML = pageHTML;
+
+        appContent.innerHTML = pageHTML;
+
+        document.querySelectorAll(".btn-invest").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const planId = btn.getAttribute("data-plan-id");
+                investInPlan(planId);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error rendering VIP plans:', error);
+        appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
+    }
 };
+
+
+// const renderVipPage = async () => {
+//     appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
+
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
+//             credentials: 'include'
+//         });
+//         console.log('Response from Investment backend:', response);
+
+//         if (!response.ok) throw new Error('Failed to load data.');
+
+//         const data = await response.json(); 
+
+//         console.log('VIP Investment data from backend:', data);
+
+//         let vipHTML = "";
+
+//         data.investments.forEach(plan => {
+//             vipHTML += `
+//             <div class="product-card-wc">
+//                 <div class="product-image-wc">
+//                     <img src="${vips.image}" alt="${vips.name}"
+//                     onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
+//                 </div>
+//                 <div class="product-info-wc">
+//                     <h4>${vips.name}</h4>
+//                     <p><strong>Price:</strong> ₦${vips.price.toLocaleString()}</p>
+//                     <p><strong>Total Return:</strong> ₦${vips.total_returns.toLocaleString()}</p>
+//                     <p><strong>Duration:</strong> ${vips.duration_days} days</p>
+//                     <p style="font-size: 12px; color: #666;">
+//                         (Note: Additional 20% of your investment will be added after maturity)
+//                     </p>
+//                     <button class="btn-invest" data-plan-id="${vips.id}">Invest</button>
+//                 </div>
+//             </div>`;
+//         });
+
+
+//         const pageHTML = `
+//         <div class="page-container">
+//             <div class="page-header"><h2>VIP Promotions</h2></div>
+//             <div class="product-grid-wc">${vipHTML}</div>
+//         </div>`;
+
+//         appContent.innerHTML = pageHTML;
+
+//         // Handle invest button click
+//         document.querySelectorAll(".btn-invest").forEach(btn => {
+//             btn.addEventListener("click", async () => {
+//                 const planId = btn.getAttribute("data-plan-id");
+//                 console.log("Selected investment ID:", planId);
+//                 investInPlan(planId);  // call next function
+//             });
+//         });
+
+//     } catch (error) {
+//         console.error('Error rendering VIP plans:', error);
+//         appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
+//     }
+// };
+
+
+//Investment plan ID
+const investInPlan = async (planId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/investments/createVipInvestment/${planId}`, {
+            method: "POST",
+            credentials: "include"
+        });
+
+        const data = await response.json();
+        console.log("Investment response:", data);
+
+        if (data.success) {
+            alert("Investment purchased successfully!");
+            router(); // go to dashboard/home after purchase
+        } else {
+            alert(data.message || "Investment failed");
+        }
+
+    } catch (error) {
+        console.error("Investment error:", error);
+        alert("Error processing investment. Try again.");
+    }
+};
+
+
 
 
 // --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
@@ -550,15 +676,18 @@ const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
         // --- UPDATED to use fetchWithAuth ---
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/user_profile`, { method: 'GET' });
         if (!response.ok) { throw new Error('Failed to load data.'); }
+        // console.log('Response from /users/balance:', response);
         const data = await response.json();
+
+        // console.log('User profile data:', data);
         
         // --- FIX: Switched to data.balance and provided defaults ---
-        const referralCode = data.balance.referral_code || 'N/A';
-        const email = data.balance.email || 'No email provided';
-        const phone = data.balance.phone_number || 'No phone provided';
-        const fullName = data.balance.full_name || 'User';
+        const referralCode = data.profile.referral_code || 'N/A';
+        const email = data.profile.email || 'No email provided';
+        const phone = data.profile.phone_number || 'No phone provided';
+        const fullName = data.profile.full_name || 'User';
 
         const pageHTML = `
             <div class="page-container">
@@ -589,7 +718,7 @@ const renderMePage = async () => {
         
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
-            logoutUser(); // Use the central function
+            logoutUser(); 
         });
         
         document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
@@ -603,7 +732,7 @@ const renderMePage = async () => {
         `;
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
-            logoutUser(); // Use the central function
+            logoutUser(); 
         });
     }
 };
