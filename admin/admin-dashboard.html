@@ -67,6 +67,31 @@
                     </table>
                 </div>
             </section>
+
+            <section class="data-card">
+                <div class="stat-header">
+                    <i class="fas fa-hourglass-half"></i>
+                    <h2>Pending Withdrawals</h2>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User Name</th>
+                                <th>Phone</th>
+                                <th>Amount</th>
+                                <th>Bank Details</th>
+                                <th>Reference</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingWithdrawalsTable">
+                            <tr><td colspan="7">Loading pending withdrawals...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -168,7 +193,94 @@
                 document.getElementById('totalAmountStat').textContent = '0';
                 document.getElementById('recentUsersTable').innerHTML = '<tr><td colspan="3">Unable to load stats.</td></tr>';
             }
+
+            // Load pending withdrawals
+            await loadPendingWithdrawals();
         });
+
+        async function loadPendingWithdrawals() {
+            const token = localStorage.getItem('adminToken');
+            const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:3000/api'
+                : 'https://jjb24-backend.onrender.com/api';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/withdrawals/pending`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch pending withdrawals');
+                }
+
+                const data = await response.json();
+                const tableBody = document.getElementById('pendingWithdrawalsTable');
+                
+                if (data.withdrawals && data.withdrawals.length > 0) {
+                    tableBody.innerHTML = '';
+                    data.withdrawals.forEach(withdrawal => {
+                        const row = document.createElement('tr');
+                        const date = new Date(withdrawal.created_at).toLocaleString();
+                        const bankDetails = `${withdrawal.bank_name || 'N/A'}<br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
+                        
+                        row.innerHTML = `
+                            <td>${withdrawal.full_name || 'N/A'}</td>
+                            <td>${withdrawal.phone_number || 'N/A'}</td>
+                            <td>₦${Number(withdrawal.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td>${bankDetails}</td>
+                            <td>${withdrawal.reference}</td>
+                            <td>${date}</td>
+                            <td>
+                                <button class="btn-approve" onclick="handleWithdrawalAction('${withdrawal.reference}', true)">Approve</button>
+                                <button class="btn-reject" onclick="handleWithdrawalAction('${withdrawal.reference}', false)">Reject</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="7">No pending withdrawals.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading pending withdrawals:', error);
+                document.getElementById('pendingWithdrawalsTable').innerHTML = '<tr><td colspan="7">Unable to load pending withdrawals.</td></tr>';
+            }
+        }
+
+        async function handleWithdrawalAction(reference, approve) {
+            const token = localStorage.getItem('adminToken');
+            const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'http://localhost:3000/api'
+                : 'https://jjb24-backend.onrender.com/api';
+
+            if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this withdrawal?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/payment/approve/${reference}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ approve })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to process withdrawal');
+                }
+
+                const data = await response.json();
+                alert(data.message || `Withdrawal ${approve ? 'approved' : 'rejected'} successfully`);
+                
+                // Reload pending withdrawals
+                await loadPendingWithdrawals();
+            } catch (error) {
+                console.error('Error processing withdrawal:', error);
+                alert('Error: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>
