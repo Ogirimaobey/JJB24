@@ -1,6 +1,9 @@
+import vipProducts from './vip.js';
+
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -21,9 +24,36 @@ const closeModal = () => {
     }
 };
 
+// --- NEW: A central function to handle logging the user out ---
+const logoutUser = () => {
+    window.location.hash = '#login';
+    router(); 
+};
 
+const fetchWithAuth = async (url, options = {}) => {
+    const headers = new Headers(options.headers || {});
+    if (!headers.has('Content-Type') && options.body) {
+        headers.append('Content-Type', 'application/json');
+    }
+
+    const response = await fetch(url, { 
+        ...options, 
+        headers,
+        credentials: 'include'
+    });
+
+    if (response.status === 401 || response.status === 403) {
+        alert('Your session has expired. Please log in again.');
+        logoutUser();
+        return new Promise(() => {}); 
+    }
+
+    return response;
+};
 
 // --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+
+// --- 2. FIXED handleLogin (OURS) ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
@@ -33,25 +63,26 @@ const handleLogin = async (event) => {
         return alert('Please provide email or phone and password.');
     }
     
-    // --- FIXED LOGIN LOGIC ---
-    // Send both keys, with one being empty, to match backend expectation
     const isEmail = loginIdentifier.includes('@');
     const loginData = {
         password: password,
         email: isEmail ? loginIdentifier : '',
         phone: isEmail ? '' : loginIdentifier
     };
-    
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(loginData) 
+            body: JSON.stringify(loginData),
+            credentials: 'include'
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token);
-        // console.log('Login successful, token stored:' , result.token);
+        // Store token for API calls
+        if (result.token) {
+            localStorage.setItem('token', result.token);
+        }
         window.location.hash = '#home';
         router();
     } catch (error) { 
@@ -59,6 +90,7 @@ const handleLogin = async (event) => {
     }
 };
 
+// --- 3. FIXED handleRegister (with Terms Check) (OURS) ---
 const handleRegister = async (event) => {
     event.preventDefault();
 
@@ -74,14 +106,20 @@ const handleRegister = async (event) => {
     const password = (document.getElementById('password') || {}).value || '';
     const cpassword = (document.getElementById('cpassword') || {}).value || '';
     const referral = (document.getElementById('referral') || {}).value?.trim() || '';
+    
+
+    const agreedToTerms = document.getElementById('termsCheckbox').checked;
+    if (!agreedToTerms) {
+        return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
+    }
+    
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
-
+    // NOTE: We use the original 'fetch' here because we don't have a token yet.
     try {
         const payload = { fullName, phone, email, password };
         if (referral) {
             try {
-
                 const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -90,11 +128,12 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-                
+
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
         }
+        // NOTE: We use the original 'fetch' here
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -103,8 +142,6 @@ const handleRegister = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
 
-        // Backend sends OTP implicitly during registration.
-        // Show OTP screen and verify using the email + code.
         alert(`OTP sent to ${email}. Please check your inbox.`);
         renderOTPVerificationScreen(email);
     } catch (error) {
@@ -112,11 +149,9 @@ const handleRegister = async (event) => {
     }
 };
 
-
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
-    
     try {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
             method: 'POST',
@@ -133,20 +168,13 @@ const handleOTPVerification = async (event, email) => {
     }
 };
 
-const handleResendOTP = async (phone) => {
-    // BUG FIX: Pass email to the function, but send it as 'phone' in the payload
-    // This is based on the previous bug. Ideally, backend should accept 'email'
-    // For now, this fixes the mismatch where an email was passed to a 'phone' var.
-    // NOTE: This assumes the 'phone' param is actually the EMAIL from renderOTPVerificationScreen
+// --- 4. FIXED handleResendOTP (uses email) ---
+const handleResendOTP = async (email) => { 
     try {
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // BUGGY PART: Sending email as 'phone'. This needs backend clarification.
-            // For now, we'll send the email to the 'phone' key as the function expects.
-            // A better fix is to send 'email' and have backend handle it.
-            // Let's try sending 'email' instead.
-            body: JSON.stringify({ email: phone }) // Assuming 'phone' variable holds the email
+            body: JSON.stringify({ email: email }) 
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
@@ -157,48 +185,67 @@ const handleResendOTP = async (phone) => {
     }
 };
 
+// --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const planId = event.target.dataset.planId;
-        const token = localStorage.getItem('token');
+        const rawItemId = event.target.dataset.planId; 
+        // console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
+        
+        let itemId = Number(rawItemId);
+        if (isNaN(itemId) || itemId <= 0) {
+            alert('Error: Invalid product ID. Please refresh the page and try again.');
+            // console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
+            return;
+        }
+        
+        // console.log('Sending investment request with itemId:', itemId);
+        
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/invest`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ planId })
+            const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
+                method: 'POST'
             });
+            
             const result = await response.json();
-            if (response.ok) {
-                showSuccessModal(result.message);
+            
+            if (response.ok && result.success) {
+                showSuccessModal('Investment created successfully! Your balance has been updated.');
+                setTimeout(() => {
+                    window.location.hash = '#home';
+                    router();
+                }, 2000);
             } else {
-                alert('Error: ' + result.message);
+                const errorMsg = result.message || 'Failed to create investment. Please try again.';
+                alert('Error: ' + errorMsg);
             }
         } catch (error) {
-            alert('An investment error occurred.');
+            console.error('Investment error:', error);
+            alert('An investment error occurred. Please try again.');
         }
     }
 };
 
-// NEW: Handle copying referral code
+// --- 6. NEW handleCopyReferral ---
 const handleCopyReferral = (event) => {
-    const code = event.target.dataset.code;
-    if (!code) return;
-
-    // Create a temporary textarea to copy from
+    const referralCode = document.getElementById('referralCode')?.textContent;
+    if (!referralCode || referralCode === 'N/A') {
+        alert('No referral code to copy.');
+        return;
+    }
+    
     const textArea = document.createElement('textarea');
-    textArea.value = code;
+    textArea.value = referralCode;
     document.body.appendChild(textArea);
     textArea.select();
     try {
         document.execCommand('copy');
         alert('Referral code copied to clipboard!');
     } catch (err) {
-        alert('Failed to copy code. Please copy it manually.');
+        alert('Failed to copy referral code.');
     }
     document.body.removeChild(textArea);
 };
-
 
 // --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
@@ -222,10 +269,10 @@ const renderLoginScreen = () => {
             <p class="auth-link">Don't have an account? <a href="#register">Register here</a></p>
         </div>
     `;
-    // Removed event listener, href="#register" will be caught by router
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
+// --- 7. FIXED renderRegisterScreen (with Terms HTML) (OURS) ---
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -258,23 +305,21 @@ const renderRegisterScreen = () => {
                     <label>Referral Code (Optional)</label>
                     <input type="text" id="referral" />
                 </div>
-                
                 <!-- NEW: Terms and Conditions Checkbox -->
-                <div class="form-group terms-group" style="flex-direction: row; align-items: center; gap: 10px; margin-top: 15px;">
-                    <input type="checkbox" id="agreeTerms" required style="width: auto; height: auto; margin: 0;">
-                    <label for="agreeTerms" style="margin: 0; font-size: 12px; font-weight: normal; color: #666;">
-                        I have read and agree to the 
-                        <a href="#terms" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Terms & Conditions</a> and 
+                <div class="form-group-checkbox" style="flex-direction: row; align-items: center; display: flex; gap: 10px; margin-top: 15px;">
+                    <input type="checkbox" id="termsCheckbox" required style="width: auto; height: auto; margin: 0;" />
+                    <label for="termsCheckbox" style="margin: 0; font-size: 12px; font-weight: normal; color: #666;">
+                        I agree to the 
+                        <a href="#terms" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Terms & Conditions</a> 
+                        and 
                         <a href="#privacy" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Privacy Policy</a>.
                     </label>
                 </div>
-
                 <button type="submit" class="btn-auth">Register</button>
             </form>
             <p class="auth-link">Already have an account? <a href="#login">Login here</a></p>
         </div>
     `;
-    // Removed event listener, href="#login" will be caught by router
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
@@ -314,45 +359,24 @@ const renderOTPVerificationScreen = (email) => {
     `;
     
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
-    // Fix: Pass the correct variable (email) to the resend function
-    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email));
-    // No listener needed for Back to Login, href="#login" handles it
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
-
+// --- 8. FIXED renderHomeScreen (with Certificate Button) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-    const token = localStorage.getItem('token');
-    
-    // This check is good, but the router should handle it.
-    if (!token) {
-        alert("You are not logged in. Please log in again.");
-        renderLoginScreen();
-        return;
-    }
 
     try {
-        // FIX: Reverted to /users/balance, as this was working.
-        const response = await fetch(`${API_BASE_URL}/users/balance`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`, 
-        },
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
+            method: "GET"
         });
 
-        // console.log('Response from user Balance backend:', response); 
-
         if (!response.ok) {
-        const err = await response.text();
-        console.error('Backend error:', err);
-        throw new Error('Failed to load data.');
+            const err = await response.text();
+            throw new Error('Failed to load data.');
         }
 
         const data = await response.json();
-        // console.log('User Balance data:', data);
-
-        // FIX: Reverted to data.balance, as this was working.
         const fullName = data.balance.full_name || 'User';
         const balance = data.balance.balance || 0;
 
@@ -395,6 +419,11 @@ const renderHomeScreen = async () => {
                         <i class="fas fa-gift"></i>
                         <span>Rewards</span>
                     </a>
+                    <!-- NEW: Certificate Button -->
+                    <a href="#certificate" class="action-button">
+                        <i class="fas fa-file-certificate"></i>
+                        <span>Certificate</span>
+                    </a>
                 </div>
                 <div class="activity-card">
                     <h3>Recent Activity</h3>
@@ -403,42 +432,58 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        console.log('Error loading home screen:', error);
-        // Better error message
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load dashboard. Please try again. <a href="#login">Logout</a></p>';
+        if (error.message && error.message.includes('Promise')) { 
+            console.log("Redirecting to login."); 
+            return; 
+        }
+        appContent.innerHTML = `
+            <div class="page-container" style="text-align: center; margin-top: 50px;">
+                <p>Could not load dashboard. Please try again.</p>
+                <a href="#" id="logoutButton" class="btn-auth" style="display: inline-block; margin-top: 20px;">Logout</a>
+            </div>
+        `;
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
+            logoutUser(); 
+        });
     }
 };
 
-
+// --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
-    const token = localStorage.getItem('token');
-
+    
     try {
         const response = await fetch(`${API_BASE_URL}/users/allItems`, {
-            headers: { 'Authorization': 'Bearer ' + token }
+            credentials: 'include'
         });
         // console.log('Response from products backend:', response);
 
         if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        // console.log('Products data from backend:', data);
 
         let productHTML = '';
         data.items.forEach(item => {
-            productHTML += `
-                <div class="product-card-wc">
-                    <div class="product-image-wc">
-                        <img src="${item.itemimage}" alt="${item.itemname}">
-                    </div>
-                    <div class="product-info-wc">
-                        <h4>${item.itemname}</h4>
-                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${item.id}">Invest</button>
-                    </div>
-                </div>`;
+        // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
+            
+        const itemId = Number(item.id);
+        if (isNaN(itemId)) {
+            console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+            return; 
+        }
+        productHTML += `
+            <div class="product-card-wc">
+                <div class="product-image-wc">
+                    <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                </div>
+                <div class="product-info-wc">
+                    <h4>${item.itemname}</h4>
+                    <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                    <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                    <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                </div>
+            </div>`;
         });
 
         const pageHTML = `
@@ -448,210 +493,580 @@ const renderProductsPage = async () => {
             </div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
-        console.error('Error loading products:', error);
+        console.error('Error rendering products:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
 
-
+// --- 10. FIXED renderVipPage (uses API) ---
 const renderVipPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
-    
-    // FIX: Hardcode the VIP data as requested
-    const vipPlans = [
-        { id: 'vip1', name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30 },
-        { id: 'vip2', name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30 },
-        { id: 'vip3', name: 'CASPER3', price: 2000000, total_return: 2400000, duration: 30 },
-        { id: 'vip4', name: 'CASPER4', price: 3000000, total_return: 3600000, duration: 30 }
-    ];
+    appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
 
-    let vipHTML = '';
-    vipPlans.forEach(plan => {
-        vipHTML += `
-        <div class="product-card-wc">
-            <div class="product-info-wc">
-                <h4>${plan.name}</h4>
-                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration} days</p>
-                <p><small>(Note: Additional 20% of your investment will be added after maturity)</small></p>
-                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-            </div>
+    try {
+        const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
+            credentials: 'include'
+        });
+
+        if (!response.ok) throw new Error('Failed to load data.');
+
+        const data = await response.json();
+
+        if (!data.vips || !Array.isArray(data.vips)) {
+            throw new Error("VIP list missing from backend response");
+        }
+
+        let vipHTML = "";
+
+        data.vips.forEach(plan => {
+            vipHTML += `
+            <div class="product-card-wc">
+                <div class="product-image-wc">
+                    <img src="${plan.image}" alt="${plan.name}"
+                    onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
+                </div>
+                <div class="product-info-wc">
+                    <h4>${plan.name}</h4>
+                    <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
+                    <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
+                    <p><strong>Duration:</strong> ${plan.duration_days} days</p>
+                    <p style="font-size: 12px; color: #666;">
+                        (Note: Additional 20% of your investment will be added after maturity)
+                    </p>
+                    <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+                </div>
+            </div>`;
+        });
+
+        const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>VIP Promotions</h2></div>
+            <div class="product-grid-wc">${vipHTML}</div>
         </div>`;
-    });
-    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
-    appContent.innerHTML = pageHTML;
-    
-    // Old fetch logic is removed
+
+        appContent.innerHTML = pageHTML;
+
+        document.querySelectorAll(".btn-invest").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const planId = btn.getAttribute("data-plan-id");
+                investInPlan(planId);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error rendering VIP plans:', error);
+        appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
+    }
 };
 
+//Investment plan ID
+const investInPlan = async (planId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/investments/createVipInvestment/${planId}`, {
+            method: "POST",
+            credentials: "include"
+        });
+
+        const data = await response.json();
+        console.log("Investment response:", data);
+
+        if (data.success) {
+            alert("Investment purchased successfully!");
+            router(); 
+        } else {
+            alert(data.message || "Investment failed");
+        }
+
+    } catch (error) {
+        console.error("Investment error:", error);
+        alert("Error processing investment. Try again.");
+    }
+};
+
+// --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/user_profile`, { method: 'GET' });
         if (!response.ok) { throw new Error('Failed to load data.'); }
+        // console.log('Response from /users/balance:', response);
         const data = await response.json();
         
-        // NEW: Get referral code, default if not present
-        const referralCode = data.user.referral_code || 'N/A';
+        // Handle both data structures (user vs profile)
+        const userData = data.user || data.profile || {};
+        const referralCode = userData.referral_code || 'N/A';
+        const email = userData.email || 'No email provided';
+        const phone = userData.phone_number || 'No phone provided';
+        const fullName = userData.full_name || 'User';
 
         const pageHTML = `
             <div class="page-container me-page">
                 <div class="profile-header-card">
                     <div class="profile-icon"><i class="fas fa-user"></i></div>
-                    <h3>${data.user.full_name}</h3>
-                    <p>${data.user.phone_number}</p>
-                    
-                    <!-- NEW: Referral Code Display -->
-                    <div class="referral-card">
-                        <small>My Referral Code</small>
-                        <div class="referral-box">
-                            <span id="referralCode">${referralCode}</span>
-                            <button id="copyRefBtn" data-code="${referralCode}" ${referralCode === 'N/A' ? 'disabled' : ''}>Copy</button>
+                    <h3>${fullName}</h3>
+                    <p>${phone}</p>
+                    <p style="font-size: 14px; color: #666; margin-top: 5px;">${email}</p>
+                    <div class="referral-box" style="background: #f4f4f4; border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
+                        <small style="font-size: 12px; color: #555;">My Referral Code:</small>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;">
+                            <strong id="referralCode" style="font-size: 16px; color: #333;">${referralCode}</strong>
+                            <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Copy</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- NEW: Standard Global Action List -->
                 <div class="action-list-card">
-                    <a href="#history" class="action-list-item">
-                        <i class="fas fa-history"></i>
-                        <span>Transaction History</span>
-                    </a>
-                    <a href="#team" class="action-list-item">
-                        <i class="fas fa-users"></i>
-                        <span>My Team</span>
-                    </a>
-                    <a href="#settings" class="action-list-item">
-                        <i class="fas fa-key"></i>
-                        <span>Change Password</span>
-                    </a>
-                    <a href="#about" class="action-list-item">
-                        <i class="fas fa-info-circle"></i>
-                        <span>About Us</span>
-                    </a>
-                    <a href="#support" class="action-list-item">
-                        <i class="fas fa-headset"></i>
-                        <span>Customer Support</span>
-                    </a>
-                    <a href="#" id="logoutButton" class="action-list-item">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
+                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>Transaction History</span><i class="fas fa-chevron-right"></i></a>
+                    <a href="#team" class="action-list-item"><i class="fas fa-users"></i><span>My Team</span><i class="fas fa-chevron-right"></i></a>
+                    <a href="#settings" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span><i class="fas fa-chevron-right"></i></a>
+                    <a href="#about" class="action-list-item"><i class="fas fa-info-circle"></i><span>About Us</span><i class="fas fa-chevron-right"></i></a>
+                    <a href="#support" class="action-list-item"><i class="fas fa-headset"></i><span>Customer Support</span><i class="fas fa-chevron-right"></i></a>
+                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span><i class="fas fa-chevron-right"></i></a>
                 </div>
             </div>
         `;
         appContent.innerHTML = pageHTML;
         
-        // Add event listeners for new buttons
         document.getElementById('logoutButton').addEventListener('click', (e) => {
             e.preventDefault();
-            localStorage.removeItem('token');
-            window.location.hash = '#login'; // Go to login
-            router();
+            logoutUser(); 
         });
         
-        if (referralCode !== 'N/A') {
-            document.getElementById('copyRefBtn').addEventListener('click', handleCopyReferral);
-        }
+        document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
 
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load profile.</p>'; }
+    } catch (error) { 
+        if (error.message && error.message.includes('Promise')) { 
+            console.log("Redirecting to login."); 
+            return; 
+        }
+        appContent.innerHTML = `
+            <div class="page-container" style="text-align: center; margin-top: 50px;">
+                <p>Could not load profile. Please try again.</p>
+                <a href="#" id="logoutButton" class="btn-auth" style="display: inline-block; margin-top: 20px;">Logout</a>
+            </div>
+        `;
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
+            logoutUser(); 
+        });
+    }
 };
 
+// --- 12. FIXED renderTaskPage (new Earnings Dashboard) (OURS) ---
 const renderTaskPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Tasks...</p>';
-    const token = localStorage.getItem('token');
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/tasks`, { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!response.ok) throw new Error('Failed to load tasks.');
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
+        if (!response.ok) throw new Error('Failed to load earnings.');
         const data = await response.json();
-        if (data.message) {
-            appContent.innerHTML = `<div class="page-container task-page"><div class="page-header"><h2>Daily Tasks</h2></div><p style="text-align: center;">${data.message}</p></div>`;
-            return;
-        }
+        
+        const earnings = {
+            today: data.today || 0.00,
+            yesterday: data.yesterday || 0.00,
+            total: data.total || 0.00
+        };
+
         const pageHTML = `
             <div class="page-container task-page">
-                <div class="page-header"><h2>Daily Tasks</h2></div>
-                <div class="task-progress-card">
-                    <h4>Tasks for Today</h4>
-                    <p id="task-counter">${data.tasksCompleted} / ${data.tasksRequired}</p>
-                    <div class="progress-bar-container"><div id="progress-bar-fill" style="width: ${((data.tasksCompleted / (data.tasksRequired || 1)) * 100)}%;"></div></div>
+                <div class="page-header"><h2>Daily Earnings</h2></div>
+                
+                <div class="earnings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <small style="font-size: 12px; color: var(--text-secondary); display: block;">Today's Earning</small>
+                        <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.today).toLocaleString()}</p>
+                    </div>
+                    <div class="earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <small style="font-size: 12px; color: var(--text-secondary); display: block;">Yesterday's Earning</small>
+                        <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.yesterday).toLocaleString()}</p>
+                    </div>
                 </div>
-                <div class="task-action-card">
-                    <button id="completeTaskBtn" ${data.tasksCompleted >= data.tasksRequired ? 'disabled' : ''}>
-                        ${data.tasksCompleted >= data.tasksRequired ? 'All Tasks Completed' : 'Complete a Task'}
-                    </button>
+
+                <div class="earnings-card total-earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <small style="font-size: 12px; color: var(--text-secondary); display: block;">Total Earnings</small>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.total).toLocaleString()}</p>
+                </div>
+
+                <div class="info-card" style="margin-top: 20px; text-align: center; background: var(--card-background); padding: 10px; border-radius: 8px; font-size: 14px;">
+                    <i class="fas fa-clock" style="color: #6a0dad; margin-right: 8px;"></i>
+                    <span>Daily income drops at 12:00 am.</span>
                 </div>
             </div>`;
         appContent.innerHTML = pageHTML;
-        document.getElementById('completeTaskBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('completeTaskBtn');
-            btn.textContent = 'Processing...';
-            btn.disabled = true;
-            try {
-                const completeResponse = await fetch(`${API_BASE_URL}/tasks/complete`, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-                const result = await completeResponse.json();
-                if (!completeResponse.ok) {
-                    alert('Error: ' + result.message);
-                    renderTaskPage();
-                    return;
-                }
-                document.getElementById('task-counter').textContent = `${result.tasksCompleted} / ${result.tasksRequired}`;
-                document.getElementById('progress-bar-fill').style.width = `${((result.tasksCompleted / (result.tasksRequired || 1)) * 100)}%`;
-                if (result.tasksCompleted >= result.tasksRequired) {
-                    btn.textContent = 'All Tasks Completed';
-                } else {
-                    btn.textContent = 'Complete a Task';
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                alert('An error occurred while completing the task.');
-                renderTaskPage();
-            }
-        });
-    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load tasks. You may need to invest in a plan first.</p>'; }
+
+    } catch (error) { 
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load earnings. Please try again.</p>'; 
+    }
 };
 
+// --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
+const renderDepositPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+
+    let email, phone, userId;
+    try {
+        const userResponse = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
+            method: 'GET'
+        });
+        if (!userResponse.ok) {
+            throw new Error('Failed to load user data');
+        }
+        const userData = await userResponse.json();
+        userId = userData.balance.id;
+        email = userData.balance.email;
+        phone = userData.balance.phone_number;
+    } catch (e) {
+        console.error("Failed to get user info:", e);
+        alert("Your session is invalid. Please log in again.");
+        logoutUser(); 
+        return;
+    }
+
+
+    const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Deposit Funds</h2></div>
+            <div class="withdraw-card">
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label for="amount">Amount (NGN)</label>
+                        <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                    </div>
+                    <button type="submit" class="btn-auth">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>`;
+    appContent.innerHTML = pageHTML;
+
+    document.getElementById('depositForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const amount = document.getElementById('amount').value;
+        
+        if (!amount || parseFloat(amount) <= 0) {
+            return alert('Please enter a valid amount.');
+        }
+
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    userId,
+                    amount: parseFloat(amount),
+                    email,
+                    name: phone || 'User'
+                })
+            });
+            if (!response) return;
+
+            const result = await response.json();
+            if (!response.ok) return alert('Error: ' + result.message);
+
+            if (result.success && result.data && result.data.paymentLink) {
+                window.location.href = result.data.paymentLink;
+            } else {
+                alert('Failed to get payment link.');
+            }
+        } catch (error) {
+            if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+            alert('An error occurred. Please try again.');
+        }
+    });
+};
+
+// --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
+const renderHistoryPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/payment/history`, {
+            method: 'GET'
+        });
+
+        if (!response.ok) throw new Error('Failed to load history.');
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to load history.');
+        }
+
+        const transactions = data.transactions || [];
+        let historyHTML = '';
+
+        if (transactions.length === 0) {
+            historyHTML = '<p style="text-align: center; color: var(--text-secondary);">No transaction history yet.</p>';
+        } else {
+            transactions.forEach(txn => {
+                const date = new Date(txn.created_at).toLocaleString();
+                const amount = Number(txn.amount).toLocaleString();
+                // Sahil's audit mentioned 'type' might be missing. We add a fallback.
+                const type = txn.type || 'transaction'; 
+                const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+                const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+                const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
+                const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
+
+                historyHTML += `
+                    <div class="history-item" data-transaction-id="${txn.id}" style="background: var(--card-background); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 1.2rem;"></i>
+                                <div>
+                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</p>
+                                    <small style="color: var(--text-secondary);">${date}</small>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="font-weight: 700; font-size: 1.1rem; margin: 0; color: ${typeColor};">₦${amount}</p>
+                                <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize;">${txn.status}</span>
+                            </div>
+                        </div>
+                        <small style="color: var(--text-secondary);">Ref: ${txn.reference}</small>
+                    </div>
+                `;
+            });
+        }
+
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header">
+                    <h2>Transaction History</h2>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    ${historyHTML}
+                </div>
+            </div>
+        `;
+        
+        appContent.innerHTML = pageHTML;
+        
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const transactionId = item.dataset.transactionId;
+                const transaction = transactions.find(t => t.id.toString() === transactionId);
+                if (transaction) {
+                    showTransactionDetails(transaction);
+                }
+            });
+        });
+    } catch (error) {
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        console.error('Error loading history:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
+    }
+};
+
+// --- 15. showTransactionDetails (BABATUNDE'S) ---
+const showTransactionDetails = (transaction) => {
+    const date = new Date(transaction.created_at).toLocaleString();
+    const amount = Number(transaction.amount).toLocaleString();
+    const type = transaction.type || 'transaction'; // Add fallback
+    const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
+    const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
+    const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
+    
+    const bankDetails = transaction.bank_name || transaction.account_number || transaction.account_name;
+    
+    let detailsHTML = `
+        <div style="text-align: left;">
+            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                    <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 2rem;"></i>
+                    <div>
+                        <h3 style="margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</h3>
+                        <span style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize; display: inline-block; margin-top: 0.5rem;">${transaction.status}</span>
+                    </div>
+                </div>
+                <p style="font-size: 2rem; font-weight: 700; color: ${typeColor}; margin: 0;">₦${amount}</p>
+            </div>
+            
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Transaction ID</small>
+                    <p style="margin: 0; font-weight: 600;">${transaction.id}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Reference</small>
+                    <p style="margin: 0; font-weight: 600;">${transaction.reference}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Date & Time</small>
+                    <p style="margin: 0; font-weight: 600;">${date}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${type.replace('_', ' ')}</p>
+                </div>
+                
+                <div>
+                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Status</small>
+                    <p style="margin: 0; font-weight: 600; text-transform: capitalize; color: ${statusColor};">${transaction.status}</p>
+                </div>
+    `;
+    
+    if (bankDetails) {
+        detailsHTML += `
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Bank Details</h4>
+                    ${transaction.bank_name ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Bank Name</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.bank_name}</p>
+                    </div>
+                    ` : ''}
+                    ${transaction.account_number ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Number</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.account_number}</p>
+                    </div>
+                    ` : ''}
+                    ${transaction.account_name ? `
+                    <div style="margin-bottom: 0.75rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Name</small>
+                        <p style="margin: 0; font-weight: 600;">${transaction.account_name}</p>
+                    </div>
+                    ` : ''}
+                </div>
+        `;
+    }
+    
+    detailsHTML += `
+            </div>
+        </div>
+    `;
+    
+    const modalHTML = `
+        <div id="transactionDetailModal" class="modal-overlay" style="display: flex;">
+            <div class="modal-content" style="max-width: 400px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="margin: 0;">Transaction Details</h2>
+                    <button id="closeTransactionModal" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                </div>
+                ${detailsHTML}
+                <button id="closeTransactionModalBtn" class="btn-cta" style="margin-top: 1.5rem; width: 100%;">Close</button>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('transactionDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    document.getElementById('closeTransactionModal').addEventListener('click', () => {
+        document.getElementById('transactionDetailModal').remove();
+    });
+    
+    document.getElementById('closeTransactionModalBtn').addEventListener('click', () => {
+        document.getElementById('transactionDetailModal').remove();
+    });
+    
+    document.getElementById('transactionDetailModal').addEventListener('click', (e) => {
+        if (e.target.id === 'transactionDetailModal') {
+            e.target.remove();
+        }
+    });
+};
+
+// --- 16. renderWithdrawPage (BABATUNDE'S + Our Fix) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    const token = localStorage.getItem('token');
+
     try {
-        const response = await fetch(`${API_BASE_URL}/dashboard`, { headers: { 'Authorization': 'Bearer ' + token } });
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
+            method: 'GET'
+        });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
+        const balance = data.balance?.balance || 0;
+        
         const pageHTML = `
             <div class="page-container">
                 <div class="page-header"><h2>Request Withdrawal</h2></div>
                 <div class="withdraw-card">
-                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(data.user.balance).toLocaleString()}</p></div>
+                    <div class="balance-display">
+                        <small>Available Balance</small>
+                        <p>₦ ${Number(balance).toLocaleString()}</p>
+                    </div>
                     <form id="withdrawForm">
-                        <div class="form-group"><label for="amount">Amount</label><input type="number" id="amount" required /></div>
-                        <div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required /></div>
-                        <div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required /></div>
-                        <div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required /></div>
+                        <div class="form-group">
+                            <label for="amount">Amount (NGN)</label>
+                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                        </div>
+                        <div class="form-group">
+                            <label for="bankName">Bank Name</label>
+                            <input type="text" id="bankName" required placeholder="Enter bank name" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountNumber">Account Number</label>
+                            <input type="text" id="accountNumber" required placeholder="Enter account number" />
+                        </div>
+                        <div class="form-group">
+                            <label for="accountName">Account Name</label>
+                            <input type="text" id="accountName" required placeholder="Enter account name" />
+                        </div>
                         <button type="submit" class="btn-auth">Submit Request</button>
                     </form>
                 </div>
             </div>`;
         appContent.innerHTML = pageHTML;
+        
         document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const amount = document.getElementById('amount').value;
-            const bankDetails = { bankName: document.getElementById('bankName').value, accountNumber: document.getElementById('accountNumber').value, accountName: document.getElementById('accountName').value };
-            if (!confirm(`Request withdrawal of ₦${amount}?`)) return;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const bankName = document.getElementById('bankName').value.trim();
+            const accountNumber = document.getElementById('accountNumber').value.trim();
+            const accountName = document.getElementById('accountName').value.trim();
+
+            if (!amount || amount <= 0) {
+                return alert('Please enter a valid amount.');
+            }
+            
+            // --- TODO: We need the minimum withdrawal amount rule ---
+            // if (amount < 800) {
+            //     return alert('Minimum withdrawal is ₦800.');
+            // }
+
+            if (amount > balance) {
+                return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
+            }
+
+            if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
+
             try {
-                const withdrawResponse = await fetch(`${API_BASE_URL}/withdraw`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ amount, bankDetails }) });
+                const withdrawResponse = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        amount,
+                        bank_name: bankName,
+                        account_number: accountNumber,
+                        account_name: accountName
+                    })
+                });
+                if (!withdrawResponse) return;
+                
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
-                showSuccessModal(result.message);
-            } catch (error) { alert('An error occurred.'); }
+                
+                showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
+            } catch (error) {
+                if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+                alert('An error occurred. Please try again.');
+            }
         });
-    } catch (error) { appContent.innerHTML = '<p>Could not load page.</p>'; }
+    } catch (error) {
+        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        console.error('Error loading withdrawal page:', error);
+        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
+    }
 };
 
 // --- NEW RENDER FUNCTIONS FOR LEGAL PAGES ---
-
 const renderTermsPage = () => {
     bottomNav.style.display = 'none'; // Hide nav on legal pages
     appContent.innerHTML = `
@@ -820,19 +1235,7 @@ const renderPrivacyPolicyPage = () => {
 };
 
 // --- NEW PLACEHOLDER RENDER FUNCTIONS ---
-
-const renderHistoryPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>Transaction History</h2></div>
-            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
-                <i class="fas fa-history" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
-                <p>No transactions found.</p>
-                <p style="font-size: 14px; color: #999;">Your deposits, withdrawals, and earnings will appear here.</p>
-            </div>
-        </div>
-    `;
-};
+// Note: renderHistoryPage is already defined above (line 777)
 
 const renderTeamPage = () => {
     appContent.innerHTML = `
@@ -864,78 +1267,40 @@ const renderSettingsPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
             <div class="page-header"><h2>Change Password</h2></div>
-            <div class="withdraw-card">
+            <div class="placeholder-card" style="max-width: 400px; margin: 20px auto; padding: 20px;">
                 <form id="changePasswordForm">
                     <div class="form-group">
-                        <label for="oldPassword">Old Password</label>
-                        <input type="password" id="oldPassword" required />
+                        <label>Current Password</label>
+                        <input type="password" id="currentPassword" required />
                     </div>
                     <div class="form-group">
-                        <label for="newPassword">New Password</label>
+                        <label>New Password</label>
                         <input type="password" id="newPassword" required />
                     </div>
                     <div class="form-group">
-                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <label>Confirm New Password</label>
                         <input type="password" id="confirmNewPassword" required />
                     </div>
                     <button type="submit" class="btn-auth">Update Password</button>
                 </form>
+                <small style="text-align: center; display: block; margin-top: 15px;">(Feature in development)</small>
             </div>
         </div>
     `;
-    // Add event listener for the form
-    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+    document.getElementById('changePasswordForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        alert('Password change functionality is not yet connected to the backend.');
-        // TODO: Implement the backend call for password change
+        alert('Password change feature is in development.');
     });
 };
-
-const renderAboutPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container legal-page" style="padding: 15px;">
-            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="#me" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back to Profile</a>
-                <h2 style="margin-top: 10px;">About Us</h2>
-            </div>
-            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
-                <p>Wine is more than just a drink – it’s a growing global business worth billions of dollars. For decades, wine investments have been reserved for wealthy collectors and foreign investors. Today, we are changing that.</p>
-                <p><strong>JJB24 wines</strong> is Nigeria’s first online winery investment platform designed to give everyday people the chance to participate in the lucrative wine industry. Through our platform, you can invest in wine production, storage, and distribution, while earning attractive returns as the market grows.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Why Wine Investment?</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li>
-                    <li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li>
-                    <li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">🍷 Our Vision</h4>
-                <p>We believe Africa – and Nigeria in particular – can play a bigger role in the global wine market. By opening the doors of winery investment to Nigerians, we are not only creating wealth opportunities but also supporting the growth of a local wine culture and industry.</p>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">🔒 Why Trust Us?</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li>
-                    <li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li>
-                    <li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">🚀 Be Part of the Future</h4>
-                <p>With JJB24 you don’t need to be a billionaire or a wine expert to invest. Whether you are an entrepreneur, a professional, or someone simply looking for a smart passive income opportunity, this is your chance to take part in an exciting industry.</p>
-                <p>👉 Invest today, grow with us, and let’s put Nigeria on the global wine map.</p>
-            </div>
-        </div>
-    `;
-};
-
 const renderSupportPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
             <div class="page-header"><h2>Customer Support</h2></div>
-            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
-                <i class="fas fa-headset" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
-                <p>For help with your account, deposits, or withdrawals, please contact our support team.</p>
-                <p style="font-size: 14px; color: #999; margin-top: 20px;">Our primary support channel is via <strong>Telegram</strong>.</p>
-                <a href="#" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px;" onclick="alert('Telegram link not yet available.')">Contact Support on Telegram</a>
+            <div class="placeholder-card" style="text-align: center; padding: 40px 20px;">
+                <p>For any assistance, please contact our customer care via email.</p>
+                <a href="mailto:jjb24wines@gmail.com" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 20px;">
+                    jjb24wines@gmail.com
+                </a>
             </div>
         </div>
     `;
@@ -945,89 +1310,116 @@ const renderRewardsPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
             <div class="page-header"><h2>Rewards</h2></div>
-            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
-                <i class="fas fa-gift" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
-                <p>Special rewards and bonuses will appear here.</p>
-                <p style="font-size: 14px; color: #999;">Keep an eye out for special promotions!</p>
+            <div class="placeholder-card" style="text-align: center; padding: 40px 20px;">
+                <p>Your rewards and bonuses will appear here.</p>
+                <small>(Feature in development)</small>
             </div>
         </div>
     `;
 };
 
+// --- 18. NEW Certificate Page ---
+const renderCertificatePage = () => {
+    const certificateUrl = 'https://placehold.co/600x850/ffffff/333333?text=Company+Registration+Certificate+(CAC)';
+    
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Company Registration</h2></div>
+            <div class="placeholder-card" style="padding: 10px;">
+                <img src="${certificateUrl}" 
+                     alt="JJB24 Company Registration Certificate" 
+                     style="width: 100%; max-width: 600px; margin: 0 auto; display: block; border: 1px solid #eee;"
+                     onerror="this.src='https://placehold.co/600x850/ffffff/333333?text=Image+Not+Found'">
+            </div>
+        </div>
+    `;
+};
 
-// --- ROUTER ---
+// --- 19. NEW LEGAL PAGES (OURS) ---
+const renderAboutPage = () => {
+    appContent.innerHTML = `
+        <div class="page-container legal-page">
+            <div class="page-header"><h2>About Us</h2></div>
+            <div class="legal-content">
+                <p>Wine is more than just a drink – it’s a growing global business worth billions of dollars. For decades, wine investments have been reserved for wealthy collectors and foreign investors. Today, we are changing that. JJB24 wines] is Nigeria’s first online winery investment platform designed to give everyday people the chance to participate in the lucrative wine industry. Through our platform, you can invest in wine production, storage, and distribution, while earning attractive returns as the market grows.</p>
+                
+                <h4>Why Wine Investment?</h4>
+                <ul>
+                    <li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li>
+                    <li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li>
+                    <li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li>
+                </ul>
+
+                <h4>🍷 Our Vision</h4>
+                <p>We believe Africa – and Nigeria in particular – can play a bigger role in the global wine market. By opening the doors of winery investment to Nigerians, we are not only creating wealth opportunities but also supporting the growth of a local wine culture and industry.</p>
+
+                <h4>🔒 Why Trust Us?</h4>
+                <ul>
+                    <li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li>
+                    <li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li>
+                    <li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li>
+                </ul>
+
+                <h4>🚀 Be Part of the Future</h4>
+                <p>With JJB24 you don’t need to be a billionaire or a wine expert to invest. Whether you are an entrepreneur, a professional, or someone simply looking for a smart passive income opportunity, this is your chance to take part in an exciting industry.</p>
+                <p>👉 Invest today, grow with us, and let’s put Nigeria on the global wine map.</p>
+            </div>
+        </div>
+    `;
+};
+
+// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
+// Note: renderTermsPage is already defined above (line 1070)
+// Note: renderPrivacyPolicyPage is already defined above (line 1157)
 const router = () => {
-    const token = localStorage.getItem('token');
-    
-    // Handle routes that DON'T require a token
     const hash = window.location.hash || '#home';
-
-    // Public auth/legal routes
-    // We check for these *before* checking for a token
-    if (hash === '#login') {
-        bottomNav.style.display = 'none';
-        renderLoginScreen();
-        return;
-    }
-    if (hash === '#register') {
-        bottomNav.style.display = 'none';
-        renderRegisterScreen();
-        return;
-    }
-    if (hash === '#terms') {
-        bottomNav.style.display = 'none';
-        renderTermsPage();
-        return;
-    }
-    if (hash === '#privacy') {
-        bottomNav.style.display = 'none';
-        renderPrivacyPolicyPage();
-        return;
-    }
-
-    // From here, all routes REQUIRE a token
-    if (!token) {
-        bottomNav.style.display = 'none';
-        renderLoginScreen();
-        return;
-    }
     
-    // User is logged in, show the nav
+    if (['#login', '#register', '#terms', '#privacy'].includes(hash)) {
+        bottomNav.style.display = 'none';
+
+        switch(hash) {
+            case '#login': renderLoginScreen(); break;
+            case '#register': renderRegisterScreen(); break;
+            case '#terms': renderTermsPage(); break;
+            case '#privacy': renderPrivacyPolicyPage(); break;
+            default: renderLoginScreen(); // Default to login
+        }
+        return;
+    }
+
     bottomNav.style.display = 'flex';
-    // Update active nav link
-    const activeLink = hash.startsWith('#home') ? '#home' :
-                       hash.startsWith('#products') ? '#products' :
-                       hash.startsWith('#task') ? '#task' :
-                       hash.startsWith('#vip') ? '#vip' :
-                       hash.startsWith('#me') ? '#me' : '#home'; // Default to home
 
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('href') === activeLink) {
+        if (link.getAttribute('href') === '#home' && (hash === '#home' || hash === '')) {
+            link.classList.add('active');
+        } 
+        else if (link.getAttribute('href') === hash) { 
+            link.classList.add('active'); 
+        }
+        else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
             link.classList.add('active');
         }
     });
     
-    // Main app router
     switch (hash) {
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
-        case '#withdraw': renderWithdrawPage(); break;
         
-        // NEW: Routes for "Me" page and "Home" page links
+        case '#deposit': renderDepositPage(); break;
+        case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
         case '#team': renderTeamPage(); break;
         case '#settings': renderSettingsPage(); break;
         case '#about': renderAboutPage(); break;
         case '#support': renderSupportPage(); break;
         case '#rewards': renderRewardsPage(); break;
+        case '#certificate': renderCertificatePage(); break;
 
-        // Default for logged-in users
         default: 
-            window.location.hash = '#home';
             renderHomeScreen();
     }
 };
@@ -1038,7 +1430,7 @@ window.addEventListener('DOMContentLoaded', router);
 appContent.addEventListener('click', handleInvestClick);
 closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
-    if (e.target === successModal) { closeModal(); }
+    if (e.target.id === 'successModal') { closeModal(); }
 });
 
 
