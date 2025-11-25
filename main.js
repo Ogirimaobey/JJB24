@@ -1106,7 +1106,7 @@ const renderTermsPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page" style="padding: 15px;">
             <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="${localStorage.getItem('token') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
+                <a href="${localStorage.getItem('authToken') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
                 <h2 style="margin-top: 10px;">Terms & Conditions</h2>
             </div>
             <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
@@ -1193,7 +1193,7 @@ const renderPrivacyPolicyPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page" style="padding: 15px;">
             <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="${localStorage.getItem('token') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
+                <a href="${localStorage.getItem('authToken') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
                 <h2 style="margin-top: 10px;">Privacy Policy</h2>
             </div>
             <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
