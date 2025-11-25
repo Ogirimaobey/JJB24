@@ -4,7 +4,10 @@ import vipProducts from './vip.js';
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+// Switch to local backend for testing, change back to Render for production
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'https://jjb24-backend.onrender.com/api';
 
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
@@ -40,6 +43,16 @@ const fetchWithAuth = async (url, options = {}) => {
     if (!headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
+    
+    // Add Authorization header with token from localStorage (fallback if cookie doesn't work)
+    const token = localStorage.getItem('authToken');
+    if (token && !headers.has('Authorization')) {
+        headers.append('Authorization', `Bearer ${token}`);
+    }
+
+    console.log('[fetchWithAuth] Making request to:', url);
+    console.log('[fetchWithAuth] Has token:', !!token);
+    console.log('[fetchWithAuth] Headers:', Object.fromEntries(headers));
 
     const response = await fetch(url, { 
         ...options, 
@@ -47,9 +60,13 @@ const fetchWithAuth = async (url, options = {}) => {
         credentials: 'include'
     });
 
+    console.log('[fetchWithAuth] Response status:', response.status);
+
     // THIS IS THE FIX:
     // If token is expired or invalid, the server sends 401
     if (response.status === 401 || response.status === 403) {
+        console.error('[fetchWithAuth] Authentication failed, clearing token');
+        localStorage.removeItem('authToken');
         alert('Your session has expired. Please log in again.');
         logoutUser();
         // Return a new, unresolved promise to stop the calling function
@@ -90,6 +107,12 @@ const handleLogin = async (event) => {
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
+        
+        // Store token in localStorage if provided (for Authorization header fallback)
+        if (result.token) {
+            localStorage.setItem('authToken', result.token);
+        }
+        
         window.location.hash = '#home';
         router();
     } catch (error) { 
@@ -705,6 +728,8 @@ const renderDepositPage = async () => {
         }
 
         try {
+            console.log('[Deposit] Initializing payment...', { amount, email, phone, userId });
+            
             // --- UPDATED to use fetchWithAuth ---
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
                 method: 'POST',
@@ -716,16 +741,25 @@ const renderDepositPage = async () => {
                 })
             });
 
+            console.log('[Deposit] Response status:', response.status);
             const result = await response.json();
-            if (!response.ok) return alert('Error: ' + result.message);
+            console.log('[Deposit] Response data:', result);
+            
+            if (!response.ok) {
+                console.error('[Deposit] Error response:', result);
+                return alert('Error: ' + result.message);
+            }
 
             if (result.success && result.data && result.data.paymentLink) {
+                console.log('[Deposit] Payment link received:', result.data.paymentLink);
                 window.location.href = result.data.paymentLink;
             } else {
-                alert('Failed to get payment link.');
+                console.error('[Deposit] Invalid response structure:', result);
+                alert('Failed to get payment link. Check console for details.');
             }
         } catch (error) {
-            alert('An error occurred. Please try again.');
+            console.error('[Deposit] Exception:', error);
+            alert('An error occurred. Please check console and try again.');
         }
     });
 };
