@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products - Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="admin-dashboard.css">
+    <style>
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--admin-border);
+        }
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--admin-text);
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            color: var(--admin-accent);
+            border-bottom-color: var(--admin-accent);
+        }
+        .tab-button:hover {
+            color: var(--admin-accent);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .upload-section {
+            background: var(--admin-white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--admin-heading);
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--admin-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+        .form-group input[type="file"] {
+            padding: 8px;
+        }
+        .btn-upload {
+            background: var(--admin-accent);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-upload:hover {
+            background: #1e40af;
+        }
+        .btn-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .product-card {
+            background: var(--admin-white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--admin-border);
+        }
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .product-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: var(--admin-heading);
+            font-size: 1.2rem;
+        }
+        .product-card p {
+            margin: 0.25rem 0;
+            color: var(--admin-text);
+            font-size: 0.9rem;
+        }
+        .product-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn-edit, .btn-delete {
+            flex: 1;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-edit {
+            background: #fbbf24;
+            color: white;
+        }
+        .btn-edit:hover {
+            background: #f59e0b;
+        }
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+        .edit-form {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .edit-form.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-wrapper">
+        <header class="admin-header">
+            <h1>Manage Products</h1>
+            <div class="header-actions">
+                <a href="admin-dashboard.html" class="nav-button">Dashboard</a>
+                <a href="users.html" class="nav-button">Manage Users</a>
+                <a href="investments.html" class="nav-button">Manage Investments</a>
+                <button id="adminLogoutButton">Logout</button>
+            </div>
+        </header>
+
+        <main class="admin-main">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" data-tab="items">Regular Products (Items)</button>
+                <button class="tab-button" data-tab="vip">CASPERVIP Products</button>
+            </div>
+
+            <!-- Regular Products Tab -->
+            <div id="items-tab" class="tab-content active">
+                <section class="upload-section">
+                    <h2 style="margin-top: 0;">Upload New Regular Product</h2>
+                    <div id="itemsMessageContainer"></div>
+                    <form id="itemsUploadForm">
+                        <div class="form-group">
+                            <label for="itemName">Product Name *</label>
+                            <input type="text" id="itemName" required placeholder="e.g., SW1. CHAMDOR">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemPrice">Price (₦) *</label>
+                            <input type="number" id="itemPrice" required min="0" step="0.01" placeholder="e.g., 8000">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemDailyIncome">Daily Income (₦) *</label>
+                            <input type="number" id="itemDailyIncome" required min="0" step="0.01" placeholder="e.g., 400">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemImage">Product Image *</label>
+                            <input type="file" id="itemImage" required accept="image/*">
+                        </div>
+                        <button type="submit" class="btn-upload" id="itemsUploadBtn">
+                            <i class="fas fa-upload"></i> Upload Product
+                        </button>
+                    </form>
+                </section>
+
+                <section class="data-card">
+                    <div class="stat-header">
+                        <i class="fas fa-box"></i>
+                        <h2>All Regular Products</h2>
+                    </div>
+                    <div id="itemsContainer" style="padding: 1rem;">
+                        <p>Loading products...</p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- CASPERVIP Products Tab -->
+            <div id="vip-tab" class="tab-content">
+                <section class="upload-section">
+                    <h2 style="margin-top: 0;">Create New CASPERVIP Product</h2>
+                    <div id="vipMessageContainer"></div>
+                    <form id="vipUploadForm">
+                        <div class="form-group">
+                            <label for="vipName">VIP Name *</label>
+                            <input type="text" id="vipName" required placeholder="e.g., CASPER VIP 1">
+                        </div>
+                        <div class="form-group">
+                            <label for="vipPrice">Price (₦) *</label>
+                            <input type="number" id="vipPrice" required min="0" step="0.01" placeholder="e.g., 500000">
+                        </div>
+                        <div class="form-group">
+                            <label for="vipDailyEarnings">Daily Earnings (₦) *</label>
+                            <input type="number" id="vipDailyEarnings" required min="0" step="0.01" placeholder="e.g., 3333.33">
+                        </div>
+                        <div class="form-group">
+                            <label for="vipDurationDays">Duration (Days) *</label>
+                            <input type="number" id="vipDurationDays" required min="1" placeholder="e.g., 30">
+                        </div>
+                        <div class="form-group">
+                            <label for="vipTotalReturns">Total Returns (₦) *</label>
+                            <input type="number" id="vipTotalReturns" required min="0" step="0.01" placeholder="e.g., 600000">
+                        </div>
+                        <div class="form-group">
+                            <label for="vipImage">Product Image (Optional)</label>
+                            <input type="file" id="vipImage" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn-upload" id="vipUploadBtn">
+                            <i class="fas fa-upload"></i> Create CASPERVIP
+                        </button>
+                    </form>
+                </section>
+
+                <section class="data-card">
+                    <div class="stat-header">
+                        <i class="fas fa-crown"></i>
+                        <h2>All CASPERVIP Products</h2>
+                    </div>
+                    <div id="vipContainer" style="padding: 1rem;">
+                        <p>Loading CASPERVIP products...</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Use localhost for local testing, change to production URL when deploying
+        const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:3000/api'
+            : 'https://jjb24-backend.onrender.com/api';
+        
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            // Tab switching
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.dataset.tab;
+                    
+                    // Update buttons
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Update content
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById(`${tabName}-tab`).classList.add('active');
+                });
+            });
+
+            // Load products
+            await loadItems(token);
+            await loadVips(token);
+
+            // Items form submission
+            document.getElementById('itemsUploadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await uploadItem(token);
+            });
+
+            // VIP form submission
+            document.getElementById('vipUploadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await uploadVip(token);
+            });
+
+            // Logout
+            document.getElementById('adminLogoutButton').addEventListener('click', () => {
+                localStorage.removeItem('adminToken');
+                window.location.href = 'admin-login.html';
+            });
+        });
+
+        // Load regular items
+        async function loadItems(token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/items/`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load products');
+                }
+
+                const data = await response.json();
+                const container = document.getElementById('itemsContainer');
+                
+                if (!data.items || data.items.length === 0) {
+                    container.innerHTML = '<p>No products found. Upload your first product above.</p>';
+                    return;
+                }
+
+                const productsHTML = `
+                    <div class="products-grid">
+                        ${data.items.map(item => `
+                            <div class="product-card" data-item-id="${item.id}">
+                                <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                                <h3>${item.itemname}</h3>
+                                <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
+                                <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
+                                <div class="product-actions">
+                                    <button class="btn-edit" onclick="editItem(${item.id}, '${token}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn-delete" onclick="deleteItem(${item.id}, '${token}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                                <div id="edit-form-item-${item.id}" class="edit-form">
+                                    <h4>Edit Product</h4>
+                                    <form onsubmit="updateItem(event, ${item.id}, '${token}')">
+                                        <div class="form-group">
+                                            <label>Product Name</label>
+                                            <input type="text" id="edit-item-name-${item.id}" value="${item.itemname}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Price (₦)</label>
+                                            <input type="number" id="edit-item-price-${item.id}" value="${item.price}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Daily Income (₦)</label>
+                                            <input type="number" id="edit-item-daily-${item.id}" value="${item.dailyincome}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>New Image (Optional)</label>
+                                            <input type="file" id="edit-item-image-${item.id}" accept="image/*">
+                                        </div>
+                                        <button type="submit" class="btn-upload">Update</button>
+                                        <button type="button" class="btn-delete" onclick="cancelEdit(${item.id})">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.innerHTML = productsHTML;
+            } catch (error) {
+                console.error('Error loading items:', error);
+                document.getElementById('itemsContainer').innerHTML = 
+                    '<p style="color: red;">Error loading products. Please refresh the page.</p>';
+            }
+        }
+
+        // Load CASPERVIP products
+        async function loadVips(token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vip`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!response.ok) {
+                    // If endpoint doesn't exist yet, show empty state
+                    if (response.status === 404) {
+                        document.getElementById('vipContainer').innerHTML = 
+                            '<p>No CASPERVIP products found. Create your first CASPERVIP above.</p>';
+                        return;
+                    }
+                    throw new Error('Failed to load CASPERVIP products');
+                }
+
+                const data = await response.json();
+                const container = document.getElementById('vipContainer');
+                
+                if (!data.vips || data.vips.length === 0) {
+                    container.innerHTML = '<p>No CASPERVIP products found. Create your first CASPERVIP above.</p>';
+                    return;
+                }
+
+                const vipsHTML = `
+                    <div class="products-grid">
+                        ${data.vips.map(vip => `
+                            <div class="product-card" data-vip-id="${vip.id}">
+                                ${vip.image ? `<img src="${vip.image}" alt="${vip.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=CASPERVIP'">` : '<div style="width:100%;height:200px;background:#1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;margin-bottom:1rem;">CASPERVIP</div>'}
+                                <h3>${vip.name}</h3>
+                                <p><strong>Price:</strong> ₦${Number(vip.price).toLocaleString()}</p>
+                                <p><strong>Daily Earnings:</strong> ₦${Number(vip.daily_earnings).toLocaleString()}</p>
+                                <p><strong>Duration:</strong> ${vip.duration_days} days</p>
+                                <p><strong>Total Returns:</strong> ₦${Number(vip.total_returns).toLocaleString()}</p>
+                                <div class="product-actions">
+                                    <button class="btn-edit" onclick="editVip(${vip.id}, '${token}')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn-delete" onclick="deleteVip(${vip.id}, '${token}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                                <div id="edit-form-vip-${vip.id}" class="edit-form">
+                                    <h4>Edit CASPERVIP</h4>
+                                    <form onsubmit="updateVip(event, ${vip.id}, '${token}')">
+                                        <div class="form-group">
+                                            <label>VIP Name</label>
+                                            <input type="text" id="edit-vip-name-${vip.id}" value="${vip.name}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Price (₦)</label>
+                                            <input type="number" id="edit-vip-price-${vip.id}" value="${vip.price}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Daily Earnings (₦)</label>
+                                            <input type="number" id="edit-vip-daily-${vip.id}" value="${vip.daily_earnings}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Duration (Days)</label>
+                                            <input type="number" id="edit-vip-duration-${vip.id}" value="${vip.duration_days}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Total Returns (₦)</label>
+                                            <input type="number" id="edit-vip-returns-${vip.id}" value="${vip.total_returns}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>New Image (Optional)</label>
+                                            <input type="file" id="edit-vip-image-${vip.id}" accept="image/*">
+                                        </div>
+                                        <button type="submit" class="btn-upload">Update</button>
+                                        <button type="button" class="btn-delete" onclick="cancelEditVip(${vip.id})">Cancel</button>
+                                    </form>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.innerHTML = vipsHTML;
+            } catch (error) {
+                console.error('Error loading VIPs:', error);
+                document.getElementById('vipContainer').innerHTML = 
+                    '<p style="color: red;">Error loading CASPERVIP products. Please refresh the page.</p>';
+            }
+        }
+
+        // Upload regular item
+        async function uploadItem(token) {
+            const form = document.getElementById('itemsUploadForm');
+            const btn = document.getElementById('itemsUploadBtn');
+            const messageContainer = document.getElementById('itemsMessageContainer');
+
+            const itemName = document.getElementById('itemName').value.trim();
+            const price = document.getElementById('itemPrice').value;
+            const dailyIncome = document.getElementById('itemDailyIncome').value;
+            const imageFile = document.getElementById('itemImage').files[0];
+
+            if (!itemName || !price || !dailyIncome || !imageFile) {
+                showMessage('Please fill all fields', 'error', messageContainer);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('itemName', itemName);
+            formData.append('price', price);
+            formData.append('dailyIncome', dailyIncome);
+            formData.append('itemImage', imageFile);
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/items/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage('Product uploaded successfully!', 'success', messageContainer);
+                    form.reset();
+                    await loadItems(token);
+                } else {
+                    showMessage(result.message || 'Failed to upload product', 'error', messageContainer);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage('An error occurred. Please try again.', 'error', messageContainer);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload"></i> Upload Product';
+            }
+        }
+
+        // Upload CASPERVIP
+        async function uploadVip(token) {
+            const form = document.getElementById('vipUploadForm');
+            const btn = document.getElementById('vipUploadBtn');
+            const messageContainer = document.getElementById('vipMessageContainer');
+
+            const name = document.getElementById('vipName').value.trim();
+            const price = document.getElementById('vipPrice').value;
+            const daily_earnings = document.getElementById('vipDailyEarnings').value;
+            const duration_days = document.getElementById('vipDurationDays').value;
+            const total_returns = document.getElementById('vipTotalReturns').value;
+            const imageFile = document.getElementById('vipImage').files[0];
+
+            if (!name || !price || !daily_earnings || !duration_days || !total_returns) {
+                showMessage('Please fill all required fields', 'error', messageContainer);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('price', price);
+            formData.append('daily_earnings', daily_earnings);
+            formData.append('duration_days', duration_days);
+            formData.append('total_returns', total_returns);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vip/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showMessage('CASPERVIP created successfully!', 'success', messageContainer);
+                    form.reset();
+                    await loadVips(token);
+                } else {
+                    showMessage(result.message || 'Failed to create CASPERVIP', 'error', messageContainer);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage('An error occurred. Please try again.', 'error', messageContainer);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload"></i> Create CASPERVIP';
+            }
+        }
+
+        // Edit item
+        function editItem(itemId, token) {
+            const editForm = document.getElementById(`edit-form-item-${itemId}`);
+            editForm.classList.toggle('active');
+        }
+
+        // Update item
+        async function updateItem(event, itemId, token) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('itemName', document.getElementById(`edit-item-name-${itemId}`).value);
+            formData.append('price', document.getElementById(`edit-item-price-${itemId}`).value);
+            formData.append('dailyIncome', document.getElementById(`edit-item-daily-${itemId}`).value);
+            
+            const imageFile = document.getElementById(`edit-item-image-${itemId}`).files[0];
+            if (imageFile) {
+                formData.append('itemImage', imageFile);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert('Product updated successfully!');
+                    await loadItems(token);
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to update product'));
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+
+        // Delete item
+        async function deleteItem(itemId, token) {
+            if (!confirm('Are you sure you want to delete this product?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert('Product deleted successfully!');
+                    await loadItems(token);
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to delete product'));
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+
+        // Edit VIP
+        function editVip(vipId, token) {
+            const editForm = document.getElementById(`edit-form-vip-${vipId}`);
+            editForm.classList.toggle('active');
+        }
+
+        // Update VIP
+        async function updateVip(event, vipId, token) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById(`edit-vip-name-${vipId}`).value);
+            formData.append('price', document.getElementById(`edit-vip-price-${vipId}`).value);
+            formData.append('daily_earnings', document.getElementById(`edit-vip-daily-${vipId}`).value);
+            formData.append('duration_days', document.getElementById(`edit-vip-duration-${vipId}`).value);
+            formData.append('total_returns', document.getElementById(`edit-vip-returns-${vipId}`).value);
+            
+            const imageFile = document.getElementById(`edit-vip-image-${vipId}`).files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vip/${vipId}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert('CASPERVIP updated successfully!');
+                    await loadVips(token);
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to update CASPERVIP'));
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+
+        // Delete VIP
+        async function deleteVip(vipId, token) {
+            if (!confirm('Are you sure you want to delete this CASPERVIP product?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/vip/${vipId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert('CASPERVIP deleted successfully!');
+                    await loadVips(token);
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to delete CASPERVIP'));
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
+
+        // Cancel edit
+        function cancelEdit(itemId) {
+            document.getElementById(`edit-form-item-${itemId}`).classList.remove('active');
+        }
+
+        function cancelEditVip(vipId) {
+            document.getElementById(`edit-form-vip-${vipId}`).classList.remove('active');
+        }
+
+        // Show message
+        function showMessage(message, type, container) {
+            container.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+
