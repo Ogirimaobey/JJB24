@@ -1,9 +1,10 @@
-import vipProducts from './vip.js';
+// --- 1. IMPORTS AT THE VERY TOP ---
+// We removed swProducts import because we will now fetch them from the API
+import vipProducts from './vip.js'; 
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
-
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
 const successModal = document.getElementById('successModal');
@@ -26,22 +27,27 @@ const closeModal = () => {
 
 // --- NEW: A central function to handle logging the user out ---
 const logoutUser = () => {
+    localStorage.removeItem('token');
     window.location.hash = '#login';
     router(); 
 };
 
+// --- NEW: A "smart" fetch function that handles expired tokens ---
 const fetchWithAuth = async (url, options = {}) => {
+    const token = localStorage.getItem('token');
+
+    // Prepare headers
     const headers = new Headers(options.headers || {});
+    if (token) {
+        headers.append('Authorization', `Bearer ${token}`);
+    }
     if (!headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
 
-    const response = await fetch(url, { 
-        ...options, 
-        headers,
-        credentials: 'include'
-    });
+    const response = await fetch(url, { ...options, headers });
 
+    // If token is expired or invalid, the server sends 401
     if (response.status === 401 || response.status === 403) {
         alert('Your session has expired. Please log in again.');
         logoutUser();
@@ -51,7 +57,8 @@ const fetchWithAuth = async (url, options = {}) => {
     return response;
 };
 
-// --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+
+// --- ACTION HANDLERS ---
 
 // --- 2. FIXED handleLogin (OURS) ---
 const handleLogin = async (event) => {
@@ -63,7 +70,6 @@ const handleLogin = async (event) => {
         return alert('Please provide email or phone and password.');
     }
     
-
     const isEmail = loginIdentifier.includes('@');
     const loginData = {
         password: password,
@@ -75,11 +81,11 @@ const handleLogin = async (event) => {
         const response = await fetch(`${API_BASE_URL}/users/login`, { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(loginData),
-            credentials: 'include'
+            body: JSON.stringify(loginData) 
         });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
+        localStorage.setItem('token', result.token);
         window.location.hash = '#home';
         router();
     } catch (error) { 
@@ -98,7 +104,6 @@ const handleRegister = async (event) => {
     const cpassword = (document.getElementById('cpassword') || {}).value || '';
     const referral = (document.getElementById('referral') || {}).value?.trim() || '';
     
-
     const agreedToTerms = document.getElementById('termsCheckbox').checked;
     if (!agreedToTerms) {
         return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
@@ -106,7 +111,7 @@ const handleRegister = async (event) => {
     
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
-    // NOTE: We use the original 'fetch' here because we don't have a token yet.
+
     try {
         const payload = { fullName, phone, email, password };
         if (referral) {
@@ -119,12 +124,11 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-
+                
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
         }
-        // NOTE: We use the original 'fetch' here
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -140,9 +144,11 @@ const handleRegister = async (event) => {
     }
 };
 
+
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
     const otpCode = document.getElementById('otpCode').value;
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
             method: 'POST',
@@ -162,8 +168,6 @@ const handleOTPVerification = async (event, email) => {
 // --- 4. FIXED handleResendOTP (uses email) (OURS) ---
 const handleResendOTP = async (email) => { 
     try {
-        // Sahil's audit says this endpoint is missing, but we will keep the code
-        // ready for when he builds it.
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -178,24 +182,28 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
+// --- 5. handleInvestClick (Merged Logic) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
-        const rawItemId = event.target.dataset.planId; 
-        // console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
+        const rawItemId = event.target.dataset.planId;
         
+        // IMPORTANT: Convert to number for the backend
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) {
             alert('Error: Invalid product ID. Please refresh the page and try again.');
-            // console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
             return;
         }
-        
-        // console.log('Sending investment request with itemId:', itemId);
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            logoutUser(); 
+            return;
+        }
         
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
         try {
+            // Using fetchWithAuth to handle token
             const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
                 method: 'POST'
             });
@@ -240,7 +248,10 @@ const handleCopyReferral = (event) => {
     document.body.removeChild(textArea);
 };
 
-// --- RENDER FUNCTIONS (Build the HTML for each page) ---
+
+
+// --- RENDER FUNCTIONS ---
+
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -265,7 +276,6 @@ const renderLoginScreen = () => {
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
-// --- 7. FIXED renderRegisterScreen (with Terms HTML) (OURS) ---
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
@@ -298,7 +308,6 @@ const renderRegisterScreen = () => {
                     <label>Referral Code (Optional)</label>
                     <input type="text" id="referral" />
                 </div>
-                <!-- NEW: Terms and Conditions Checkbox -->
                 <div class="form-group-checkbox" style="flex-direction: row; align-items: center; display: flex; gap: 10px; margin-top: 15px;">
                     <input type="checkbox" id="termsCheckbox" required style="width: auto; height: auto; margin: 0;" />
                     <label for="termsCheckbox" style="margin: 0; font-size: 12px; font-weight: normal; color: #666;">
@@ -323,59 +332,53 @@ const renderOTPVerificationScreen = (email) => {
             <div class="auth-logo">JJB24</div>
             <h2>Verify Your Phone</h2>
             <p>Enter the 6-digit code sent to ${email}</p>
-            
             <form id="otpForm">
                 <div class="form-group">
                     <label>OTP Code</label>
-                    <input type="text" 
-                            id="otpCode" 
-                            maxlength="6" 
-                            pattern="[0-9]{6}" 
-                            placeholder="000000"
-                            class="otp-input"
-                            required 
-                            autocomplete="one-time-code" />
+                    <input type="text" id="otpCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000" class="otp-input" required autocomplete="one-time-code" />
                 </div>
-                
                 <button type="submit" class="btn-auth">Verify</button>
             </form>
-            
-            <p class="auth-link">
-                Didn't receive code? 
-                <a id="resendOTP" style="cursor: pointer; color: #6a0dad;">Resend OTP</a>
-            </p>
-            
-            <p class="auth-link">
-                <a href="#login">Back to Login</a>
-            </p>
+            <p class="auth-link">Didn't receive code? <a id="resendOTP" style="cursor: pointer; color: #6a0dad;">Resend OTP</a></p>
+            <p class="auth-link"><a href="#login">Back to Login</a></p>
         </div>
     `;
-    
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
-// --- 8. FIXED renderHomeScreen (with Certificate Button) (OURS) ---
+
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
+    const token = localStorage.getItem('token');
+    if (!token) { logoutUser(); return; }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: "GET"
-        });
-
-        if (!response.ok) {
-        const err = await response.text();
-        // console.error('Backend error:', err);
-        throw new Error('Failed to load data.');
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
+        if (!response) return;
+        if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        
         const fullName = data.balance.full_name || 'User';
         const balance = data.balance.balance || 0;
 
-        const activityHTML = "<p>No recent activity yet.</p>";
+        let activityHTML = "<p>No recent activity yet.</p>";
+        try {
+            const historyResponse = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
+            if (historyResponse && historyResponse.ok) {
+                const historyData = await historyResponse.json();
+                if (historyData.success && historyData.transactions && historyData.transactions.length > 0) {
+                    const recent = historyData.transactions.slice(0, 3);
+                    activityHTML = recent.map(txn => {
+                         const typeColor = txn.type === 'deposit' ? 'green' : 'red';
+                         return `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
+                                    <span>${txn.type}</span>
+                                    <span style="color:${typeColor}; font-weight:bold;">₦${Number(txn.amount).toLocaleString()}</span>
+                                 </div>`;
+                    }).join('');
+                }
+            }
+        } catch(e) { console.log("History fetch failed for home screen, ignoring"); }
 
         const homeHTML = `
             <div class="top-header">
@@ -383,9 +386,7 @@ const renderHomeScreen = async () => {
                     <h4>Hello, ${fullName.split(' ')[0]}</h4>
                     <p>Welcome back!</p>
                 </div>
-                <div class="profile-icon">
-                    <i class="fas fa-user"></i>
-                </div>
+                <div class="profile-icon"><i class="fas fa-user"></i></div>
             </div>
             <div class="balance-card">
                 <small>Total Assets (NGN)</small>
@@ -395,30 +396,13 @@ const renderHomeScreen = async () => {
                     <a href="#withdraw" class="btn-withdraw">Withdraw</a>
                 </div>
             </div>
-
             <div class="home-content">
                 <div class="quick-actions">
-                    <a href="#team" class="action-button">
-                        <i class="fas fa-users"></i>
-                        <span>My Team</span>
-                    </a>
-                    <a href="#history" class="action-button">
-                        <i class="fas fa-history"></i>
-                        <span>History</span>
-                    </a>
-                    <a href="#support" class="action-button">
-                        <i class="fas fa-headset"></i>
-                        <span>Support</span>
-                    </a>
-                    <a href="#rewards" class="action-button">
-                        <i class="fas fa-gift"></i>
-                        <span>Rewards</span>
-                    </a>
-                    <!-- NEW: Certificate Button -->
-                    <a href="#certificate" class="action-button">
-                        <i class="fas fa-file-certificate"></i>
-                        <span>Certificate</span>
-                    </a>
+                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
+                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                    <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 </div>
                 <div class="activity-card">
                     <h3>Recent Activity</h3>
@@ -427,58 +411,53 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        // console.log('Error loading home screen:', error);
+        if (error.message && error.message.includes('Promise')) return;
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
                 <p>Could not load dashboard. Please try again.</p>
                 <a href="#" id="logoutButton" class="btn-auth" style="display: inline-block; margin-top: 20px;">Logout</a>
             </div>
         `;
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser(); 
-        });
+        document.getElementById('logoutButton').addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
     }
 };
 
-// --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
+
+// --- 9. FIXED renderProductsPage (USING API - SAHIL'S FIX) ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     
     try {
-        const response = await fetch(`${API_BASE_URL}/users/allItems`, {
-            credentials: 'include'
-        });
-        // console.log('Response from products backend:', response);
-
+        // FETCH FROM API instead of local file
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
+        if (!response) return;
         if (!response.ok) throw new Error('Failed to load data.');
 
         const data = await response.json();
-        // console.log('Products data from backend:', data);
-        // console.log('First item structure:', data.items[0]);
-
+        
         let productHTML = '';
-        data.items.forEach(item => {
-        // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
-            
-        const itemId = Number(item.id);
-        if (isNaN(itemId)) {
-            console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
-            return; 
+        // Use data.items array
+        const items = data.items || [];
+        
+        if (items.length === 0) {
+            productHTML = '<p style="text-align:center; padding:20px;">No products available.</p>';
+        } else {
+            items.forEach(item => {
+                const itemId = Number(item.id);
+                productHTML += `
+                    <div class="product-card-wc">
+                        <div class="product-image-wc">
+                            <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                        </div>
+                        <div class="product-info-wc">
+                            <h4>${item.itemname}</h4>
+                            <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                            <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                            <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                        </div>
+                    </div>`;
+            });
         }
-        productHTML += `
-            <div class="product-card-wc">
-                <div class="product-image-wc">
-                    <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
-                </div>
-                <div class="product-info-wc">
-                    <h4>${item.itemname}</h4>
-                    <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                    <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                    <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
-                </div>
-            </div>`;
-        });
 
         const pageHTML = `
             <div class="page-container">
@@ -487,113 +466,54 @@ const renderProductsPage = async () => {
             </div>`;
         appContent.innerHTML = pageHTML;
     } catch (error) {
+        if (error.message && error.message.includes('Promise')) return;
         console.error('Error rendering products:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
     }
 };
 
+
 // --- 10. FIXED renderVipPage (uses import) (OURS) ---
-const renderVipPage = async () => {
-    appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
-            credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Failed to load data.');
-
-        const data = await response.json();
-        // console.log("VIP data:", data); 
-        // console.log("VIP list:", data.vips); 
-
-        if (!data.vips || !Array.isArray(data.vips)) {
-            throw new Error("VIP list missing from backend response");
-        }
-
-
-        let vipHTML = "";
-
-        data.vips.forEach(plan => {
-            vipHTML += `
-            <div class="product-card-wc">
-                <div class="product-image-wc">
-                    <img src="${plan.image}" alt="${plan.name}"
-                    onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-                </div>
-                <div class="product-info-wc">
-                    <h4>${plan.name}</h4>
-                    <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
-                    <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
-                    <p><strong>Duration:</strong> ${plan.duration_days} days</p>
-                    <p style="font-size: 12px; color: #666;">
-                        (Note: Additional 20% of your investment will be added after maturity)
-                    </p>
-                    <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-                </div>
-            </div>`;
-        });
-
-        const pageHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>VIP Promotions</h2></div>
-            <div class="product-grid-wc">${vipHTML}</div>
+const renderVipPage = () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
+    
+    let vipHTML = '';
+    vipProducts.forEach(plan => {
+        const itemId = Number(plan.id);
+        vipHTML += `
+        <div class="product-card-wc">
+            <div class="product-image-wc">
+                <img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
+            </div>
+            <div class="product-info-wc">
+                <h4>${plan.name}</h4>
+                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
+                <p><strong>Duration:</strong> ${plan.duration} days</p>
+                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
+                <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+            </div>
         </div>`;
-
-        appContent.innerHTML = pageHTML;
-
-        document.querySelectorAll(".btn-invest").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const planId = btn.getAttribute("data-plan-id");
-                investInPlan(planId);
-            });
-        });
-
-    } catch (error) {
-        console.error('Error rendering VIP plans:', error);
-        appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
-    }
+    });
+    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    appContent.innerHTML = pageHTML;
 };
 
-//Investment plan ID
-const investInPlan = async (planId) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/investments/createVipInvestment/${planId}`, {
-            method: "POST",
-            credentials: "include"
-        });
 
-        const data = await response.json();
-        console.log("Investment response:", data);
-
-        if (data.success) {
-            alert("Investment purchased successfully!");
-            router(); 
-        } else {
-            alert(data.message || "Investment failed");
-        }
-
-    } catch (error) {
-        console.error("Investment error:", error);
-        alert("Error processing investment. Try again.");
-    }
-};
-
-// --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
+// --- 11. FIXED renderMePage (OURS + fetchWithAuth) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/user_profile`, { method: 'GET' });
-        if (!response.ok) { throw new Error('Failed to load data.'); }
-        // console.log('Response from /users/balance:', response);
-        const data = await response.json();
-
-        // console.log('User profile data:', data);
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
+        if (!response) return; 
         
-        const referralCode = data.profile.referral_code || 'N/A';
-        const email = data.profile.email || 'No email provided';
-        const phone = data.profile.phone_number || 'No phone provided';
-        const fullName = data.profile.full_name || 'User';
+        if (!response.ok) { throw new Error('Failed to load data.'); }
+        const data = await response.json();
+        
+        const referralCode = data.balance.referral_code || 'N/A';
+        const email = data.balance.email || 'No email provided';
+        const phone = data.balance.phone_number || 'No phone provided';
+        const fullName = data.balance.full_name || 'User';
 
         const pageHTML = `
             <div class="page-container">
@@ -630,6 +550,7 @@ const renderMePage = async () => {
         document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
 
     } catch (error) { 
+        if (error.message && error.message.includes('Promise')) return;
         appContent.innerHTML = `
             <div class="page-container" style="text-align: center; margin-top: 50px;">
                 <p>Could not load profile. Please try again.</p>
@@ -648,15 +569,34 @@ const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
     
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
-        if (!response.ok) throw new Error('Failed to load earnings.');
-        const data = await response.json();
-        
+        // Placeholder Data until Backend Ready
         const earnings = {
-            today: data.today || 0.00,
-            yesterday: data.yesterday || 0.00,
-            total: data.total || 0.00
+            today: 0.00,
+            yesterday: 0.00,
+            total: 0.00
         };
+        
+        // Fetch Active Investments
+        let investmentsHTML = '<p style="color: #999; font-size: 14px;">No active investments found.</p>';
+        try {
+            const invResponse = await fetchWithAuth(`${API_BASE_URL}/investments`, { method: 'GET' });
+            if (invResponse.ok) {
+                const invData = await invResponse.json();
+                const investments = Array.isArray(invData) ? invData : (invData.data || []);
+                if (investments.length > 0) {
+                    investmentsHTML = investments.map(inv => `
+                        <div class="earnings-card" style="background: #fff; margin-bottom: 10px; padding: 10px; border-left: 4px solid #6a0dad; text-align: left;">
+                            <h4 style="margin: 0 0 5px 0; font-size: 14px;">${inv.item_name || 'Investment'}</h4>
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                                <span>Amount: ₦${Number(inv.amount).toLocaleString()}</span>
+                                <span>Daily: ₦${Number(inv.daily_income || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            }
+        } catch(e) { console.log("Investments fetch failed, showing empty list"); }
+
 
         const pageHTML = `
             <div class="page-container task-page">
@@ -677,6 +617,12 @@ const renderTaskPage = async () => {
                     <small style="font-size: 12px; color: var(--text-secondary); display: block;">Total Earnings</small>
                     <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.total).toLocaleString()}</p>
                 </div>
+                
+                 <!-- Active Plans Section -->
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 16px; margin-bottom: 10px;">My Active Plans</h3>
+                    ${investmentsHTML}
+                </div>
 
                 <div class="info-card" style="margin-top: 20px; text-align: center; background: var(--card-background); padding: 10px; border-radius: 8px; font-size: 14px;">
                     <i class="fas fa-clock" style="color: #6a0dad; margin-right: 8px;"></i>
@@ -686,6 +632,7 @@ const renderTaskPage = async () => {
         appContent.innerHTML = pageHTML;
 
     } catch (error) { 
+        if (error.message && error.message.includes('Promise')) return;
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load earnings. Please try again.</p>'; 
     }
 };
@@ -693,23 +640,24 @@ const renderTaskPage = async () => {
 // --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
 const renderDepositPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-
+    
+    // Decode token to get user info
     let email, phone, userId;
     try {
-        const userResponse = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: 'GET'
-        });
-        if (!userResponse.ok) {
-            throw new Error('Failed to load user data');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please log in to deposit.');
+            logoutUser(); 
+            return;
         }
-        const userData = await userResponse.json();
-        userId = userData.balance.id;
-        email = userData.balance.email;
-        phone = userData.balance.phone_number;
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        userId = tokenPayload.id;
+        email = tokenPayload.email;
+        phone = tokenPayload.phone;
     } catch (e) {
-        console.error("Failed to get user info:", e);
+        console.error("Failed to decode token:", e);
         alert("Your session is invalid. Please log in again.");
-        logoutUser(); 
+        logoutUser();
         return;
     }
 
@@ -758,7 +706,7 @@ const renderDepositPage = async () => {
                 alert('Failed to get payment link.');
             }
         } catch (error) {
-            if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+            if (error.message && error.message.includes('Promise')) return;
             alert('An error occurred. Please try again.');
         }
     });
@@ -767,11 +715,12 @@ const renderDepositPage = async () => {
 // --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
 const renderHistoryPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
-
+    
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/payment/history`, {
             method: 'GET'
         });
+        if (!response) return;
 
         if (!response.ok) throw new Error('Failed to load history.');
 
@@ -790,11 +739,9 @@ const renderHistoryPage = async () => {
             transactions.forEach(txn => {
                 const date = new Date(txn.created_at).toLocaleString();
                 const amount = Number(txn.amount).toLocaleString();
-                // Sahil's audit mentioned 'type' might be missing. We add a fallback.
                 const type = txn.type || 'transaction'; 
                 const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
                 const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
-                const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
                 const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
 
                 historyHTML += `
@@ -831,6 +778,7 @@ const renderHistoryPage = async () => {
         
         appContent.innerHTML = pageHTML;
         
+        // Add click handlers
         document.querySelectorAll('.history-item').forEach(item => {
             item.addEventListener('click', () => {
                 const transactionId = item.dataset.transactionId;
@@ -841,7 +789,7 @@ const renderHistoryPage = async () => {
             });
         });
     } catch (error) {
-        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) return;
         console.error('Error loading history:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
     }
@@ -851,7 +799,7 @@ const renderHistoryPage = async () => {
 const showTransactionDetails = (transaction) => {
     const date = new Date(transaction.created_at).toLocaleString();
     const amount = Number(transaction.amount).toLocaleString();
-    const type = transaction.type || 'transaction'; // Add fallback
+    const type = transaction.type || 'transaction';
     const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
     const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
     const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
@@ -876,22 +824,18 @@ const showTransactionDetails = (transaction) => {
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Transaction ID</small>
                     <p style="margin: 0; font-weight: 600;">${transaction.id}</p>
                 </div>
-                
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Reference</small>
                     <p style="margin: 0; font-weight: 600;">${transaction.reference}</p>
                 </div>
-                
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Date & Time</small>
                     <p style="margin: 0; font-weight: 600;">${date}</p>
                 </div>
-                
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
                     <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${type.replace('_', ' ')}</p>
                 </div>
-                
                 <div>
                     <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Status</small>
                     <p style="margin: 0; font-weight: 600; text-transform: capitalize; color: ${statusColor};">${transaction.status}</p>
@@ -906,28 +850,16 @@ const showTransactionDetails = (transaction) => {
                     <div style="margin-bottom: 0.75rem;">
                         <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Bank Name</small>
                         <p style="margin: 0; font-weight: 600;">${transaction.bank_name}</p>
-                    </div>
-                    ` : ''}
+                    </div>` : ''}
                     ${transaction.account_number ? `
                     <div style="margin-bottom: 0.75rem;">
                         <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Number</small>
                         <p style="margin: 0; font-weight: 600;">${transaction.account_number}</p>
-                    </div>
-                    ` : ''}
-                    ${transaction.account_name ? `
-                    <div style="margin-bottom: 0.75rem;">
-                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Name</small>
-                        <p style="margin: 0; font-weight: 600;">${transaction.account_name}</p>
-                    </div>
-                    ` : ''}
+                    </div>` : ''}
                 </div>
         `;
     }
-    
-    detailsHTML += `
-            </div>
-        </div>
-    `;
+    detailsHTML += `</div></div>`;
     
     const modalHTML = `
         <div id="transactionDetailModal" class="modal-overlay" style="display: flex;">
@@ -943,24 +875,14 @@ const showTransactionDetails = (transaction) => {
     `;
     
     const existingModal = document.getElementById('transactionDetailModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
+    if (existingModal) existingModal.remove();
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    document.getElementById('closeTransactionModal').addEventListener('click', () => {
-        document.getElementById('transactionDetailModal').remove();
-    });
-    
-    document.getElementById('closeTransactionModalBtn').addEventListener('click', () => {
-        document.getElementById('transactionDetailModal').remove();
-    });
-    
+    document.getElementById('closeTransactionModal').addEventListener('click', () => document.getElementById('transactionDetailModal').remove());
+    document.getElementById('closeTransactionModalBtn').addEventListener('click', () => document.getElementById('transactionDetailModal').remove());
     document.getElementById('transactionDetailModal').addEventListener('click', (e) => {
-        if (e.target.id === 'transactionDetailModal') {
-            e.target.remove();
-        }
+        if (e.target.id === 'transactionDetailModal') e.target.remove();
     });
 };
 
@@ -969,9 +891,7 @@ const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: 'GET'
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         const balance = data.balance?.balance || 0;
@@ -1014,30 +934,14 @@ const renderWithdrawPage = async () => {
             const accountNumber = document.getElementById('accountNumber').value.trim();
             const accountName = document.getElementById('accountName').value.trim();
 
-            if (!amount || amount <= 0) {
-                return alert('Please enter a valid amount.');
-            }
-            
-            // --- TODO: We need the minimum withdrawal amount rule ---
-            // if (amount < 800) {
-            //     return alert('Minimum withdrawal is ₦800.');
-            // }
-
-            if (amount > balance) {
-                return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
-            }
-
+            if (!amount || amount <= 0) return alert('Please enter a valid amount.');
+            if (amount > balance) return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
             if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
 
             try {
                 const withdrawResponse = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        amount,
-                        bank_name: bankName,
-                        account_number: accountNumber,
-                        account_name: accountName
-                    })
+                    body: JSON.stringify({ amount, bank_name: bankName, account_number: accountNumber, account_name: accountName })
                 });
                 if (!withdrawResponse) return;
                 
@@ -1046,16 +950,17 @@ const renderWithdrawPage = async () => {
                 
                 showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
             } catch (error) {
-                if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+                if (error.message && error.message.includes('Promise')) return;
                 alert('An error occurred. Please try again.');
             }
         });
     } catch (error) {
-        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
+        if (error.message && error.message.includes('Promise')) return;
         console.error('Error loading withdrawal page:', error);
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
     }
 };
+
 
 // --- 17. NEW "PLACEHOLDER" PAGES (OURS) ---
 const renderTeamPage = () => {
@@ -1067,17 +972,9 @@ const renderTeamPage = () => {
                 <small>(Feature in development)</small>
                 <div style="text-align: left; margin-top: 20px; display: inline-block;">
                     <h4>Referral Commission Rules:</h4>
-                    <ul>
-                        <li>Level A: 6%</li>
-                        <li>Level B: 2%</li>
-                        <li>Level C: 1%</li>
-                    </ul>
+                    <ul><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul>
                     <h4>Team Commission Rules:</h4>
-                    <ul>
-                        <li>Level A: 5% Daily</li>
-                        <li>Level B: 3% Daily</li>
-                        <li>Level C: 2% Daily</li>
-                    </ul>
+                    <ul><li>Level A: 5% Daily</li><li>Level B: 3% Daily</li><li>Level C: 2% Daily</li></ul>
                 </div>
             </div>
         </div>
@@ -1090,18 +987,9 @@ const renderSettingsPage = () => {
             <div class="page-header"><h2>Change Password</h2></div>
             <div class="placeholder-card" style="max-width: 400px; margin: 20px auto; padding: 20px;">
                 <form id="changePasswordForm">
-                    <div class="form-group">
-                        <label>Current Password</label>
-                        <input type="password" id="currentPassword" required />
-                    </div>
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" id="newPassword" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm New Password</label>
-                        <input type="password" id="confirmNewPassword" required />
-                    </div>
+                    <div class="form-group"><label>Current Password</label><input type="password" id="currentPassword" required /></div>
+                    <div class="form-group"><label>New Password</label><input type="password" id="newPassword" required /></div>
+                    <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmNewPassword" required /></div>
                     <button type="submit" class="btn-auth">Update Password</button>
                 </form>
                 <small style="text-align: center; display: block; margin-top: 15px;">(Feature in development)</small>
@@ -1118,12 +1006,9 @@ const renderSupportPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
             <div class="page-header"><h2>Customer Support</h2></div>
-            <!-- UPDATED: Added new email address -->
             <div class="placeholder-card" style="text-align: center; padding: 40px 20px;">
                 <p>For any assistance, please contact our customer care via email.</p>
-                <a href="mailto:jjb24wines@gmail.com" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 20px;">
-                    jjb24wines@gmail.com
-                </a>
+                <a href="mailto:jjb24wines@gmail.com" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 20px;">jjb24wines@gmail.com</a>
             </div>
         </div>
     `;
@@ -1143,20 +1028,17 @@ const renderRewardsPage = () => {
 
 // --- 18. NEW Certificate Page (OURS) ---
 const renderCertificatePage = () => {
-    const certificateUrl = 'https://placehold.co/600x850/ffffff/333333?text=Company+Registration+Certificate+(CAC)';
-    
+    const certificateUrl = 'image.png';
     appContent.innerHTML = `
         <div class="page-container">
             <div class="page-header"><h2>Company Registration</h2></div>
             <div class="placeholder-card" style="padding: 10px;">
-                <img src="${certificateUrl}" 
-                     alt="JJB24 Company Registration Certificate" 
-                     style="width: 100%; max-width: 600px; margin: 0 auto; display: block; border: 1px solid #eee;"
-                     onerror="this.src='https://placehold.co/600x850/ffffff/333333?text=Image+Not+Found'">
+                <img src="${certificateUrl}" alt="JJB24 Company Registration Certificate" style="width: 100%; max-width: 600px; margin: 0 auto; display: block; border: 1px solid #eee;" onerror="this.src='https://placehold.co/600x850/ffffff/333333?text=Image+Not+Found'">
             </div>
         </div>
     `;
 };
+
 
 // --- 19. NEW LEGAL PAGES (OURS) ---
 const renderAboutPage = () => {
@@ -1165,24 +1047,12 @@ const renderAboutPage = () => {
             <div class="page-header"><h2>About Us</h2></div>
             <div class="legal-content">
                 <p>Wine is more than just a drink – it’s a growing global business worth billions of dollars. For decades, wine investments have been reserved for wealthy collectors and foreign investors. Today, we are changing that. JJB24 wines] is Nigeria’s first online winery investment platform designed to give everyday people the chance to participate in the lucrative wine industry. Through our platform, you can invest in wine production, storage, and distribution, while earning attractive returns as the market grows.</p>
-                
                 <h4>Why Wine Investment?</h4>
-                <ul>
-                    <li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li>
-                    <li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li>
-                    <li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li>
-                </ul>
-
+                <ul><li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li><li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li><li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li></ul>
                 <h4>🍷 Our Vision</h4>
                 <p>We believe Africa – and Nigeria in particular – can play a bigger role in the global wine market. By opening the doors of winery investment to Nigerians, we are not only creating wealth opportunities but also supporting the growth of a local wine culture and industry.</p>
-
                 <h4>🔒 Why Trust Us?</h4>
-                <ul>
-                    <li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li>
-                    <li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li>
-                    <li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li>
-                </ul>
-
+                <ul><li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li><li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li><li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li></ul>
                 <h4>🚀 Be Part of the Future</h4>
                 <p>With JJB24 you don’t need to be a billionaire or a wine expert to invest. Whether you are an entrepreneur, a professional, or someone simply looking for a smart passive income opportunity, this is your chance to take part in an exciting industry.</p>
                 <p>👉 Invest today, grow with us, and let’s put Nigeria on the global wine map.</p>
@@ -1192,66 +1062,20 @@ const renderAboutPage = () => {
 };
 
 const renderTermsPage = () => {
-    bottomNav.style.display = 'none'; 
+    bottomNav.style.display = 'none';
     appContent.innerHTML = `
         <div class="page-container legal-page">
-            <div class="page-header">
-                <a href="#register" class="back-link"><i class="fas fa-chevron-left"></i> Back</a>
-                <h2>Terms & Conditions</h2>
-            </div>
+            <div class="page-header"><a href="#register" class="back-link"><i class="fas fa-chevron-left"></i> Back</a><h2>Terms & Conditions</h2></div>
             <div class="legal-content">
                 <p>Welcome to JJB24 , Nigeria’s first online winery investment platform. By creating an account or using our services, you agree to the following Terms & Conditions. Please read them carefully.</p>
-                
-                <h4>Acceptance of Terms</h4>
-                <p>By accessing or using this platform, you confirm that you are at least 18 years old and legally capable of entering into an investment agreement under Nigerian law.</p>
-
-                <h4>Nature of Service</h4>
-                <ul>
-                    <li>JJB24 provides opportunities to invest in winery-related projects (production, importation, storage, and distribution).</li>
-                    <li>We are an investment platform, not a bank or savings scheme.</li>
-                    <li>Returns are subject to market conditions and may vary.</li>
-                </ul>
-
-                <h4>Investment & Returns</h4>
-                <ul>
-                    <li>Minimum and maximum investment amounts will be specified on the platform.</li>
-                    <li>Returns on investment (ROI) will be paid according to the package selected.</li>
-                    <li>All payouts are subject to project performance and timelines.</li>
-                    <li>Past performance does not guarantee future results.</li>
-                </ul>
-
-                <h4>Risks Disclaimer</h4>
-                <ul>
-                    <li>All investments carry risks, including possible loss of capital.</li>
-                    <li>By investing, you acknowledge that you understand and accept these risks.</li>
-                    <li>We do not guarantee profits, only projected estimates based on industry performance.</li>
-                </ul>
-                
-                <h4>User Responsibilities</h4>
-                <ul>
-                    <li>Provide accurate and truthful information during registration.</li>
-                    <li>Keep login details secure and confidential.</li>
-                </ul>
-
-                <h4>Platform Responsibilities</h4>
-                <ul>
-                    <li>Provide transparent information about all investment opportunities.</li>
-                    <li>Use secure payment channels for deposits and withdrawals.</li>
-                    <li>Maintain accurate records of your investments and transactions.</li>
-                </ul>
-
-                <h4>Fees & Charge</h4>
-                <ul>
-                    <li>Some transactions may attract administrative or processing fees (clearly stated before payment).</li>
-                    <li>Fees are non-refundable unless stated otherwise.</li>
-                </ul>
-
-                <h4>Withdrawal Policy</h4>
-                <ul>
-                    <li>Withdrawals of ROI will be processed within [3 business days] of request.</li>
-                    <li>Early withdrawal of invested capital may not be possible until the project cycle ends.</li>
-                </ul>
-                
+                <h4>Acceptance of Terms</h4><p>By accessing or using this platform, you confirm that you are at least 18 years old and legally capable of entering into an investment agreement under Nigerian law.</p>
+                <h4>Nature of Service</h4><ul><li>JJB24 provides opportunities to invest in winery-related projects (production, importation, storage, and distribution).</li><li>We are an investment platform, not a bank or savings scheme.</li><li>Returns are subject to market conditions and may vary.</li></ul>
+                <h4>Investment & Returns</h4><ul><li>Minimum and maximum investment amounts will be specified on the platform.</li><li>Returns on investment (ROI) will be paid according to the package selected.</li><li>All payouts are subject to project performance and timelines.</li><li>Past performance does not guarantee future results.</li></ul>
+                <h4>Risks Disclaimer</h4><ul><li>All investments carry risks, including possible loss of capital.</li><li>By investing, you acknowledge that you understand and accept these risks.</li><li>We do not guarantee profits, only projected estimates based on industry performance.</li></ul>
+                <h4>User Responsibilities</h4><ul><li>Provide accurate and truthful information during registration.</li><li>Keep login details secure and confidential.</li></ul>
+                <h4>Platform Responsibilities</h4><ul><li>Provide transparent information about all investment opportunities.</li><li>Use secure payment channels for deposits and withdrawals.</li><li>Maintain accurate records of your investments and transactions.</li></ul>
+                <h4>Fees & Charge</h4><ul><li>Some transactions may attract administrative or processing fees (clearly stated before payment).</li><li>Fees are non-refundable unless stated otherwise.</li></ul>
+                <h4>Withdrawal Policy</h4><ul><li>Withdrawals of ROI will be processed within [3 business days] of request.</li><li>Early withdrawal of invested capital may not be possible until the project cycle ends.</li></ul>
                 <p>✅ By signing up, you agree that you have read, understood and accepte these Terms &Conditions</p>
             </div>
         </div>
@@ -1259,79 +1083,44 @@ const renderTermsPage = () => {
 };
 
 const renderPrivacyPolicyPage = () => {
-    bottomNav.style.display = 'none'; 
+    bottomNav.style.display = 'none';
     appContent.innerHTML = `
         <div class="page-container legal-page">
-            <div class="page-header">
-                <a href="#register" class="back-link"><i class="fas fa-chevron-left"></i> Back</a>
-                <h2>Privacy Policy</h2>
-            </div>
+            <div class="page-header"><a href="#register" class="back-link"><i class="fas fa-chevron-left"></i> Back</a><h2>Privacy Policy</h2></div>
             <div class="legal-content">
-                <p>Effective Date: now</p>
-                <p>At JJB24 we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we
-                    collect, use, store, and protect your data when you use our online winery investment platform.</p>
-
-                <h4>Information We Collect</h4>
-                <p>When you register or use our platform, we may collect the following information:</p>
-                <ul>
-                    <li>Personal details (name, date of birth, gender).</li>
-                    <li>Contact information (email address, phone number)</li>
-                    <li>Financial information (bank account details, payment card details</li>
-                </ul>
-
-                <h4>How We Use Your Information</h4>
-                <p>We use the information collected to:</p>
-                <ul>
-                    <li>Verify your identity and comply with KYC (Know Your Customer regulations.</li>
-                    <li>Process investments, deposits, and withdrawals.</li>
-                    <li>Provide customer support and respond to inquiries.</li>
-                    <li>Improve our platform’s performance and user experience.</li>
-                    <li>Send important updates, newsletters, or promotional offers (you can opt out anytime).</li>
-                </ul>
-
-                <h4>Sharing of Information</h4>
-                <p>We do not sell your personal information. However, we may share it with:</p>
-                <ul>
-                    <li>Regulatory bodies (SEC, CBN, NDIC) when required by law.</li>
-                    <li>Third-party partners (payment processors, verification services, auditors).</li>
-                    <li>Law enforcement agencies in cases of fraud, money laundering, or illegal activity.</li>
-                </ul>
-
-                <h4>Data Protection & Security</h4>
-                <ul>
-                    <li>We use encryption, firewalls, and secure servers to protect your data.</li>
-                    <li>Only authorized staff have access to sensitive information.</li>
-                    <li>Despite our efforts, no system is 100% secure. Users are encouraged to protect their login details.</li>
-                </ul>
-
-                <h4>Your Rights</h4>
-                <p>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p>
-                <ul>
-                    <li>Access the personal data we hold about you.</li>
-                    <li>Request correction or deletion of your data.</li>
-                    <li>Withdraw consent for certain data uses (e.g., marketing).</li>
-                </ul>
-                
-                <p> By using our platform, you agree to the terms of this Privacy Policy.</p>
+                <p>Effective Date: now</p><p>At JJB24 we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, and protect your data when you use our online winery investment platform.</p>
+                <h4>Information We Collect</h4><p>When you register or use our platform, we may collect the following information:</p><ul><li>Personal details (name, date of birth, gender).</li><li>Contact information (email address, phone number)</li><li>Financial information (bank account details, payment card details</li></ul>
+                <h4>How We Use Your Information</h4><p>We use the information collected to:</p><ul><li>Verify your identity and comply with KYC (Know Your Customer regulations.</li><li>Process investments, deposits, and withdrawals.</li><li>Provide customer support and respond to inquiries.</li><li>Improve our platform’s performance and user experience.</li><li>Send important updates, newsletters, or promotional offers (you can opt out anytime).</li></ul>
+                <h4>Sharing of Information</h4><p>We do not sell your personal information. However, we may share it with:</p><ul><li>Regulatory bodies (SEC, CBN, NDIC) when required by law.</li><li>Third-party partners (payment processors, verification services, auditors).</li><li>Law enforcement agencies in cases of fraud, money laundering, or illegal activity.</li></ul>
+                <h4>Data Protection & Security</h4><ul><li>We use encryption, firewalls, and secure servers to protect your data.</li><li>Only authorized staff have access to sensitive information.</li><li>Despite our efforts, no system is 100% secure. Users are encouraged to protect their login details.</li></ul>
+                <h4>Your Rights</h4><p>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p><ul><li>Access the personal data we hold about you.</li><li>Request correction or deletion of your data.</li><li>Withdraw consent for certain data uses (e.g., marketing).</li></ul>
+                <p>✅ By using our platform, you agree to the terms of this Privacy Policy.</p>
             </div>
         </div>
     `;
 };
 
-// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
+
+// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S + SAHIL'S) ---
 const router = () => {
+    const token = localStorage.getItem('token');
     const hash = window.location.hash || '#home';
     
     if (['#login', '#register', '#terms', '#privacy'].includes(hash)) {
         bottomNav.style.display = 'none';
-
         switch(hash) {
             case '#login': renderLoginScreen(); break;
             case '#register': renderRegisterScreen(); break;
             case '#terms': renderTermsPage(); break;
             case '#privacy': renderPrivacyPolicyPage(); break;
-            default: renderLoginScreen(); // Default to login
+            default: renderLoginScreen(); 
         }
+        return;
+    }
+
+    if (!token) {
+        bottomNav.style.display = 'none'; 
+        logoutUser(); 
         return;
     }
 
@@ -1341,11 +1130,9 @@ const router = () => {
         link.classList.remove('active');
         if (link.getAttribute('href') === '#home' && (hash === '#home' || hash === '')) {
             link.classList.add('active');
-        } 
-        else if (link.getAttribute('href') === hash) { 
+        } else if (link.getAttribute('href') === hash) { 
             link.classList.add('active'); 
-        }
-        else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
+        } else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
             link.classList.add('active');
         }
     });
@@ -1356,20 +1143,16 @@ const router = () => {
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
         case '#task': renderTaskPage(); break;
-        
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
-        
         case '#team': renderTeamPage(); break;
         case '#settings': renderSettingsPage(); break;
         case '#about': renderAboutPage(); break;
         case '#support': renderSupportPage(); break;
         case '#rewards': renderRewardsPage(); break;
         case '#certificate': renderCertificatePage(); break;
-
-        default: 
-            renderHomeScreen();
+        default: renderHomeScreen(); 
     }
 };
 
@@ -1381,6 +1164,3 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target.id === 'successModal') { closeModal(); }
 });
-
-
-
