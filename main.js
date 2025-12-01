@@ -38,7 +38,7 @@ const fetchWithAuth = async (url, options = {}) => {
     if (!headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
-    
+
     // Add Authorization header with token from localStorage (fallback if cookie doesn't work)
     const token = localStorage.getItem('authToken');
     if (token && !headers.has('Authorization')) {
@@ -148,7 +148,7 @@ const handleRegister = async (event) => {
                 const result = await response.json();
                 if (!response.ok) return alert(`Referral Error: ${result.message}`);
                 payload.referral = referral;
-
+                
             } catch (error) {
                 return alert('Could not validate referral code.');
             }
@@ -392,8 +392,8 @@ const renderHomeScreen = async () => {
         });
 
         if (!response.ok) {
-            const err = await response.text();
-            throw new Error('Failed to load data.');
+        const err = await response.text();
+        throw new Error('Failed to load data.');
         }
 
         const data = await response.json();
@@ -487,23 +487,23 @@ const renderProductsPage = async () => {
         data.items.forEach(item => {
         // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
             
-        const itemId = Number(item.id);
-        if (isNaN(itemId)) {
-            console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+            const itemId = Number(item.id);
+            if (isNaN(itemId)) {
+                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
             return; 
-        }
-        productHTML += `
-            <div class="product-card-wc">
-                <div class="product-image-wc">
-                    <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
-                </div>
-                <div class="product-info-wc">
-                    <h4>${item.itemname}</h4>
-                    <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                    <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                    <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
-                </div>
-            </div>`;
+            }
+            productHTML += `
+                <div class="product-card-wc">
+                    <div class="product-image-wc">
+                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                    </div>
+                    <div class="product-info-wc">
+                        <h4>${item.itemname}</h4>
+                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                    </div>
+                </div>`;
         });
 
         const pageHTML = `
@@ -538,24 +538,24 @@ const renderVipPage = async () => {
         let vipHTML = "";
 
         data.vips.forEach(plan => {
-            vipHTML += `
-            <div class="product-card-wc">
-                <div class="product-image-wc">
+        vipHTML += `
+        <div class="product-card-wc">
+            <div class="product-image-wc">
                     <img src="${plan.image}" alt="${plan.name}"
                     onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-                </div>
-                <div class="product-info-wc">
-                    <h4>${plan.name}</h4>
+            </div>
+            <div class="product-info-wc">
+                <h4>${plan.name}</h4>
                     <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
                     <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
                     <p><strong>Duration:</strong> ${plan.duration_days} days</p>
                     <p style="font-size: 12px; color: #666;">
                         (Note: Additional 20% of your investment will be added after maturity)
                     </p>
-                    <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-                </div>
-            </div>`;
-        });
+                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+            </div>
+        </div>`;
+    });
 
         const pageHTML = `
         <div class="page-container">
@@ -563,7 +563,7 @@ const renderVipPage = async () => {
             <div class="product-grid-wc">${vipHTML}</div>
         </div>`;
 
-        appContent.innerHTML = pageHTML;
+    appContent.innerHTML = pageHTML;
 
         document.querySelectorAll(".btn-invest").forEach(btn => {
             btn.addEventListener("click", () => {
@@ -1282,16 +1282,16 @@ const renderTeamPage = () => {
             <div class="info-card" style="margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
                 <h4 style="margin-top: 0;">Referral Commission</h4>
                 <ul style="list-style-type: none; padding-left: 0;">
-                    <li>Level A: 6%</li>
-                    <li>Level B: 2%</li>
-                    <li>Level C: 1%</li>
-                </ul>
+                        <li>Level A: 6%</li>
+                        <li>Level B: 2%</li>
+                        <li>Level C: 1%</li>
+                    </ul>
                 <h4>Team Commission (Daily)</h4>
                 <ul style="list-style-type: none; padding-left: 0;">
-                    <li>Level A: 5% Daily</li>
-                    <li>Level B: 3% Daily</li>
-                    <li>Level C: 2% Daily</li>
-                </ul>
+                        <li>Level A: 5% Daily</li>
+                        <li>Level B: 3% Daily</li>
+                        <li>Level C: 2% Daily</li>
+                    </ul>
             </div>
         </div>
     `;
