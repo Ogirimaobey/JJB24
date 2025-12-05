@@ -2,8 +2,7 @@ import vipProducts from './vip.js';
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-// const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
