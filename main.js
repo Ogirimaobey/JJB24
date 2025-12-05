@@ -2,7 +2,8 @@ import vipProducts from './vip.js';
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+// const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 
 // --- MODAL HELPER ELEMENTS & FUNCTIONS ---
@@ -79,11 +80,13 @@ const handleLogin = async (event) => {
             credentials: 'include'
         });
         const result = await response.json();
+        console.log('Login response:', result);
         if (!response.ok) return alert(`Error: ${result.message}`);
         window.location.hash = '#home';
         router();
     } catch (error) { 
         alert('Could not connect to server.'); 
+        console.error('Login error:', error);
     }
 };
 
