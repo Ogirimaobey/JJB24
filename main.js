@@ -96,6 +96,7 @@ const handleLogin = async (event) => {
             credentials: 'include'
         });
         const result = await response.json();
+        console.log('Login response:', result);
         if (!response.ok) return alert(`Error: ${result.message}`);
         
         // Store token in localStorage if provided (for Authorization header fallback)
@@ -107,6 +108,7 @@ const handleLogin = async (event) => {
         router();
     } catch (error) { 
         alert('Could not connect to server.'); 
+        console.error('Login error:', error);
     }
 };
 
