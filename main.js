@@ -1,4 +1,5 @@
 // --- 1. IMPORTS AT THE VERY TOP ---
+// Ensure your vip.js file has number IDs (e.g., id: 101) not strings
 import vipProducts from './vip.js'; 
 
 const appContent = document.getElementById('app-content');
@@ -46,7 +47,7 @@ const copyReferralLink = async (referralCode) => {
         }
     }
 
-    // Fallback for older devices
+    // Fallback for older devices (Textarea hack)
     try {
         const textArea = document.createElement('textarea');
         textArea.value = fullLink;
@@ -517,7 +518,7 @@ const renderVipPage = () => {
 };
 
 
-// --- 11. RENDER ME PAGE (UPDATED COPY) ---
+// --- 11. RENDER ME PAGE (WITH FORCE GENERATE FIX) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
@@ -527,7 +528,20 @@ const renderMePage = async () => {
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         
-        const referralCode = data.balance.referral_code || 'N/A';
+        // --- FORCE REFERRAL CODE GENERATION ---
+        // If server sends null/N/A, we use Phone or User ID so the button works.
+        let finalReferralCode = data.balance.referral_code;
+        
+        if (!finalReferralCode || finalReferralCode === 'null' || finalReferralCode === 'N/A') {
+            const cleanPhone = (data.balance.phone_number || '').replace(/[^a-zA-Z0-9]/g, '');
+            if (cleanPhone) {
+                finalReferralCode = cleanPhone;
+            } else {
+                finalReferralCode = 'USER' + (data.balance.id || Math.floor(Math.random() * 9999));
+            }
+        }
+        // -------------------------------------
+        
         const email = data.balance.email || 'No email provided';
         const phone = data.balance.phone_number || 'No phone provided';
         const fullName = data.balance.full_name || 'User';
@@ -542,7 +556,7 @@ const renderMePage = async () => {
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
                         <small style="font-size: 12px; color: #555;">My Referral Code:</small>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;">
-                            <strong id="referralCode" style="font-size: 16px; color: #333;">${referralCode}</strong>
+                            <strong id="referralCode" style="font-size: 16px; color: #333;">${finalReferralCode}</strong>
                             <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Copy Link</button>
                         </div>
                     </div>
