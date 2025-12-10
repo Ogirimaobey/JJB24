@@ -1,5 +1,4 @@
 // --- 1. IMPORTS AT THE VERY TOP ---
-// We removed swProducts import because we will now fetch them from the API
 import vipProducts from './vip.js'; 
 
 const appContent = document.getElementById('app-content');
@@ -25,18 +24,67 @@ const closeModal = () => {
     }
 };
 
-// --- NEW: A central function to handle logging the user out ---
+// --- HELPER: COPY REFERRAL (Robust Mobile Support) ---
+const copyReferralLink = async (referralCode) => {
+    if (!referralCode || referralCode === 'N/A') {
+        alert('No referral code available to copy.');
+        return;
+    }
+
+    // Construct the full URL
+    const origin = window.location.origin;
+    const fullLink = `${origin}/#register?ref=${referralCode}`;
+
+    // Modern API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(fullLink);
+            alert('Referral link copied to clipboard!');
+            return;
+        } catch (err) {
+            console.warn('Clipboard API failed, attempting fallback...');
+        }
+    }
+
+    // Fallback for older devices
+    try {
+        const textArea = document.createElement('textarea');
+        textArea.value = fullLink;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (successful) alert('Referral link copied to clipboard!');
+        else throw new Error('Copy failed');
+    } catch (err) {
+        prompt("Copy your referral link:", fullLink);
+    }
+};
+
+// --- HELPER: EXTRACT REFERRAL FROM URL ---
+const getReferralFromUrl = () => {
+    const fullHash = window.location.hash;
+    if (fullHash.includes('?ref=')) {
+        const parts = fullHash.split('?ref=');
+        if (parts.length > 1) {
+            return parts[1].split('&')[0];
+        }
+    }
+    return '';
+};
+
+// --- AUTH HELPER FUNCTIONS ---
 const logoutUser = () => {
     localStorage.removeItem('token');
     window.location.hash = '#login';
     router(); 
 };
 
-// --- NEW: A "smart" fetch function that handles expired tokens ---
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
-
-    // Prepare headers
     const headers = new Headers(options.headers || {});
     if (token) {
         headers.append('Authorization', `Bearer ${token}`);
@@ -47,7 +95,6 @@ const fetchWithAuth = async (url, options = {}) => {
 
     const response = await fetch(url, { ...options, headers });
 
-    // If token is expired or invalid, the server sends 401
     if (response.status === 401 || response.status === 403) {
         alert('Your session has expired. Please log in again.');
         logoutUser();
@@ -60,7 +107,7 @@ const fetchWithAuth = async (url, options = {}) => {
 
 // --- ACTION HANDLERS ---
 
-// --- 2. FIXED handleLogin (OURS) ---
+// --- 2. HANDLE LOGIN ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
@@ -93,7 +140,7 @@ const handleLogin = async (event) => {
     }
 };
 
-// --- 3. FIXED handleRegister (with Terms Check) (OURS) ---
+// --- 3. HANDLE REGISTER (OPTIMISTIC MODE) ---
 const handleRegister = async (event) => {
     event.preventDefault();
 
@@ -104,6 +151,7 @@ const handleRegister = async (event) => {
     const cpassword = (document.getElementById('cpassword') || {}).value || '';
     const referral = (document.getElementById('referral') || {}).value?.trim() || '';
     
+    // Check Terms
     const agreedToTerms = document.getElementById('termsCheckbox').checked;
     if (!agreedToTerms) {
         return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
@@ -114,26 +162,18 @@ const handleRegister = async (event) => {
 
     try {
         const payload = { fullName, phone, email, password };
+        
+        // Optimistic: Attach code if it exists, don't validate first
         if (referral) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referral })
-                });
-                const result = await response.json();
-                if (!response.ok) return alert(`Referral Error: ${result.message}`);
-                payload.referral = referral;
-                
-            } catch (error) {
-                return alert('Could not validate referral code.');
-            }
+            payload.referral = referral;
         }
+        
         const response = await fetch(`${API_BASE_URL}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+        
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
 
@@ -143,7 +183,6 @@ const handleRegister = async (event) => {
         alert('Could not connect to server.');
     }
 };
-
 
 const handleOTPVerification = async (event, email) => {
     event.preventDefault();
@@ -165,7 +204,7 @@ const handleOTPVerification = async (event, email) => {
     }
 };
 
-// --- 4. FIXED handleResendOTP (uses email) (OURS) ---
+// --- 4. HANDLE RESEND OTP ---
 const handleResendOTP = async (email) => { 
     try {
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
@@ -182,12 +221,11 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. handleInvestClick (Merged Logic) ---
+// --- 5. HANDLE INVEST CLICK ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId;
         
-        // IMPORTANT: Convert to number for the backend
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) {
             alert('Error: Invalid product ID. Please refresh the page and try again.');
@@ -203,7 +241,6 @@ const handleInvestClick = async (event) => {
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
         try {
-            // Using fetchWithAuth to handle token
             const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
                 method: 'POST'
             });
@@ -226,28 +263,6 @@ const handleInvestClick = async (event) => {
         }
     }
 };
-
-// --- 6. NEW handleCopyReferral (OURS) ---
-const handleCopyReferral = (event) => {
-    const referralCode = document.getElementById('referralCode').textContent;
-    if (!referralCode || referralCode === 'N/A') {
-        alert('No referral code to copy.');
-        return;
-    }
-    
-    const textArea = document.createElement('textarea');
-    textArea.value = referralCode;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        alert('Referral code copied to clipboard!');
-    } catch (err) {
-        alert('Failed to copy referral code.');
-    }
-    document.body.removeChild(textArea);
-};
-
 
 
 // --- RENDER FUNCTIONS ---
@@ -278,6 +293,10 @@ const renderLoginScreen = () => {
 
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
+    
+    // Auto-fill code from URL if present
+    const autoRefCode = getReferralFromUrl();
+
     appContent.innerHTML = `
         <div class="auth-container">
             <div class="auth-logo">JJB24</div>
@@ -306,7 +325,7 @@ const renderRegisterScreen = () => {
                 </div>
                 <div class="form-group">
                     <label>Referral Code (Optional)</label>
-                    <input type="text" id="referral" />
+                    <input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} />
                 </div>
                 <div class="form-group-checkbox" style="flex-direction: row; align-items: center; display: flex; gap: 10px; margin-top: 15px;">
                     <input type="checkbox" id="termsCheckbox" required style="width: auto; height: auto; margin: 0;" />
@@ -423,12 +442,11 @@ const renderHomeScreen = async () => {
 };
 
 
-// --- 9. FIXED renderProductsPage (USING API - SAHIL'S FIX) ---
+// --- 9. RENDER PRODUCTS (API) ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     
     try {
-        // FETCH FROM API instead of local file
         const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
         if (!response) return;
         if (!response.ok) throw new Error('Failed to load data.');
@@ -436,7 +454,6 @@ const renderProductsPage = async () => {
         const data = await response.json();
         
         let productHTML = '';
-        // Use data.items array
         const items = data.items || [];
         
         if (items.length === 0) {
@@ -473,7 +490,7 @@ const renderProductsPage = async () => {
 };
 
 
-// --- 10. FIXED renderVipPage (uses import) (OURS) ---
+// --- 10. RENDER VIP PAGE ---
 const renderVipPage = () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
     
@@ -500,7 +517,7 @@ const renderVipPage = () => {
 };
 
 
-// --- 11. FIXED renderMePage (OURS + fetchWithAuth) ---
+// --- 11. RENDER ME PAGE (UPDATED COPY) ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
@@ -526,7 +543,7 @@ const renderMePage = async () => {
                         <small style="font-size: 12px; color: #555;">My Referral Code:</small>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;">
                             <strong id="referralCode" style="font-size: 16px; color: #333;">${referralCode}</strong>
-                            <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Copy</button>
+                            <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Copy Link</button>
                         </div>
                     </div>
                 </div>
@@ -547,7 +564,11 @@ const renderMePage = async () => {
             logoutUser(); 
         });
         
-        document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
+        // Updated Copy Logic
+        document.getElementById('copyReferralBtn').addEventListener('click', () => {
+            const code = document.getElementById('referralCode').textContent;
+            copyReferralLink(code);
+        });
 
     } catch (error) { 
         if (error.message && error.message.includes('Promise')) return;
@@ -564,19 +585,17 @@ const renderMePage = async () => {
     }
 };
 
-// --- 12. FIXED renderTaskPage (new Earnings Dashboard) (OURS) ---
+// --- 12. RENDER TASK PAGE (EARNINGS) ---
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
     
     try {
-        // Placeholder Data until Backend Ready
         const earnings = {
             today: 0.00,
             yesterday: 0.00,
             total: 0.00
         };
         
-        // Fetch Active Investments
         let investmentsHTML = '<p style="color: #999; font-size: 14px;">No active investments found.</p>';
         try {
             const invResponse = await fetchWithAuth(`${API_BASE_URL}/investments`, { method: 'GET' });
@@ -618,7 +637,6 @@ const renderTaskPage = async () => {
                     <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.total).toLocaleString()}</p>
                 </div>
                 
-                 <!-- Active Plans Section -->
                 <div style="margin-top: 20px;">
                     <h3 style="font-size: 16px; margin-bottom: 10px;">My Active Plans</h3>
                     ${investmentsHTML}
@@ -637,11 +655,10 @@ const renderTaskPage = async () => {
     }
 };
 
-// --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
+// --- 13. RENDER DEPOSIT PAGE ---
 const renderDepositPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     
-    // Decode token to get user info
     let email, phone, userId;
     try {
         const token = localStorage.getItem('token');
@@ -712,7 +729,7 @@ const renderDepositPage = async () => {
     });
 };
 
-// --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
+// --- 14. RENDER HISTORY PAGE ---
 const renderHistoryPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
     
@@ -795,7 +812,7 @@ const renderHistoryPage = async () => {
     }
 };
 
-// --- 15. showTransactionDetails (BABATUNDE'S) ---
+// --- 15. SHOW TRANSACTION DETAILS ---
 const showTransactionDetails = (transaction) => {
     const date = new Date(transaction.created_at).toLocaleString();
     const amount = Number(transaction.amount).toLocaleString();
@@ -886,7 +903,7 @@ const showTransactionDetails = (transaction) => {
     });
 };
 
-// --- 16. renderWithdrawPage (BABATUNDE'S + Our Fix) ---
+// --- 16. RENDER WITHDRAW PAGE ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
 
@@ -962,7 +979,7 @@ const renderWithdrawPage = async () => {
 };
 
 
-// --- 17. NEW "PLACEHOLDER" PAGES (OURS) ---
+// --- 17. PLACEHOLDER PAGES ---
 const renderTeamPage = () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -1026,7 +1043,7 @@ const renderRewardsPage = () => {
     `;
 };
 
-// --- 18. NEW Certificate Page (OURS) ---
+// --- 18. CERTIFICATE PAGE ---
 const renderCertificatePage = () => {
     const certificateUrl = 'image.png';
     appContent.innerHTML = `
@@ -1040,7 +1057,7 @@ const renderCertificatePage = () => {
 };
 
 
-// --- 19. NEW LEGAL PAGES (OURS) ---
+// --- 19. LEGAL PAGES ---
 const renderAboutPage = () => {
     appContent.innerHTML = `
         <div class="page-container legal-page">
@@ -1101,10 +1118,15 @@ const renderPrivacyPolicyPage = () => {
 };
 
 
-// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S + SAHIL'S) ---
+// --- 20. FINAL MERGED ROUTER (Handles Query Params) ---
 const router = () => {
     const token = localStorage.getItem('token');
-    const hash = window.location.hash || '#home';
+    
+    // Get clean hash (remove ?ref=...)
+    let hash = window.location.hash || '#home';
+    if (hash.includes('?')) {
+        hash = hash.split('?')[0]; 
+    }
     
     if (['#login', '#register', '#terms', '#privacy'].includes(hash)) {
         bottomNav.style.display = 'none';
@@ -1128,11 +1150,12 @@ const router = () => {
 
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('href') === '#home' && (hash === '#home' || hash === '')) {
+        const linkHref = link.getAttribute('href');
+        if (linkHref === '#home' && (hash === '#home' || hash === '')) {
             link.classList.add('active');
-        } else if (link.getAttribute('href') === hash) { 
+        } else if (linkHref === hash) { 
             link.classList.add('active'); 
-        } else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
+        } else if (linkHref === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
             link.classList.add('active');
         }
     });
