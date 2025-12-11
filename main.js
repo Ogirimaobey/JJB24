@@ -1,5 +1,4 @@
 // --- 1. IMPORTS AT THE VERY TOP ---
-// Ensure your vip.js file has number IDs (e.g., id: 101) not strings
 import vipProducts from './vip.js'; 
 
 const appContent = document.getElementById('app-content');
@@ -529,9 +528,7 @@ const renderMePage = async () => {
         const data = await response.json();
         
         // --- FORCE REFERRAL CODE GENERATION ---
-        // If server sends null/N/A, we use Phone or User ID so the button works.
         let finalReferralCode = data.balance.referral_code;
-        
         if (!finalReferralCode || finalReferralCode === 'null' || finalReferralCode === 'N/A') {
             const cleanPhone = (data.balance.phone_number || '').replace(/[^a-zA-Z0-9]/g, '');
             if (cleanPhone) {
@@ -540,7 +537,6 @@ const renderMePage = async () => {
                 finalReferralCode = 'USER' + (data.balance.id || Math.floor(Math.random() * 9999));
             }
         }
-        // -------------------------------------
         
         const email = data.balance.email || 'No email provided';
         const phone = data.balance.phone_number || 'No phone provided';
@@ -578,7 +574,6 @@ const renderMePage = async () => {
             logoutUser(); 
         });
         
-        // Updated Copy Logic
         document.getElementById('copyReferralBtn').addEventListener('click', () => {
             const code = document.getElementById('referralCode').textContent;
             copyReferralLink(code);
@@ -917,7 +912,7 @@ const showTransactionDetails = (transaction) => {
     });
 };
 
-// --- 16. RENDER WITHDRAW PAGE ---
+// --- 16. RENDER WITHDRAW PAGE (WITH 9% FEE CALCULATOR) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
 
@@ -938,7 +933,18 @@ const renderWithdrawPage = async () => {
                     <form id="withdrawForm">
                         <div class="form-group">
                             <label for="amount">Amount (NGN)</label>
-                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
+                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount to withdraw" />
+                        </div>
+
+                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span>Withdrawal Fee (9%):</span>
+                                <span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px; color: #333;">
+                                <span>You Will Receive:</span>
+                                <span id="finalDisplay" style="color: #388e3c;">₦0.00</span>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="bankName">Bank Name</label>
@@ -958,16 +964,42 @@ const renderWithdrawPage = async () => {
             </div>`;
         appContent.innerHTML = pageHTML;
         
+        // --- REAL-TIME CALCULATION LOGIC ---
+        const amountInput = document.getElementById('amount');
+        const feeContainer = document.getElementById('feeContainer');
+        const feeDisplay = document.getElementById('feeDisplay');
+        const finalDisplay = document.getElementById('finalDisplay');
+
+        amountInput.addEventListener('input', () => {
+            const val = parseFloat(amountInput.value);
+            if (!isNaN(val) && val > 0) {
+                const fee = val * 0.09; // 9% calculation
+                const final = val - fee;
+                
+                feeDisplay.textContent = '- ₦' + fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                finalDisplay.textContent = '₦' + final.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                feeContainer.style.display = 'block';
+            } else {
+                feeContainer.style.display = 'none';
+            }
+        });
+        // -----------------------------------
+
         document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
             event.preventDefault();
-            const amount = parseFloat(document.getElementById('amount').value);
+            const amount = parseFloat(amountInput.value);
             const bankName = document.getElementById('bankName').value.trim();
             const accountNumber = document.getElementById('accountNumber').value.trim();
             const accountName = document.getElementById('accountName').value.trim();
 
             if (!amount || amount <= 0) return alert('Please enter a valid amount.');
             if (amount > balance) return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
-            if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
+            
+            // Calculate final for the confirmation message
+            const fee = amount * 0.09;
+            const receive = amount - fee;
+
+            if (!confirm(`Confirm Withdrawal?\n\nRequested: ₦${amount.toLocaleString()}\nFee (9%): ₦${fee.toLocaleString()}\nYou Receive: ₦${receive.toLocaleString()}\n\nProceed?`)) return;
 
             try {
                 const withdrawResponse = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, {
