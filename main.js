@@ -216,10 +216,11 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. HANDLE INVEST CLICK ---
+// --- 5. HANDLE INVEST CLICK (SMART ROUTING) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId;
+        const investType = event.target.dataset.type; // Check if it is 'vip'
         
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) {
@@ -235,8 +236,14 @@ const handleInvestClick = async (event) => {
         
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
+        // DETERMINE CORRECT ENDPOINT
+        let endpoint = `${API_BASE_URL}/investments/createInvestment/${itemId}`; // Default (Regular)
+        if (investType === 'vip') {
+            endpoint = `${API_BASE_URL}/investments/createVipInvestment/${itemId}`; // Switch to VIP endpoint
+        }
+
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
+            const response = await fetchWithAuth(endpoint, {
                 method: 'POST'
             });
             
@@ -472,7 +479,7 @@ const renderProductsPage = async () => {
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">
                                 (Note: Capital returned after maturity)
                             </p>
-                            <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                            <button class="btn-invest" data-plan-id="${itemId}" data-type="regular">Invest</button>
                         </div>
                     </div>`;
             });
@@ -510,7 +517,7 @@ const renderVipPage = () => {
                 <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
                 <p><strong>Duration:</strong> ${plan.duration} days</p>
                 <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
-                <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
             </div>
         </div>`;
     });
