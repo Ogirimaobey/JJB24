@@ -168,15 +168,15 @@
                     const usersTableBody = document.getElementById('recentUsersTable');
                     usersTableBody.innerHTML = '';
                     if (data.recentUsers && data.recentUsers.length > 0) {
-                        data.recentUsers.forEach(user => {
-                            const row = document.createElement('tr');
-                            const registrationDate = new Date(user.created_at).toLocaleString();
-                            row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
-                            usersTableBody.appendChild(row);
-                        });
+                    data.recentUsers.forEach(user => {
+                        const row = document.createElement('tr');
+                        const registrationDate = new Date(user.created_at).toLocaleString();
+                        row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
+                        usersTableBody.appendChild(row);
+                    });
                     } else {
                         usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
-                    }
+                }
                 } else {
                     // Stats endpoint doesn't exist yet, show placeholder data
                     console.log('Stats endpoint not available (status:', response.status, '), showing placeholder data');
@@ -223,10 +223,19 @@
                         const date = new Date(withdrawal.created_at).toLocaleString();
                         const bankDetails = `${withdrawal.bank_name || 'N/A'}<br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
                         
+                        // Calculate net payout (amount - 9%)
+                        const grossAmount = Number(withdrawal.amount);
+                        const netAmount = Math.round(grossAmount * 0.91 * 100) / 100;
+                        const feeAmount = grossAmount - netAmount;
+                        
                         row.innerHTML = `
                             <td>${withdrawal.full_name || 'N/A'}</td>
                             <td>${withdrawal.phone_number || 'N/A'}</td>
-                            <td>₦${Number(withdrawal.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td>
+                                <strong>Requested:</strong> ₦${grossAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                                <strong style="color: #28a745;">Transfer:</strong> ₦${netAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br>
+                                <small style="color: #dc3545;">Fee (9%): ₦${feeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</small>
+                            </td>
                             <td>${bankDetails}</td>
                             <td>${withdrawal.reference}</td>
                             <td>${date}</td>
