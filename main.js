@@ -456,6 +456,9 @@ const renderProductsPage = async () => {
         } else {
             items.forEach(item => {
                 const itemId = Number(item.id);
+                // Backend might not send 'duration' yet, so we default to 30
+                const duration = item.duration || 30; 
+                
                 productHTML += `
                     <div class="product-card-wc">
                         <div class="product-image-wc">
@@ -463,8 +466,12 @@ const renderProductsPage = async () => {
                         </div>
                         <div class="product-info-wc">
                             <h4>${item.itemname}</h4>
-                            <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                            <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                            <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
+                            <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
+                            <p><strong>Duration:</strong> ${duration} days</p>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                (Note: Capital returned after maturity)
+                            </p>
                             <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
                         </div>
                     </div>`;
@@ -605,18 +612,11 @@ const renderTaskPage = async () => {
                 
                 if (investments.length > 0) {
                     investmentsHTML = investments.map(inv => {
-                        // Calculate Expiry - Safe Fallback
-                        let startDate, expiryDate, duration;
-                        try {
-                            startDate = new Date(inv.created_at || Date.now());
-                            duration = Number(inv.duration) || 30; // Default to 30
-                            expiryDate = new Date(startDate);
-                            expiryDate.setDate(startDate.getDate() + duration);
-                        } catch(err) {
-                            startDate = new Date();
-                            expiryDate = new Date();
-                            duration = 30;
-                        }
+                        // Calculate Expiry
+                        const startDate = new Date(inv.created_at || Date.now());
+                        const duration = inv.duration || 30; // Default to 30
+                        const expiryDate = new Date(startDate);
+                        expiryDate.setDate(startDate.getDate() + Number(duration));
                         
                         return `
                         <div class="earnings-card" style="background: #fff; margin-bottom: 10px; padding: 15px; border-left: 4px solid #6a0dad; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
@@ -1243,7 +1243,12 @@ const renderTermsPage = () => {
                 <h4>User Responsibilities</h4><ul><li>Provide accurate and truthful information during registration.</li><li>Keep login details secure and confidential.</li></ul>
                 <h4>Platform Responsibilities</h4><ul><li>Provide transparent information about all investment opportunities.</li><li>Use secure payment channels for deposits and withdrawals.</li><li>Maintain accurate records of your investments and transactions.</li></ul>
                 <h4>Fees & Charge</h4><ul><li>Some transactions may attract administrative or processing fees (clearly stated before payment).</li><li>Fees are non-refundable unless stated otherwise.</li></ul>
-                <h4>Withdrawal Policy</h4><ul><li>Withdrawals of ROI will be processed within [3 business days] of request.</li><li>Early withdrawal of invested capital may not be possible until the project cycle ends.</li></ul>
+                <h4>Withdrawal Policy</h4>
+                <ul>
+                    <li>Withdrawals of ROI will be processed within <strong>[3 business days]</strong> of request.</li>
+                    <li><strong>Project Cycle:</strong> The standard investment cycle is <strong>30 Days</strong>.</li>
+                    <li>Early withdrawal of invested capital is <strong>NOT possible</strong> until the 30-day project cycle is complete.</li>
+                </ul>
                 <p>✅ By signing up, you agree that you have read, understood and accepte these Terms &Conditions</p>
             </div>
         </div>
