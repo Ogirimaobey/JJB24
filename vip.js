@@ -3,7 +3,7 @@
 
 const vipProducts = [
     { 
-        id: 'vip1', 
+        id: 101,  // <--- REPLACE THIS with the real DB ID for CASPERVIP1
         name: 'CASPERVIP1', 
         price: 500000, 
         total_return: 600000, 
@@ -11,7 +11,7 @@ const vipProducts = [
         itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPERVIP1'
     },
     { 
-        id: 'vip2', 
+        id: 102,  // <--- REPLACE THIS with the real DB ID for CASPERVIP2
         name: 'CASPERVIP2', 
         price: 1000000, 
         total_return: 1200000, 
@@ -19,7 +19,7 @@ const vipProducts = [
         itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPERVIP2'
     },
     { 
-        id: 'vip3', 
+        id: 103,  // <--- REPLACE THIS with the real DB ID for CASPER3
         name: 'CASPER3', 
         price: 2000000, 
         total_return: 2400000, 
@@ -27,7 +27,7 @@ const vipProducts = [
         itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER3'
     },
     { 
-        id: 'vip4', 
+        id: 104,  // <--- REPLACE THIS with the real DB ID for CASPER4
         name: 'CASPER4', 
         price: 3000000, 
         total_return: 3600000, 
