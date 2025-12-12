@@ -1042,23 +1042,38 @@ const renderWithdrawPage = async () => {
 };
 
 
-// --- 17. REWARDS PAGE (Converted to Investment Details) ---
+// --- 17. REWARDS PAGE (Converted to Investment Details + SAFE MODE) ---
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Portfolio...</p>';
     
+    let investments = [];
+    
+    // 1. Try to fetch data, but don't crash if it fails
     try {
         const invResponse = await fetchWithAuth(`${API_BASE_URL}/investments`, { method: 'GET' });
-        if (!invResponse.ok) throw new Error('Failed to load portfolio.');
-        
-        const invData = await invResponse.json();
-        const investments = Array.isArray(invData) ? invData : (invData.data || []);
-        
+        if (invResponse.ok) {
+            const invData = await invResponse.json();
+            investments = Array.isArray(invData) ? invData : (invData.data || []);
+        } else {
+            console.log("Investments endpoint failed (Likely 404 or 500). Showing empty state.");
+        }
+    } catch (e) {
+        console.log("Network error loading investments. Showing empty state.");
+    }
+
+    // 2. Render the page (Empty or With Data)
+    try {
         let detailsHTML = '';
         if (investments.length === 0) {
-            detailsHTML = '<div class="placeholder-card" style="text-align:center; padding: 30px;"><p>You have no active investments.</p><a href="#products" class="btn-auth" style="display:inline-block; margin-top:10px;">Invest Now</a></div>';
+            detailsHTML = `
+                <div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;">
+                    <i class="fas fa-folder-open" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i>
+                    <p style="color: #666; margin-bottom: 20px;">You have no active investments yet.</p>
+                    <a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Investing</a>
+                </div>`;
         } else {
             detailsHTML = investments.map(inv => {
-                // Safe calculation
+                // Safe Date Calculation
                 let startDate, expiryDate, duration, percentage;
                 try {
                     startDate = new Date(inv.created_at || Date.now());
@@ -1079,10 +1094,10 @@ const renderRewardsPage = async () => {
                 }
 
                 return `
-                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid #6a0dad;">
+                    <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0; font-size: 16px; color: #6a0dad;">${inv.item_name || 'Investment'}</h3>
-                        <small style="color: #888;">ID: #${inv.id}</small>
+                        <span style="font-size: 11px; background: #e1bee7; color: #4a148c; padding: 2px 8px; border-radius: 10px;">Active</span>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
                         <div>
@@ -1117,11 +1132,12 @@ const renderRewardsPage = async () => {
 
         appContent.innerHTML = `
             <div class="page-container">
-                <div class="page-header"><h2>My Portfolio Details</h2></div>
+                <div class="page-header"><h2>My Portfolio</h2></div>
                 ${detailsHTML}
             </div>
         `;
     } catch (e) {
+        // Fallback if rendering crashes completely
         appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load portfolio.</p>';
     }
 };
