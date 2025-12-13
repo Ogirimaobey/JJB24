@@ -77,10 +77,12 @@
                             <label for="itemDailyIncome">Daily Income (₦) *</label>
                             <input type="number" id="itemDailyIncome" required min="0" step="0.01" placeholder="e.g., 400">
                         </div>
+                        
                         <div class="form-group">
                             <label for="itemDuration">Duration (Days) *</label>
-                            <input type="number" id="itemDuration" required min="1" placeholder="e.g., 30">
+                            <input type="number" id="itemDuration" required min="1" placeholder="e.g., 30 (Owner can edit this)">
                         </div>
+                        
                         <div class="form-group">
                             <label for="itemImage">Product Image *</label>
                             <input type="file" id="itemImage" required accept="image/*">
@@ -236,7 +238,9 @@
                                         <div class="form-group"><label>Product Name</label><input type="text" id="edit-item-name-${item.id}" value="${item.itemname}" required></div>
                                         <div class="form-group"><label>Price (₦)</label><input type="number" id="edit-item-price-${item.id}" value="${item.price}" required></div>
                                         <div class="form-group"><label>Daily Income (₦)</label><input type="number" id="edit-item-daily-${item.id}" value="${item.dailyincome}" required></div>
+                                        
                                         <div class="form-group"><label>Duration (Days)</label><input type="number" id="edit-item-duration-${item.id}" value="${item.duration || 30}" required></div>
+                                        
                                         <div class="form-group"><label>New Image (Optional)</label><input type="file" id="edit-item-image-${item.id}" accept="image/*"></div>
                                         <button type="submit" class="btn-upload">Update</button>
                                         <button type="button" class="btn-delete" onclick="cancelEdit(${item.id})">Cancel</button>
