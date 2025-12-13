@@ -216,7 +216,7 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. HANDLE INVEST CLICK (SMART ROUTING) ---
+// --- 5. HANDLE INVEST CLICK (SMART ROUTING - CRITICAL) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId;
@@ -476,9 +476,11 @@ const renderProductsPage = async () => {
                             <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
                             <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
                             <p><strong>Duration:</strong> ${duration} days</p>
+                            
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                                (Note: Capital returned after maturity)
+                                (Daily Withdrawal Available)
                             </p>
+                            
                             <button class="btn-invest" data-plan-id="${itemId}" data-type="regular">Invest</button>
                         </div>
                     </div>`;
@@ -516,7 +518,9 @@ const renderVipPage = () => {
                 <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
                 <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
                 <p><strong>Duration:</strong> ${plan.duration} days</p>
-                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
+                
+                <p style="font-size: 12px; color: #666;">(Daily Withdrawal Available)</p>
+                
                 <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
             </div>
         </div>`;
