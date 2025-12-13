@@ -216,7 +216,7 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. HANDLE INVEST CLICK (SMART ROUTING - CRITICAL) ---
+// --- 5. HANDLE INVEST CLICK (SMART ROUTING) ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId;
@@ -463,8 +463,13 @@ const renderProductsPage = async () => {
         } else {
             items.forEach(item => {
                 const itemId = Number(item.id);
-                // Backend might not send 'duration' yet, so we default to 30
-                const duration = item.duration || 30; 
+                
+                // --- OWNER REQUEST: ONLY SHOW DURATION IF ADMIN ADDED IT ---
+                let durationHTML = '';
+                if (item.duration && Number(item.duration) > 0) {
+                    durationHTML = `<p><strong>Duration:</strong> ${item.duration} days</p>`;
+                }
+                // -----------------------------------------------------------
                 
                 productHTML += `
                     <div class="product-card-wc">
@@ -475,7 +480,7 @@ const renderProductsPage = async () => {
                             <h4>${item.itemname}</h4>
                             <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
                             <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
-                            <p><strong>Duration:</strong> ${duration} days</p>
+                            ${durationHTML}
                             
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">
                                 (Daily Withdrawal Available)
@@ -508,6 +513,8 @@ const renderVipPage = () => {
     let vipHTML = '';
     vipProducts.forEach(plan => {
         const itemId = Number(plan.id);
+        
+        // --- VIP DURATION IS ALWAYS SHOWN (AS REQUESTED) ---
         vipHTML += `
         <div class="product-card-wc">
             <div class="product-image-wc">
@@ -519,7 +526,7 @@ const renderVipPage = () => {
                 <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
                 <p><strong>Duration:</strong> ${plan.duration} days</p>
                 
-                <p style="font-size: 12px; color: #666;">(Daily Withdrawal Available)</p>
+                <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
                 
                 <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
             </div>
