@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JJB Wines | Premium Wealth</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                        display: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: { 500: '#10b981', 600: '#059669', 900: '#064e3b' },
+                        gold: { 400: '#facc15', 500: '#eab308', 600: '#ca8a04' },
+                        dark: { 900: '#0f172a', 800: '#1e293b' }
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                        'glow': '0 0 15px rgba(16, 185, 129, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F8FAFC;
+            background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Premium Bottom Nav (Fixed, not floating) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 50;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Inputs */
+        input:focus { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+
+        /* Loader */
+        #app-loader {
+            position: fixed; inset: 0; z-index: 100;
+            background: #ffffff; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+
+<body class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden">
+
+    <div id="app-loader">
+        <div class="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-xl animate-bounce">J</div>
+        <p class="text-gray-400 font-medium text-sm animate-pulse">Initializing Secure App...</p>
+    </div>
+
+    <main id="app-content" class="flex-grow overflow-y-auto pb-32 pt-6 px-5"></main>
+
+    <nav id="main-nav" class="bottom-nav hidden">
+        <div class="flex justify-between items-center px-6 h-16 max-w-lg mx-auto">
+            <a href="#home" class="nav-link flex flex-col items-center gap-1 text-gray-400 hover:text-brand-600 transition group">
+                <i class="ph ph-house text-2xl group-[.active]:text-brand-600 group-[.active]:fill-brand-600"></i>
+                <span class="text-[10px] font-semibold">Home</span>
+            </a>
+            
+            <a href="#products" class="nav-link flex flex-col items-center gap-1 text-gray-400 hover:text-brand-600 transition group">
+                <i class="ph ph-wine text-2xl group-[.active]:text-brand-600 group-[.active]:fill-brand-600"></i>
+                <span class="text-[10px] font-semibold">Invest</span>
+            </a>
+            
+            <div class="relative -top-6">
+                <a href="#vip" class="flex flex-col items-center justify-center w-14 h-14 bg-gray-900 rounded-full text-white shadow-xl shadow-gray-900/40 transform hover:scale-105 active:scale-95 transition-all border-4 border-white">
+                    <i class="ph-fill ph-crown text-2xl text-yellow-400"></i>
+                </a>
+            </div>
+
+            <a href="#history" class="nav-link flex flex-col items-center gap-1 text-gray-400 hover:text-brand-600 transition group">
+                <i class="ph ph-clock-counter-clockwise text-2xl group-[.active]:text-brand-600 group-[.active]:fill-brand-600"></i>
+                <span class="text-[10px] font-semibold">History</span>
+            </a>
+            
+            <a href="#me" class="nav-link flex flex-col items-center gap-1 text-gray-400 hover:text-brand-600 transition group">
+                <i class="ph ph-user text-2xl group-[.active]:text-brand-600 group-[.active]:fill-brand-600"></i>
+                <span class="text-[10px] font-semibold">Profile</span>
+            </a>
+        </div>
+    </nav>
+
+    <div id="successModal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl scale-100 transition-transform">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                <i class="ph-fill ph-check-circle text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-display font-bold text-gray-900 mb-2">Success</h3>
+            <p id="modalMessage" class="text-gray-500 text-sm mb-6">Action completed successfully.</p>
+            <button onclick="closeModal()" class="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+        const appContent = document.getElementById('app-content');
+        const mainNav = document.getElementById('main-nav');
+        const loader = document.getElementById('app-loader');
+
+        // Mock VIP Data (Local)
+        const vipProducts = [
+            { id: 101, name: "Casper VIP Gold", price: 150000, total_return: 250000, duration: 30, image: "https://placehold.co/300x200/10b981/ffffff?text=Gold+VIP" },
+            { id: 102, name: "Casper VIP Platinum", price: 500000, total_return: 900000, duration: 45, image: "https://placehold.co/300x200/064e3b/ffffff?text=Platinum+VIP" }
+        ];
+
+        // --- HELPERS ---
+        const hideLoader = () => { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); };
+        const showLoader = () => { loader.style.display = 'flex'; loader.style.opacity = '1'; };
+        
+        const showSuccess = (msg) => {
+            document.getElementById('modalMessage').textContent = msg;
+            document.getElementById('successModal').style.display = 'flex';
+        };
+        const closeModal = () => document.getElementById('successModal').style.display = 'none';
+
+        const api = async (endpoint, method = 'GET', body = null) => {
+            const token = localStorage.getItem('token');
+            const headers = { 'Content-Type': 'application/json' };
+            if(token) headers['Authorization'] = `Bearer ${token}`;
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}${endpoint}`, { method, headers, body: body ? JSON.stringify(body) : null });
+                if(res.status === 401) { logout(); return null; }
+                return await res.json();
+            } catch(e) {
+                console.error(e);
+                return null;
+            }
+        };
+
+        const logout = () => { localStorage.removeItem('token'); window.location.hash = '#login'; };
+
+        // --- SCREENS ---
+
+        // 1. LOGIN
+        const renderLogin = () => {
+            mainNav.classList.add('hidden');
+            appContent.innerHTML = `
+                <div class="flex flex-col justify-center min-h-[80vh]">
+                    <div class="text-center mb-10">
+                        <div class="w-14 h-14 bg-brand-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-glow">J</div>
+                        <h1 class="font-display text-3xl font-bold text-gray-900">Welcome Back</h1>
+                        <p class="text-gray-500">Manage your wealth securely.</p>
+                    </div>
+                    <form onsubmit="handleLogin(event)" class="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Email or Phone</label>
+                            <input type="text" id="email" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:ring-2 focus:ring-brand-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Password</label>
+                            <input type="password" id="password" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 text-gray-900 font-medium outline-none focus:ring-2 focus:ring-brand-500" required>
+                        </div>
+                        <button type="submit" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition active:scale-95">Sign In</button>
+                    </form>
+                    <p class="text-center mt-6 text-sm text-gray-500">Don't have an account? <a href="#register" class="text-brand-600 font-bold">Register</a></p>
+                </div>
+            `;
+            hideLoader();
+        };
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const emailIn = document.getElementById('email').value;
+            const passIn = document.getElementById('password').value;
+            const btn = e.target.querySelector('button');
+            
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i>';
+            
+            const isEmail = emailIn.includes('@');
+            const res = await api('/users/login', 'POST', { password: passIn, email: isEmail ? emailIn : '', phone: isEmail ? '' : emailIn });
+            
+            if(res && res.token) {
+                localStorage.setItem('token', res.token);
+                window.location.hash = '#home';
+            } else {
+                alert(res ? res.message : 'Connection failed');
+                btn.innerHTML = 'Sign In';
+            }
+        };
+
+        // 2. REGISTER
+        const renderRegister = () => {
+            mainNav.classList.add('hidden');
+            const ref = window.location.hash.split('ref=')[1] || '';
+            appContent.innerHTML = `
+                <div class="flex flex-col justify-center min-h-[80vh] py-10">
+                    <div class="text-center mb-8">
+                        <h1 class="font-display text-3xl font-bold text-gray-900">Join JJB24</h1>
+                        <p class="text-gray-500">Start your premium journey.</p>
+                    </div>
+                    <form onsubmit="handleRegister(event)" class="bg-white p-6 rounded-3xl shadow-xl border border-gray-100 space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <input type="text" id="rName" placeholder="Full Name" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 outline-none focus:border-brand-500" required>
+                            <input type="tel" id="rPhone" placeholder="Phone" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 outline-none focus:border-brand-500" required>
+                        </div>
+                        <input type="email" id="rEmail" placeholder="Email Address" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 outline-none focus:border-brand-500" required>
+                        <input type="password" id="rPass" placeholder="Password" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 outline-none focus:border-brand-500" required>
+                        <input type="text" id="rRef" placeholder="Referral Code (Optional)" value="${ref}" class="w-full bg-gray-50 border-gray-200 rounded-xl p-3.5 outline-none focus:border-brand-500">
+                        
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" required class="accent-brand-600 w-4 h-4">
+                            <span class="text-xs text-gray-500">Agree to Terms & Privacy</span>
+                        </div>
+                        <button type="submit" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-gray-800 transition active:scale-95">Create Account</button>
+                    </form>
+                    <p class="text-center mt-6 text-sm text-gray-500">Already a member? <a href="#login" class="text-brand-600 font-bold">Login</a></p>
+                </div>
+            `;
+            hideLoader();
+        };
+
+        const handleRegister = async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'Creating...';
+            
+            const payload = {
+                fullName: document.getElementById('rName').value,
+                email: document.getElementById('rEmail').value,
+                phone: document.getElementById('rPhone').value,
+                password: document.getElementById('rPass').value,
+                referral: document.getElementById('rRef').value
+            };
+            
+            const res = await api('/users/register', 'POST', payload);
+            if(res && (res.message || res.success)) {
+                alert('Account Created! Please check email for OTP.');
+                renderOTP(payload.email);
+            } else {
+                alert('Registration Failed');
+                btn.innerText = 'Create Account';
+            }
+        };
+
+        // 3. OTP
+        const renderOTP = (email) => {
+            appContent.innerHTML = `
+                <div class="flex flex-col justify-center min-h-[80vh] text-center">
+                    <div class="bg-white p-8 rounded-3xl shadow-xl mx-4">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Verify OTP</h2>
+                        <p class="text-sm text-gray-500 mb-6">Code sent to ${email}</p>
+                        <input type="text" id="otpIn" placeholder="000000" class="text-center text-3xl tracking-widest font-mono w-full bg-gray-50 border-gray-200 rounded-xl p-4 mb-4 outline-none focus:ring-2 focus:ring-brand-500">
+                        <button onclick="handleOTP('${email}')" class="w-full bg-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg">Verify & Login</button>
+                    </div>
+                </div>
+            `;
+        };
+
+        const handleOTP = async (email) => {
+            const otp = document.getElementById('otpIn').value;
+            const res = await api('/users/verify-otp', 'POST', { email, otp });
+            if(res && (res.message === 'User Verified Successfully!' || res.status === 'success')) {
+                alert('Verified! Please Login.');
+                renderLogin();
+            } else {
+                alert('Invalid OTP');
+            }
+        };
+
+        // 4. HOME DASHBOARD
+        const renderHome = async () => {
+            const token = localStorage.getItem('token');
+            if(!token) { renderLogin(); return; }
+            mainNav.classList.remove('hidden');
+            
+            const [balData, invData] = await Promise.all([
+                api('/users/balance'),
+                api('/investments')
+            ]);
+
+            if(!balData) return; // Auth failed
+
+            const user = balData.balance || { full_name: 'User', balance: 0 };
+            const investments = Array.isArray(invData) ? invData : (invData?.data || []);
+            const activeInv = investments.filter(i => i.status === 'active' || !i.status); // Fallback for data structure
+
+            appContent.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="font-display text-2xl font-bold text-gray-900">Hello, ${user.full_name.split(' ')[0]}</h1>
+                        <p class="text-gray-500 text-sm">Welcome back</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold border-2 border-white shadow-sm">
+                        ${user.full_name.charAt(0)}
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 text-white rounded-3xl p-6 shadow-xl shadow-gray-900/20 mb-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500 rounded-full blur-3xl opacity-20 -mr-10 -mt-10"></div>
+                    <p class="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Total Balance</p>
+                    <h2 class="text-4xl font-display font-bold mb-6">₦${Number(user.balance).toLocaleString()}</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <a href="#deposit" class="bg-brand-600 hover:bg-brand-500 text-white py-3 rounded-xl font-bold text-center text-sm transition flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-arrow-down"></i> Deposit
+                        </a>
+                        <a href="#withdraw" class="bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold text-center text-sm transition flex items-center justify-center gap-2 backdrop-blur-sm">
+                            <i class="ph-bold ph-arrow-up"></i> Withdraw
+                        </a>
+                    </div>
+                </div>
+
+                <div class="mb-24">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-gray-900">Active Portfolio</h3>
+                        <a href="#products" class="text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full">Invest More</a>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${activeInv.length === 0 ? 
+                        `<div class="text-center p-8 bg-white border border-dashed border-gray-200 rounded-2xl text-gray-400 text-sm">No active investments yet.</div>` : 
+                        activeInv.map(inv => `
+                            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center border-l-4 border-brand-500">
+                                <div>
+                                    <h4 class="font-bold text-gray-900 text-sm">${inv.item_name || 'Plan'}</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Capital: ₦${Number(inv.amount).toLocaleString()}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-400 font-bold uppercase">Daily ROI</p>
+                                    <p class="font-bold text-brand-600 font-display text-lg">+₦${Number(inv.daily_income || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            hideLoader();
+        };
+
+        // 5. PRODUCTS / VIP
+        const renderProducts = async (type = 'regular') => {
+            mainNav.classList.remove('hidden');
+            let items = [];
+            
+            if(type === 'vip') {
+                items = vipProducts;
+            } else {
+                const res = await api('/users/allItems');
+                items = res?.items || [];
+            }
+
+            appContent.innerHTML = `
+                <div class="mb-6 pt-2">
+                    <h2 class="font-display text-2xl font-bold text-gray-900">${type === 'vip' ? 'VIP Access' : 'Marketplace'}</h2>
+                    <p class="text-gray-500 text-sm">Choose a plan to grow your wealth.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pb-24">
+                    ${items.map(item => `
+                        <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden group">
+                            <div class="relative">
+                                <img src="${item.itemimage || item.image}" class="w-full h-40 object-cover rounded-2xl bg-gray-100 mb-4">
+                                <div class="absolute top-2 right-2 ${type==='vip' ? 'bg-gold-500' : 'bg-gray-900'} text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-lg">
+                                    ${type === 'vip' ? 'PREMIUM' : 'DAILY PAYOUT'}
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-lg mb-1">${item.itemname || item.name}</h3>
+                            
+                            <div class="flex justify-between items-end mt-auto pt-3 border-t border-gray-50">
+                                <div>
+                                    <p class="text-xs text-gray-400 font-bold uppercase">Price</p>
+                                    <p class="text-lg font-display font-bold text-gray-900">₦${Number(item.price).toLocaleString()}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-400 font-bold uppercase">${type==='vip' ? 'Total' : 'Daily'}</p>
+                                    <p class="text-lg font-display font-bold ${type==='vip' ? 'text-gold-600' : 'text-brand-600'}">
+                                        ₦${Number(type==='vip' ? item.total_return : item.dailyincome).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <button onclick="handleInvest('${item.id}', '${type}')" class="w-full mt-4 ${type==='vip' ? 'bg-gold-500 hover:bg-gold-600' : 'bg-gray-900 hover:bg-gray-800'} text-white font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95">
+                                ${type==='vip' ? 'Join VIP' : 'Invest Now'}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            hideLoader();
+        };
+
+        const handleInvest = async (id, type) => {
+            if(!confirm('Confirm investment?')) return;
+            const endpoint = type === 'vip' 
+                ? `/investments/createVipInvestment/${id}` 
+                : `/investments/createInvestment/${id}`;
+            
+            const res = await api(endpoint, 'POST');
+            if(res && res.success) {
+                showSuccess('Investment Created Successfully!');
+                setTimeout(() => window.location.hash = '#home', 2000);
+            } else {
+                alert(res ? res.message : 'Error processing investment');
+            }
+        };
+
+        // 6. DEPOSIT / WITHDRAW
+        const renderPayment = (type) => {
+            mainNav.classList.add('hidden');
+            const isDep = type === 'deposit';
+            
+            appContent.innerHTML = `
+                <div class="max-w-md mx-auto py-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <a href="#home" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-500"><i class="ph-bold ph-arrow-left"></i></a>
+                        <h2 class="font-display text-2xl font-bold text-gray-900">${isDep ? 'Add Funds' : 'Withdraw'}</h2>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                        <form onsubmit="handleTransaction(event, '${type}')" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Amount (NGN)</label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-4 text-gray-400 font-bold">₦</span>
+                                    <input type="number" id="amt" class="w-full bg-gray-50 border-gray-200 rounded-xl p-4 pl-8 text-lg font-bold outline-none focus:ring-2 focus:ring-brand-500" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            
+                            ${!isDep ? `
+                                <div class="p-3 bg-yellow-50 rounded-xl text-xs text-yellow-800 border border-yellow-100">
+                                    Withdrawal Fee: 9%
+                                </div>
+                                <input type="text" id="bank" placeholder="Bank Name" class="w-full bg-gray-50 border-gray-200 rounded-xl p-4 font-medium outline-none" required>
+                                <input type="text" id="accNum" placeholder="Account Number" class="w-full bg-gray-50 border-gray-200 rounded-xl p-4 font-medium outline-none" required>
+                                <input type="text" id="accName" placeholder="Account Name" class="w-full bg-gray-50 border-gray-200 rounded-xl p-4 font-medium outline-none" required>
+                            ` : ''}
+
+                            <button type="submit" class="w-full bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg transition active:scale-95">
+                                ${isDep ? 'Proceed to Payment' : 'Submit Request'}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            hideLoader();
+        };
+
+        const handleTransaction = async (e, type) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.innerText = 'Processing...';
+            const amt = document.getElementById('amt').value;
+
+            if(type === 'deposit') {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(atob(token.split('.')[1]));
+                const res = await api('/payment/initialize', 'POST', { userId: user.id, amount: amt, email: user.email, name: user.phone });
+                if(res && res.data?.paymentLink) window.location.href = res.data.paymentLink;
+                else { alert('Error generating link'); btn.innerText = 'Retry'; }
+            } else {
+                const res = await api('/payment/withdraw', 'POST', {
+                    amount: amt,
+                    bank_name: document.getElementById('bank').value,
+                    account_number: document.getElementById('accNum').value,
+                    account_name: document.getElementById('accName').value
+                });
+                if(res && res.success) { showSuccess('Withdrawal Submitted'); setTimeout(() => window.location.hash = '#home', 2000); }
+                else { alert(res ? res.message : 'Error'); btn.innerText = 'Retry'; }
+            }
+        };
+
+        // 7. PROFILE (ME)
+        const renderProfile = async () => {
+            mainNav.classList.remove('hidden');
+            const res = await api('/users/balance');
+            if(!res) return;
+            const user = res.balance;
+            const refCode = user.referral_code || user.phone_number?.replace(/[^a-zA-Z0-9]/g, '') || 'USER';
+
+            appContent.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 text-center mb-6 mt-4">
+                    <div class="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center text-brand-600 text-3xl mx-auto mb-4 border-4 border-white shadow-sm">
+                        <i class="ph-fill ph-user"></i>
+                    </div>
+                    <h2 class="font-bold text-xl text-gray-900">${user.full_name}</h2>
+                    <p class="text-gray-500 text-sm">${user.email}</p>
+                    
+                    <div class="mt-6 bg-gray-50 rounded-xl p-4 flex justify-between items-center border border-gray-200">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-400 font-bold uppercase">Referral Code</p>
+                            <p class="font-mono font-bold text-gray-900 text-lg">${refCode}</p>
+                        </div>
+                        <button onclick="navigator.clipboard.writeText('${refCode}'); alert('Copied!')" class="bg-white text-gray-900 font-bold text-xs px-4 py-2 rounded-lg border border-gray-200 shadow-sm">COPY</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pb-24">
+                    <button onclick="logout()" class="w-full bg-red-50 text-red-600 font-bold py-4 rounded-xl border border-red-100">Log Out</button>
+                </div>
+            `;
+            hideLoader();
+        };
+
+        // --- ROUTER ---
+        const router = () => {
+            showLoader();
+            const hash = window.location.hash.split('?')[0] || '#login';
+            
+            // Set Active Nav
+            document.querySelectorAll('.nav-link').forEach(l => {
+                if(l.getAttribute('href') === hash) l.classList.add('active', 'text-brand-600');
+                else l.classList.remove('active', 'text-brand-600');
+            });
+
+            switch(hash) {
+                case '#login': renderLogin(); break;
+                case '#register': renderRegister(); break;
+                case '#home': renderHome(); break;
+                case '#products': renderProducts('regular'); break;
+                case '#vip': renderProducts('vip'); break;
+                case '#deposit': renderPayment('deposit'); break;
+                case '#withdraw': renderPayment('withdraw'); break;
+                case '#me': renderProfile(); break;
+                case '#history': renderHome(); break; // Reuse home for now or add specific page
+                default: renderLogin();
+            }
+        };
+
+        window.addEventListener('hashchange', router);
+        window.addEventListener('DOMContentLoaded', router);
+
+    </script>
+</body>
+</html>
