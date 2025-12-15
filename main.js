@@ -2,7 +2,7 @@
 // 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
-// --- INJECT COMPLETE CSS STYLES (Fixed Missing Grid) ---
+// --- INJECT COMPLETE CSS STYLES (Grid + Bold Buttons + Notifications) ---
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     /* 1. BOLD BUTTONS (Deposit/Withdraw) */
@@ -42,7 +42,7 @@ styleSheet.innerText = `
         padding: 10px;
     }
 
-    /* 3. MISSING CARD STYLES (This fixes the VIP Display) */
+    /* 3. MISSING CARD STYLES (Fixes VIP Display) */
     .product-grid-wc {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -77,28 +77,45 @@ styleSheet.innerText = `
         margin: 0 0 10px 0;
         font-size: 18px;
         color: #111;
+        font-weight: 700;
     }
 `;
 document.head.appendChild(styleSheet);
 
 
-// FIXED: GLOBAL DATA (Ensures VIP products are always available)
+// FIXED: UPDATED VIP DATA (The 4 Casper Plans)
 const vipProducts = [
     { 
         id: 101, 
-        name: "Casper VIP Gold", 
-        price: 150000, 
-        total_return: 250000, 
-        duration: 30, 
-        itemimage: "https://placehold.co/300x200/10b981/ffffff?text=VIP+Gold" 
+        name: 'CASPERVIP1', 
+        price: 500000, 
+        total_return: 600000, 
+        duration: 30,
+        itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPERVIP1'
     },
     { 
         id: 102, 
-        name: "Casper VIP Platinum", 
-        price: 500000, 
-        total_return: 900000, 
-        duration: 45, 
-        itemimage: "https://placehold.co/300x200/059669/ffffff?text=VIP+Platinum" 
+        name: 'CASPERVIP2', 
+        price: 1000000, 
+        total_return: 1200000, 
+        duration: 30,
+        itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPERVIP2'
+    },
+    { 
+        id: 103, 
+        name: 'CASPER3', 
+        price: 2000000, 
+        total_return: 2400000, 
+        duration: 30,
+        itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER3'
+    },
+    { 
+        id: 104, 
+        name: 'CASPER4', 
+        price: 3000000, 
+        total_return: 3600000, 
+        duration: 30,
+        itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER4'
     }
 ];
 
