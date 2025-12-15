@@ -30,7 +30,7 @@ styleSheet.innerText = `
     }
     .btn-withdraw:active { transform: scale(0.98); }
 
-    /* 2. PREMIUM PRODUCT CARDS (The "Braced Up" Look) */
+    /* 2. PREMIUM PRODUCT CARDS */
     .product-grid-wc {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -41,90 +41,39 @@ styleSheet.innerText = `
         background: #fff;
         border-radius: 20px;
         overflow: hidden;
-        box-shadow: 0 15px 30px rgba(0,0,0,0.08); /* Softer, deeper shadow */
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
         border: 1px solid #f0f0f0;
         transition: transform 0.2s ease;
         display: flex;
         flex-direction: column;
     }
-    .product-card-wc:hover {
-        transform: translateY(-5px);
-    }
-    .product-image-wc {
-        height: 180px;
-        width: 100%;
-        position: relative;
-    }
-    .product-image-wc img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    /* Badge for VIP/Hot items */
+    .product-card-wc:hover { transform: translateY(-5px); }
+    .product-image-wc { height: 180px; width: 100%; position: relative; }
+    .product-image-wc img { width: 100%; height: 100%; object-fit: cover; }
     .card-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0,0,0,0.7);
-        color: #fff;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 10px;
-        font-weight: bold;
-        backdrop-filter: blur(4px);
+        position: absolute; top: 10px; right: 10px;
+        background: rgba(0,0,0,0.7); color: #fff;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 10px; font-weight: bold; backdrop-filter: blur(4px);
     }
+    .product-info-wc { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .product-title { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; line-height: 1.2; }
     
-    .product-info-wc {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-    .product-title {
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: #1f2937;
-        margin: 0;
-        line-height: 1.2;
-    }
-    
-    /* The Stat Grid (Makes details clear) */
     .product-stats {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        background: #f9fafb;
-        padding: 10px;
-        border-radius: 12px;
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        background: #f9fafb; padding: 10px; border-radius: 12px;
     }
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-    }
-    .stat-label {
-        font-size: 10px;
-        color: #6b7280;
-        text-transform: uppercase;
-        font-weight: 600;
-    }
-    .stat-value {
-        font-size: 14px;
-        font-weight: 700;
-        color: #111;
-    }
-    .stat-value.price { color: #10b981; font-size: 15px; } /* Green for money */
-    .stat-value.roi { color: #8b5cf6; } /* Purple for profit */
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+    .stat-value { font-size: 14px; font-weight: 700; color: #111; }
+    .stat-value.price { color: #10b981; font-size: 15px; }
+    .stat-value.roi { color: #8b5cf6; }
 
     .btn-invest-premium {
         background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-        color: white;
-        font-weight: 700;
-        border: none;
-        padding: 14px;
-        border-radius: 12px;
-        width: 100%;
-        cursor: pointer;
-        font-size: 14px;
+        color: white; font-weight: 700; border: none;
+        padding: 14px; border-radius: 12px; width: 100%;
+        cursor: pointer; font-size: 14px;
         box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
         transition: all 0.2s;
     }
@@ -132,14 +81,35 @@ styleSheet.innerText = `
 
     /* 3. LIVE TICKER */
     .live-ticker-box {
-        background: #f0f9ff;
-        border: 1px solid #bae6fd;
-        border-radius: 12px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
+        background: #f0f9ff; border: 1px solid #bae6fd;
+        border-radius: 12px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 10px;
+    }
+
+    /* 4. DESIGNER ALERT NOTIFICATION (Restored) */
+    #successModal {
+        display: none; /* Hidden by default */
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+    }
+    #successModal .modal-content {
+        background: #fff; padding: 30px; border-radius: 24px;
+        text-align: center; max-width: 320px; width: 85%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.8);
+    }
+    @keyframes popIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    #closeModalBtn {
+        margin-top: 20px; padding: 12px 30px;
+        background: #10b981; color: white; border: none;
+        border-radius: 12px; font-weight: bold; cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 `;
 document.head.appendChild(styleSheet);
@@ -192,7 +162,7 @@ const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 const showSuccessModal = (message) => {
     const successModal = document.getElementById('successModal');
     const modalMessage = document.getElementById('modalMessage');
-    if (modalMessage) modalMessage.innerHTML = `<i class="fas fa-check-circle" style="font-size: 40px; color: #10b981; margin-bottom: 15px; display:block;"></i><span style="font-size: 18px; font-weight: 600; color: #333;">${message}</span>`;
+    if (modalMessage) modalMessage.innerHTML = `<i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 15px; display:block;"></i><span style="font-size: 18px; font-weight: 700; color: #333; line-height: 1.4;">${message}</span>`;
     if (successModal) successModal.style.display = 'flex';
 };
 
