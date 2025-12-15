@@ -1,6 +1,78 @@
 // ==========================================
-// 1. CONFIGURATION & DATA
+// 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
+
+// --- INJECT WORLD-CLASS CSS STYLES ---
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+    /* 1. BOLD BUTTONS (Deposit/Withdraw) */
+    .btn-deposit {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5) !important;
+        transform: scale(1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-deposit:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7) !important;
+    }
+
+    .btn-withdraw {
+        background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5) !important;
+        transform: scale(1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-withdraw:hover {
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.7) !important;
+    }
+
+    /* 2. DESIGNER ALERTS (Success Modal) */
+    #successModal {
+        backdrop-filter: blur(12px);
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+    }
+    .modal-content {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 24px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid rgba(255,255,255,0.8) !important;
+        text-align: center;
+        padding: 30px !important;
+    }
+    
+    /* 3. LIVE TICKER (Beside Certificate) */
+    .live-ticker-box {
+        background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        animation: pulse-border 2s infinite;
+    }
+    @keyframes pulse-border {
+        0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+    }
+`;
+document.head.appendChild(styleSheet);
+
 
 // FIXED: Defined here to prevent "White Screen" errors
 const vipProducts = [
@@ -30,13 +102,13 @@ const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 // 2. HELPER FUNCTIONS
 // ==========================================
 
-// --- MODAL HELPER ---
+// --- MODAL HELPER (Styled) ---
 const successModal = document.getElementById('successModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const modalMessage = document.getElementById('modalMessage');
 
 const showSuccessModal = (message) => {
-    if (modalMessage) modalMessage.textContent = message;
+    if (modalMessage) modalMessage.innerHTML = `<i class="fas fa-check-circle" style="font-size: 40px; color: #10b981; margin-bottom: 15px; display:block;"></i><span style="font-size: 18px; font-weight: 600; color: #333;">${message}</span>`;
     if (successModal) successModal.style.display = 'flex';
 };
 
@@ -62,7 +134,7 @@ const copyReferralLink = async (referralCode) => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         try {
             await navigator.clipboard.writeText(fullLink);
-            alert('Referral link copied to clipboard!');
+            showSuccessModal('Referral link copied!');
             return;
         } catch (err) {
             console.warn('Clipboard API failed, attempting fallback...');
@@ -79,7 +151,7 @@ const copyReferralLink = async (referralCode) => {
         textArea.select();
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        if (successful) alert('Referral link copied to clipboard!');
+        if (successful) showSuccessModal('Referral link copied!');
         else throw new Error('Copy failed');
     } catch (err) {
         prompt("Copy your referral link:", fullLink);
@@ -221,7 +293,7 @@ const handleOTPVerification = async (event, email) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         
-        alert('Phone verified successfully! Please log in.');
+        showSuccessModal('Phone verified successfully! Please log in.');
         renderLoginScreen();
     } catch (error) {
         alert('Could not verify OTP. Please try again.');
@@ -440,18 +512,24 @@ const renderHomeScreen = async () => {
             <div class="balance-card">
                 <small>Total Assets (NGN)</small>
                 <h2>₦ ${Number(balance).toLocaleString()}</h2>
-                <div class="header-buttons">
-                    <a href="#deposit" class="btn-deposit">Deposit</a>
-                    <a href="#withdraw" class="btn-withdraw">Withdraw</a>
+                <div class="header-buttons" style="gap: 15px;">
+                    <a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a>
+                    <a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a>
                 </div>
             </div>
             <div class="home-content">
                 <div class="quick-actions">
+                    <div class="live-ticker-box">
+                        <i class="fas fa-users" style="color: #0ea5e9; font-size: 1.2rem; margin-bottom: 4px;"></i>
+                        <span style="font-size: 10px; font-weight: bold; color: #555;">LIVE USERS</span>
+                        <span id="live-user-count" style="font-size: 16px; font-weight: 800; color: #0284c7;">4,120</span>
+                    </div>
+
+                    <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                     <a href="#team" class="action-button"><i class="fas fa-users"></i><span>My Team</span></a>
                     <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
                     <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                     <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
-                    <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 </div>
                 <div class="activity-card">
                     <h3>Recent Activity</h3>
@@ -459,6 +537,17 @@ const renderHomeScreen = async () => {
                 </div>
             </div>`;
         appContent.innerHTML = homeHTML;
+        
+        // --- START LIVE TICKER ANIMATION (Fake numbers going up) ---
+        const tickerEl = document.getElementById('live-user-count');
+        if(tickerEl) {
+            let baseCount = 4120;
+            setInterval(() => {
+                baseCount += Math.floor(Math.random() * 3); // Add 0-2 users
+                tickerEl.textContent = baseCount.toLocaleString();
+            }, 3000);
+        }
+
     } catch (error) {
         if (error.message && error.message.includes('Promise')) return;
         appContent.innerHTML = `
@@ -746,7 +835,7 @@ const renderDepositPage = async () => {
                         <label for="amount">Amount (NGN)</label>
                         <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
                     </div>
-                    <button type="submit" class="btn-auth">Proceed to Payment</button>
+                    <button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Proceed to Payment</button>
                 </form>
             </div>
         </div>`;
@@ -1007,7 +1096,7 @@ const renderWithdrawPage = async () => {
                             <label for="accountName">Account Name</label>
                             <input type="text" id="accountName" required placeholder="Enter account name" />
                         </div>
-                        <button type="submit" class="btn-auth">Submit Request</button>
+                        <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
                     </form>
                 </div>
             </div>`;
@@ -1350,7 +1439,7 @@ const router = () => {
             link.classList.add('active'); 
         } else if (linkHref === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
             link.classList.add('active');
-        } else if (linkHref === '#rewards' && hash === '#rewards') { // Fix Active state for Rewards
+        } else if (linkHref === '#rewards' && hash === '#rewards') { 
             link.classList.add('active');
         }
     });
@@ -1368,7 +1457,7 @@ const router = () => {
         case '#settings': renderSettingsPage(); break;
         case '#about': renderAboutPage(); break;
         case '#support': renderSupportPage(); break;
-        case '#rewards': renderRewardsPage(); break; // IMPORTANT: Now calls renderRewardsPage
+        case '#rewards': renderRewardsPage(); break; 
         case '#certificate': renderCertificatePage(); break;
         default: renderHomeScreen(); 
     }
@@ -1405,59 +1494,62 @@ successModal.addEventListener('click', (e) => {
             "Benin City", "Enugu", "Kaduna", "Warri", "Jos"
         ],
         actions: [
-            { text: "just registered an account", icon: "👤", color: "#3b82f6" }, // Blue
-            { text: "just invested ₦50,000", icon: "💰", color: "#10b981" },     // Green
-            { text: "just invested ₦100,000", icon: "💰", color: "#10b981" },    // Green
-            { text: "just invested ₦20,000", icon: "💰", color: "#10b981" },     // Green
-            { text: "purchased Casper VIP Gold", icon: "🍷", color: "#eab308" }, // Gold
-            { text: "started a Platinum Plan", icon: "🏆", color: "#a855f7" },   // Purple
-            { text: "just withdrew ₦15,000", icon: "🏦", color: "#f43f5e" },     // Red
-            { text: "received daily interest", icon: "📈", color: "#10b981" }     // Green
+            { text: "just registered an account", icon: "👤", color: "#3b82f6" }, 
+            { text: "just registered an account", icon: "👤", color: "#3b82f6" }, 
+            { text: "just invested ₦50,000", icon: "💰", color: "#10b981" },      
+            { text: "just invested ₦100,000", icon: "💰", color: "#10b981" },     
+            { text: "just invested ₦20,000", icon: "💰", color: "#10b981" },      
+            { text: "purchased Casper VIP Gold", icon: "🍷", color: "#eab308" }, 
+            { text: "started a Platinum Plan", icon: "🏆", color: "#a855f7" },    
+            { text: "just withdrew ₦15,000", icon: "🏦", color: "#f43f5e" },      
+            { text: "received daily interest", icon: "📈", color: "#10b981" }      
         ],
-        times: ["Just now", "2 mins ago", "5 mins ago", "12 seconds ago", "Right now"]
+        times: ["Just now", "Just now", "2 secs ago", "1 sec ago", "Right now"]
     };
 
-    // 2. INJECT CSS STYLES (Glassmorphism)
+    // 2. INJECT CSS STYLES (Glassmorphism + Neon Glow)
     const style = document.createElement('style');
     style.innerHTML = `
         #fomo-popup {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            bottom: 80px; /* Moved up slightly to not hide nav */
+            left: 50%;
+            transform: translateX(-50%) translateY(200%); /* Center bottom, hidden down */
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
             border-left: 5px solid #10B981;
             padding: 12px 16px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            font-family: 'Inter', sans-serif; /* Uses your app font */
+            border-radius: 16px;
+            box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            font-family: 'Inter', sans-serif; 
             z-index: 9999;
-            transform: translateY(150%); /* Hidden down */
-            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             display: flex;
             align-items: center;
-            gap: 12px;
-            max-width: 340px;
+            gap: 15px;
             width: 90%;
-            pointer-events: none; /* Let clicks pass through if needed */
+            max-width: 380px;
+            pointer-events: none;
         }
 
         #fomo-popup.show {
-            transform: translateY(0); /* Slide Up */
+            transform: translateX(-50%) translateY(0); /* Slide Up to Center */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
         }
 
         .fomo-icon-box {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             background: #f3f4f6;
             flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .fomo-content {
@@ -1466,22 +1558,24 @@ successModal.addEventListener('click', (e) => {
         }
 
         .fomo-name {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             color: #111827;
         }
 
         .fomo-desc {
-            font-size: 12px;
+            font-size: 13px;
             color: #4b5563;
             line-height: 1.3;
         }
 
         .fomo-meta {
-            font-size: 10px;
+            font-size: 11px;
             color: #9ca3af;
             margin-top: 2px;
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     `;
     document.head.appendChild(style);
@@ -1503,10 +1597,8 @@ successModal.addEventListener('click', (e) => {
 
     // 4. THE LOGIC LOOP
     function showNotification() {
-        // Only show if user is NOT on login/register page (Optional check)
         if(window.location.hash.includes('login') || window.location.hash.includes('register')) return;
 
-        // Get Elements
         const elName = document.getElementById('fomo-name');
         const elAction = document.getElementById('fomo-action');
         const elLocation = document.getElementById('fomo-location');
@@ -1514,40 +1606,35 @@ successModal.addEventListener('click', (e) => {
         const elIcon = document.getElementById('fomo-icon');
         const elPopup = document.getElementById('fomo-popup');
 
-        // Randomize Data
         const name = fomoData.names[Math.floor(Math.random() * fomoData.names.length)];
         const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
         const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
         const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
 
-        // Update Content
         elName.innerText = name;
         elAction.innerText = actionObj.text;
         elLocation.innerText = loc;
         elTime.innerText = time;
         elIcon.innerText = actionObj.icon;
         
-        // Update Border/Icon Colors based on action type
+        // Dynamic Styling
         elPopup.style.borderLeftColor = actionObj.color;
-        elIcon.style.background = actionObj.color + '20'; // Add transparency
+        elIcon.style.background = actionObj.color + '20'; 
         elIcon.style.color = actionObj.color;
 
-        // Animate In
         elPopup.classList.add('show');
 
-        // Hide after 5 seconds
+        // Hide faster (after 3.5s) to allow for 2s cycle overlapping slightly
         setTimeout(() => {
             elPopup.classList.remove('show');
-        }, 5000);
+        }, 3500);
     }
 
-    // 5. START LOOP
-    // First pop up after 4 seconds
-    setTimeout(showNotification, 4000);
+    // 5. START LOOP (Aggressive 4-second cycle: 2s on, 2s off)
+    setTimeout(showNotification, 1000);
 
-    // Then repeat every 12 to 25 seconds randomly
     setInterval(() => {
         showNotification();
-    }, Math.floor(Math.random() * (25000 - 12000 + 1) + 12000));
+    }, 4000); // Trigger every 4 seconds so they don't overlap too crazily
 
 })();
