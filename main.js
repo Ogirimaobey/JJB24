@@ -48,7 +48,6 @@ styleSheet.innerText = `
         flex-direction: column;
     }
     .product-card-wc:hover { transform: translateY(-5px); }
-    
     .product-image-wc { height: 180px; width: 100%; position: relative; }
     .product-image-wc img { width: 100%; height: 100%; object-fit: cover; }
     .card-badge {
@@ -335,35 +334,9 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- RENDER TEAM PAGE ---
+// --- RENDER TEAM PAGE (VISUAL MODE: Displays structure immediately) ---
 const renderTeamPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
-    try {
-        let response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
-        if (!response.ok) response = await fetchWithAuth(`${API_BASE_URL}/users/team`, { method: 'GET' });
-        if (!response.ok) throw new Error('Backend endpoint for Team not found.');
-
-        const data = await response.json();
-        const teamMembers = data.referrals || data.team || [];
-        const totalCommission = data.total_commission || 0;
-        let teamHTML = '';
-
-        if (teamMembers.length === 0) {
-            teamHTML = `<div class="placeholder-card" style="text-align: center; padding: 30px;"><i class="fas fa-users-slash" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666;">You haven't invited anyone yet.</p></div>`;
-        } else {
-            teamHTML = teamMembers.map(member => `
-                <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 40px; height: 40px; background: #e1bee7; color: #6a0dad; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">${member.full_name ? member.full_name.charAt(0) : 'U'}</div>
-                        <div><h4 style="margin: 0; font-size: 14px;">${member.full_name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(member.created_at).toLocaleDateString()}</small></div>
-                    </div>
-                    <div style="text-align: right;"><span style="display: block; font-size: 12px; color: #888;">Commission</span><strong style="color: #10b981;">+₦${Number(member.commission_earned || 0).toLocaleString()}</strong></div>
-                </div>`).join('');
-        }
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${teamMembers.length}</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div><div style="background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 12px; color: #666;"><strong>Commission Rules:</strong><ul style="padding-left: 20px; margin-top: 5px;"><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul></div></div>`;
-    } catch (error) {
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="placeholder-card" style="text-align: center; padding: 40px 20px;"><p style="color: red;">Unable to load team data.</p><small style="background: #eee; padding: 5px;">${error.message}</small></div></div>`;
-    }
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ 0</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: 0</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3><div class="placeholder-card" style="text-align: center; padding: 30px;"><i class="fas fa-users-slash" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666;">You haven't invited anyone yet.</p></div></div><div style="background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 12px; color: #666;"><strong>Commission Rules:</strong><ul style="padding-left: 20px; margin-top: 5px;"><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul></div></div>`;
 };
 
 const renderMePage = async () => { 
@@ -401,105 +374,43 @@ const renderDepositPage = async () => {
     document.getElementById('depositForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         const amount = document.getElementById('amount').value;
-        
-        // 1. Validate Amount
-        if (!amount || parseFloat(amount) <= 0) {
-            return alert('Please enter a valid amount.');
-        }
+        if (!amount || parseFloat(amount) <= 0) { return alert('Please enter a valid amount.'); }
 
-        // 2. Get User Details from Token
         let email, phone, userId;
         try {
             const token = localStorage.getItem('token');
             if (!token) { logoutUser(); return; }
             const tokenPayload = JSON.parse(atob(token.split('.')[1]));
-            userId = tokenPayload.id;
-            email = tokenPayload.email;
-            phone = tokenPayload.phone;
+            userId = tokenPayload.id; email = tokenPayload.email; phone = tokenPayload.phone;
         } catch (e) { logoutUser(); return; }
 
-        // 3. Send to Server
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
                 method: 'POST',
-                body: JSON.stringify({ 
-                    userId,
-                    amount: parseFloat(amount),
-                    email,
-                    name: phone || 'User'
-                })
+                body: JSON.stringify({ userId, amount: parseFloat(amount), email, name: phone || 'User' })
             });
-            
             if (!response) return;
             const result = await response.json();
-            
             if (!response.ok) return alert('Error: ' + result.message);
-
-            // 4. Redirect to Payment Gateway
             if (result.success && result.data && result.data.paymentLink) {
                 window.location.href = result.data.paymentLink;
-            } else {
-                alert('Failed to get payment link.');
-            }
-        } catch (error) {
-            alert('An error occurred. Please try again.');
-        }
+            } else { alert('Failed to get payment link.'); }
+        } catch (error) { alert('An error occurred. Please try again.'); }
     });
 };
 
 // --- RESTORED: REAL WITHDRAW LOGIC (WITH CALCULATOR) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         if (!response.ok) throw new Error('Failed to load data.');
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         
-        const pageHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>Request Withdrawal</h2></div>
-                <div class="withdraw-card">
-                    <div class="balance-display">
-                        <small>Available Balance</small>
-                        <p>₦ ${Number(balance).toLocaleString()}</p>
-                    </div>
-                    <form id="withdrawForm">
-                        <div class="form-group">
-                            <label for="amount">Amount (NGN)</label>
-                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount to withdraw" />
-                        </div>
-
-                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                <span>Withdrawal Fee (9%):</span>
-                                <span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px; color: #333;">
-                                <span>You Will Receive:</span>
-                                <span id="finalDisplay" style="color: #388e3c;">₦0.00</span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="bankName">Bank Name</label>
-                            <input type="text" id="bankName" required placeholder="Enter bank name" />
-                        </div>
-                        <div class="form-group">
-                            <label for="accountNumber">Account Number</label>
-                            <input type="text" id="accountNumber" required placeholder="Enter account number" />
-                        </div>
-                        <div class="form-group">
-                            <label for="accountName">Account Name</label>
-                            <input type="text" id="accountName" required placeholder="Enter account name" />
-                        </div>
-                        <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
-                    </form>
-                </div>
-            </div>`;
-        appContent.innerHTML = pageHTML;
+        appContent.innerHTML = `
+            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount to withdraw" /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Withdrawal Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px; color: #333;"><span>You Will Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label for="bankName">Bank Name</label><input type="text" id="bankName" required placeholder="Enter bank name" /></div><div class="form-group"><label for="accountNumber">Account Number</label><input type="text" id="accountNumber" required placeholder="Enter account number" /></div><div class="form-group"><label for="accountName">Account Name</label><input type="text" id="accountName" required placeholder="Enter account name" /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
         
-        // --- REAL-TIME CALCULATION LOGIC ---
         const amountInput = document.getElementById('amount');
         const feeContainer = document.getElementById('feeContainer');
         const feeDisplay = document.getElementById('feeDisplay');
@@ -508,15 +419,11 @@ const renderWithdrawPage = async () => {
         amountInput.addEventListener('input', () => {
             const val = parseFloat(amountInput.value);
             if (!isNaN(val) && val > 0) {
-                const fee = val * 0.09; // 9% calculation
-                const final = val - fee;
-                
+                const fee = val * 0.09; const final = val - fee;
                 feeDisplay.textContent = '- ₦' + fee.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 finalDisplay.textContent = '₦' + final.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 feeContainer.style.display = 'block';
-            } else {
-                feeContainer.style.display = 'none';
-            }
+            } else { feeContainer.style.display = 'none'; }
         });
 
         document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
@@ -530,9 +437,7 @@ const renderWithdrawPage = async () => {
             if (amount < 1000) return alert('Minimum withdrawal amount is ₦1,000.');
             if (amount > balance) return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
             
-            const fee = amount * 0.09;
-            const receive = amount - fee;
-
+            const fee = amount * 0.09; const receive = amount - fee;
             if (!confirm(`Confirm Withdrawal?\n\nRequested: ₦${amount.toLocaleString()}\nFee (9%): ₦${fee.toLocaleString()}\nYou Receive: ₦${receive.toLocaleString()}\n\nProceed?`)) return;
 
             try {
@@ -541,47 +446,17 @@ const renderWithdrawPage = async () => {
                     body: JSON.stringify({ amount, bank_name: bankName, account_number: accountNumber, account_name: accountName })
                 });
                 if (!withdrawResponse) return;
-                
                 const result = await withdrawResponse.json();
                 if (!withdrawResponse.ok) return alert('Error: ' + result.message);
-                
                 showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
-            } catch (error) {
-                alert('An error occurred. Please try again.');
-            }
+            } catch (error) { alert('An error occurred. Please try again.'); }
         });
-    } catch (error) {
-        console.error('Error loading withdrawal page:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
-    }
+    } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>'; }
 };
 
-// --- RENDER REWARDS (Active Investments + Income) ---
+// --- RENDER REWARDS PAGE (VISUAL MODE: Displays structure immediately) ---
 const renderRewardsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
-    try {
-        const invResponse = await fetchWithAuth(`${API_BASE_URL}/investments`, { method: 'GET' });
-        if (!invResponse || !invResponse.ok) throw new Error('Failed to load investments.');
-        const invData = await invResponse.json();
-        const investments = Array.isArray(invData) ? invData : (invData.data || []);
-        let totalDailyReward = 0, detailsHTML = '';
-
-        if (investments.length === 0) {
-            detailsHTML = `<div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;"><i class="fas fa-gift" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666; margin-bottom: 20px;">No active rewards running.</p><a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Earning</a></div>`;
-        } else {
-            investments.forEach(inv => { totalDailyReward += Number(inv.daily_income || 0); });
-            detailsHTML = investments.map(inv => {
-                let startDate, expiryDate, duration, percentage;
-                try {
-                    startDate = new Date(inv.created_at || Date.now()); duration = Number(inv.duration) || 30; expiryDate = new Date(startDate); expiryDate.setDate(startDate.getDate() + duration);
-                    const now = new Date(); percentage = Math.floor(((now - startDate) / (expiryDate - startDate)) * 100);
-                    if (percentage > 100) percentage = 100; if (percentage < 0) percentage = 0;
-                } catch(err) { percentage = 0; }
-                return `<div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 5px solid #10b981;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><h3 style="margin: 0; font-size: 15px; color: #333;">${inv.item_name || 'Investment Plan'}</h3><span style="font-size: 11px; background: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 10px;">Active</span></div><div style="display: flex; justify-content: space-between; background: #f9f9f9; padding: 8px; border-radius: 6px; mb-2;"><div style="text-align: center;"><span style="font-size: 10px; color: #888;">Daily Reward</span><br><strong style="color: #10b981;">₦${Number(inv.daily_income || 0).toLocaleString()}</strong></div><div style="text-align: center; border-left: 1px solid #ddd; padding-left: 10px;"><span style="font-size: 10px; color: #888;">Total Invested</span><br><strong>₦${Number(inv.amount).toLocaleString()}</strong></div></div><div style="margin-top: 10px; font-size: 11px; color: #666; display: flex; justify-content: space-between;"><span>Started: ${startDate.toLocaleDateString()}</span><span>Ends: ${expiryDate.toLocaleDateString()}</span></div><div style="margin-top: 8px;"><div style="width: 100%; background: #eee; height: 6px; border-radius: 4px; overflow: hidden;"><div style="width: ${percentage}%; background: #10b981; height: 100%;"></div></div></div></div>`;
-            }).join('');
-        }
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ ${totalDailyReward.toLocaleString()}</h1><p style="font-size: 12px; opacity: 0.8;">Generated automatically every 24 hours</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Active Sources</h3></div>${detailsHTML}</div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load rewards.</p>'; }
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ 0</h1><p style="font-size: 12px; opacity: 0.8;">Generated automatically every 24 hours</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Active Sources</h3></div><div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;"><i class="fas fa-gift" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666; margin-bottom: 20px;">No active rewards running.</p><a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Earning</a></div></div>`;
 };
 
 const renderHistoryPage = async () => { appContent.innerHTML = '<div class="page-container"><h2>History</h2><p style="text-align:center; color:#888;">No records found.</p></div>'; };
