@@ -1,11 +1,36 @@
-// --- 1. IMPORTS AT THE VERY TOP ---
-import vipProducts from './vip.js'; 
+// ==========================================
+// 1. CONFIGURATION & DATA
+// ==========================================
+
+// FIXED: Defined here to prevent "White Screen" errors
+const vipProducts = [
+    { 
+        id: 101, 
+        name: "Casper VIP Gold", 
+        price: 150000, 
+        total_return: 250000, 
+        duration: 30, 
+        itemimage: "https://placehold.co/300x200/10b981/ffffff?text=VIP+Gold" 
+    },
+    { 
+        id: 102, 
+        name: "Casper VIP Platinum", 
+        price: 500000, 
+        total_return: 900000, 
+        duration: 45, 
+        itemimage: "https://placehold.co/300x200/059669/ffffff?text=VIP+Platinum" 
+    }
+];
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
-// --- MODAL HELPER ELEMENTS & FUNCTIONS ---
+// ==========================================
+// 2. HELPER FUNCTIONS
+// ==========================================
+
+// --- MODAL HELPER ---
 const successModal = document.getElementById('successModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const modalMessage = document.getElementById('modalMessage');
@@ -24,7 +49,7 @@ const closeModal = () => {
     }
 };
 
-// --- HELPER: COPY REFERRAL (Robust Mobile Support) ---
+// --- HELPER: COPY REFERRAL ---
 const copyReferralLink = async (referralCode) => {
     if (!referralCode || referralCode === 'N/A') {
         alert('No referral code available to copy.');
@@ -90,21 +115,26 @@ const fetchWithAuth = async (url, options = {}) => {
         headers.append('Content-Type', 'application/json');
     }
 
-    const response = await fetch(url, { ...options, headers });
-
-    if (response.status === 401 || response.status === 403) {
-        alert('Your session has expired. Please log in again.');
-        logoutUser();
-        return new Promise(() => {}); 
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401 || response.status === 403) {
+            alert('Your session has expired. Please log in again.');
+            logoutUser();
+            return null;
+        }
+        return response;
+    } catch (e) {
+        console.error("Network Error", e);
+        return null;
     }
-
-    return response;
 };
 
 
-// --- ACTION HANDLERS ---
+// ==========================================
+// 3. ACTION HANDLERS
+// ==========================================
 
-// --- 2. HANDLE LOGIN ---
+// --- HANDLE LOGIN ---
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
@@ -137,7 +167,7 @@ const handleLogin = async (event) => {
     }
 };
 
-// --- 3. HANDLE REGISTER (OPTIMISTIC MODE) ---
+// --- HANDLE REGISTER ---
 const handleRegister = async (event) => {
     event.preventDefault();
 
@@ -158,7 +188,6 @@ const handleRegister = async (event) => {
 
     try {
         const payload = { fullName, phone, email, password };
-        
         if (referral) {
             payload.referral = referral;
         }
@@ -199,7 +228,7 @@ const handleOTPVerification = async (event, email) => {
     }
 };
 
-// --- 4. HANDLE RESEND OTP ---
+// --- HANDLE RESEND OTP ---
 const handleResendOTP = async (email) => { 
     try {
         const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
@@ -216,11 +245,11 @@ const handleResendOTP = async (email) => {
     }
 };
 
-// --- 5. HANDLE INVEST CLICK (SMART ROUTING) ---
+// --- HANDLE INVEST CLICK ---
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId;
-        const investType = event.target.dataset.type; // Check if it is 'vip'
+        const investType = event.target.dataset.type;
         
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) {
@@ -236,10 +265,9 @@ const handleInvestClick = async (event) => {
         
         if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
         
-        // DETERMINE CORRECT ENDPOINT
-        let endpoint = `${API_BASE_URL}/investments/createInvestment/${itemId}`; // Default (Regular)
+        let endpoint = `${API_BASE_URL}/investments/createInvestment/${itemId}`;
         if (investType === 'vip') {
-            endpoint = `${API_BASE_URL}/investments/createVipInvestment/${itemId}`; // Switch to VIP endpoint
+            endpoint = `${API_BASE_URL}/investments/createVipInvestment/${itemId}`;
         }
 
         try {
@@ -249,14 +277,14 @@ const handleInvestClick = async (event) => {
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            if (response && response.ok && result.success) {
                 showSuccessModal('Investment created successfully! Your balance has been updated.');
                 setTimeout(() => {
                     window.location.hash = '#home';
                     router();
                 }, 2000);
             } else {
-                const errorMsg = result.message || 'Failed to create investment. Please try again.';
+                const errorMsg = (result && result.message) || 'Failed to create investment.';
                 alert('Error: ' + errorMsg);
             }
         } catch (error) {
@@ -267,7 +295,9 @@ const handleInvestClick = async (event) => {
 };
 
 
-// --- RENDER FUNCTIONS ---
+// ==========================================
+// 4. RENDER FUNCTIONS
+// ==========================================
 
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
@@ -295,8 +325,6 @@ const renderLoginScreen = () => {
 
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
-    
-    // Auto-fill code from URL if present
     const autoRefCode = getReferralFromUrl();
 
     appContent.innerHTML = `
@@ -444,7 +472,7 @@ const renderHomeScreen = async () => {
 };
 
 
-// --- 9. RENDER PRODUCTS (API) ---
+// --- RENDER PRODUCTS ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
     
@@ -464,12 +492,10 @@ const renderProductsPage = async () => {
             items.forEach(item => {
                 const itemId = Number(item.id);
                 
-                // --- OWNER REQUEST: ONLY SHOW DURATION IF ADMIN ADDED IT ---
                 let durationHTML = '';
                 if (item.duration && Number(item.duration) > 0) {
                     durationHTML = `<p><strong>Duration:</strong> ${item.duration} days</p>`;
                 }
-                // -----------------------------------------------------------
                 
                 productHTML += `
                     <div class="product-card-wc">
@@ -481,11 +507,9 @@ const renderProductsPage = async () => {
                             <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
                             <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
                             ${durationHTML}
-                            
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">
                                 (Daily Withdrawal Available)
                             </p>
-                            
                             <button class="btn-invest" data-plan-id="${itemId}" data-type="regular">Invest</button>
                         </div>
                     </div>`;
@@ -506,15 +530,13 @@ const renderProductsPage = async () => {
 };
 
 
-// --- 10. RENDER VIP PAGE ---
+// --- RENDER VIP PAGE ---
 const renderVipPage = () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
     
     let vipHTML = '';
     vipProducts.forEach(plan => {
         const itemId = Number(plan.id);
-        
-        // --- VIP DURATION IS ALWAYS SHOWN (AS REQUESTED) ---
         vipHTML += `
         <div class="product-card-wc">
             <div class="product-image-wc">
@@ -525,9 +547,7 @@ const renderVipPage = () => {
                 <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
                 <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
                 <p><strong>Duration:</strong> ${plan.duration} days</p>
-                
                 <p style="font-size: 12px; color: #666;">(Note: Additional 20% of your investment will be added after maturity)</p>
-                
                 <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
             </div>
         </div>`;
@@ -537,7 +557,7 @@ const renderVipPage = () => {
 };
 
 
-// --- 11. RENDER ME PAGE (WITH FORCE GENERATE FIX) ---
+// --- RENDER ME PAGE ---
 const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
@@ -547,7 +567,7 @@ const renderMePage = async () => {
         if (!response.ok) { throw new Error('Failed to load data.'); }
         const data = await response.json();
         
-        // --- FORCE REFERRAL CODE GENERATION ---
+        // Force Referral Code Generation if missing
         let finalReferralCode = data.balance.referral_code;
         if (!finalReferralCode || finalReferralCode === 'null' || finalReferralCode === 'N/A') {
             const cleanPhone = (data.balance.phone_number || '').replace(/[^a-zA-Z0-9]/g, '');
@@ -614,7 +634,7 @@ const renderMePage = async () => {
     }
 };
 
-// --- 12. RENDER TASK PAGE (EARNINGS + ACTIVE PLANS) ---
+// --- 12. RENDER TASK PAGE (EARNINGS) ---
 const renderTaskPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
     
@@ -630,9 +650,8 @@ const renderTaskPage = async () => {
                 
                 if (investments.length > 0) {
                     investmentsHTML = investments.map(inv => {
-                        // Calculate Expiry
                         const startDate = new Date(inv.created_at || Date.now());
-                        const duration = inv.duration || 30; // Default to 30
+                        const duration = inv.duration || 30;
                         const expiryDate = new Date(startDate);
                         expiryDate.setDate(startDate.getDate() + Number(duration));
                         
@@ -1363,3 +1382,172 @@ closeModalBtn.addEventListener('click', closeModal);
 successModal.addEventListener('click', (e) => {
     if (e.target.id === 'successModal') { closeModal(); }
 });
+
+
+// ==========================================
+// 🚀 SOCIAL PROOF / FOMO NOTIFICATION SYSTEM
+// ==========================================
+(function startSocialProof() {
+    
+    // 1. CONFIGURATION: The Fake Data
+    const fomoData = {
+        names: [
+            "Chinedu Okeke", "Fatima Bello", "Tunde Bakare", "Ngozi Eze", 
+            "Emeka Johnson", "Adebayo Ogunlesi", "Chioma Jesus", "Yusuf Ibrahim",
+            "Funke Akindele", "Musa Yar'adua", "Blessing Okoro", "Segun Arinze",
+            "Zainab Ahmed", "Kelechi Iheanacho", "Olamide Baddo", "Grace Ojo",
+            "Samuel Kalu", "Aisha Buhari", "David Adeleke", "Mary Slessor",
+            "Ibrahim Babangida", "Patience Ozokwor", "Don Jazzy", "Genevieve Nnaji",
+            "Femi Otedola", "Aliko Dangote", "Tony Elumelu", "Linda Ikeji"
+        ],
+        locations: [
+            "Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", 
+            "Benin City", "Enugu", "Kaduna", "Warri", "Jos"
+        ],
+        actions: [
+            { text: "just registered an account", icon: "👤", color: "#3b82f6" }, // Blue
+            { text: "just invested ₦50,000", icon: "💰", color: "#10b981" },     // Green
+            { text: "just invested ₦100,000", icon: "💰", color: "#10b981" },    // Green
+            { text: "just invested ₦20,000", icon: "💰", color: "#10b981" },     // Green
+            { text: "purchased Casper VIP Gold", icon: "🍷", color: "#eab308" }, // Gold
+            { text: "started a Platinum Plan", icon: "🏆", color: "#a855f7" },   // Purple
+            { text: "just withdrew ₦15,000", icon: "🏦", color: "#f43f5e" },     // Red
+            { text: "received daily interest", icon: "📈", color: "#10b981" }     // Green
+        ],
+        times: ["Just now", "2 mins ago", "5 mins ago", "12 seconds ago", "Right now"]
+    };
+
+    // 2. INJECT CSS STYLES (Glassmorphism)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #fomo-popup {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-left: 5px solid #10B981;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            font-family: 'Inter', sans-serif; /* Uses your app font */
+            z-index: 9999;
+            transform: translateY(150%); /* Hidden down */
+            transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 340px;
+            width: 90%;
+            pointer-events: none; /* Let clicks pass through if needed */
+        }
+
+        #fomo-popup.show {
+            transform: translateY(0); /* Slide Up */
+        }
+
+        .fomo-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: #f3f4f6;
+            flex-shrink: 0;
+        }
+
+        .fomo-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fomo-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .fomo-desc {
+            font-size: 12px;
+            color: #4b5563;
+            line-height: 1.3;
+        }
+
+        .fomo-meta {
+            font-size: 10px;
+            color: #9ca3af;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // 3. INJECT HTML ELEMENT
+    const popup = document.createElement('div');
+    popup.id = 'fomo-popup';
+    popup.innerHTML = `
+        <div class="fomo-icon-box" id="fomo-icon">👋</div>
+        <div class="fomo-content">
+            <span class="fomo-name" id="fomo-name">Loading...</span>
+            <span class="fomo-desc" id="fomo-action">...</span>
+            <span class="fomo-meta">
+                <span id="fomo-location">Lagos</span> • <span id="fomo-time">Just now</span>
+            </span>
+        </div>
+    `;
+    document.body.appendChild(popup);
+
+    // 4. THE LOGIC LOOP
+    function showNotification() {
+        // Only show if user is NOT on login/register page (Optional check)
+        if(window.location.hash.includes('login') || window.location.hash.includes('register')) return;
+
+        // Get Elements
+        const elName = document.getElementById('fomo-name');
+        const elAction = document.getElementById('fomo-action');
+        const elLocation = document.getElementById('fomo-location');
+        const elTime = document.getElementById('fomo-time');
+        const elIcon = document.getElementById('fomo-icon');
+        const elPopup = document.getElementById('fomo-popup');
+
+        // Randomize Data
+        const name = fomoData.names[Math.floor(Math.random() * fomoData.names.length)];
+        const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
+        const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
+        const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
+
+        // Update Content
+        elName.innerText = name;
+        elAction.innerText = actionObj.text;
+        elLocation.innerText = loc;
+        elTime.innerText = time;
+        elIcon.innerText = actionObj.icon;
+        
+        // Update Border/Icon Colors based on action type
+        elPopup.style.borderLeftColor = actionObj.color;
+        elIcon.style.background = actionObj.color + '20'; // Add transparency
+        elIcon.style.color = actionObj.color;
+
+        // Animate In
+        elPopup.classList.add('show');
+
+        // Hide after 5 seconds
+        setTimeout(() => {
+            elPopup.classList.remove('show');
+        }, 5000);
+    }
+
+    // 5. START LOOP
+    // First pop up after 4 seconds
+    setTimeout(showNotification, 4000);
+
+    // Then repeat every 12 to 25 seconds randomly
+    setInterval(() => {
+        showNotification();
+    }, Math.floor(Math.random() * (25000 - 12000 + 1) + 12000));
+
+})();
