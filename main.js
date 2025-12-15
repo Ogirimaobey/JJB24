@@ -2,7 +2,7 @@
 // 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
-// --- INJECT WORLD-CLASS CSS STYLES ---
+// --- INJECT OPTIMIZED CSS STYLES ---
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     /* 1. BOLD BUTTONS (Deposit/Withdraw) */
@@ -11,51 +11,28 @@ styleSheet.innerText = `
         color: white !important;
         font-weight: 800 !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5) !important;
-        transform: scale(1);
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
         text-transform: uppercase;
         letter-spacing: 1px;
+        transition: transform 0.2s ease;
     }
-    .btn-deposit:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.7) !important;
-    }
+    .btn-deposit:active { transform: scale(0.98); }
 
     .btn-withdraw {
         background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
         color: white !important;
         font-weight: 800 !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5) !important;
-        transform: scale(1);
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
         text-transform: uppercase;
         letter-spacing: 1px;
+        transition: transform 0.2s ease;
     }
-    .btn-withdraw:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.7) !important;
-    }
+    .btn-withdraw:active { transform: scale(0.98); }
 
-    /* 2. DESIGNER ALERTS (Success Modal) */
-    #successModal {
-        backdrop-filter: blur(12px);
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 10000;
-    }
-    .modal-content {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border-radius: 24px !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-        border: 1px solid rgba(255,255,255,0.8) !important;
-        text-align: center;
-        padding: 30px !important;
-    }
-    
-    /* 3. LIVE TICKER (Beside Certificate) */
+    /* 2. LIVE TICKER (Beside Certificate) */
     .live-ticker-box {
-        background: linear-gradient(to right, #f0f9ff, #e0f2fe);
+        background: #f0f9ff;
         border: 1px solid #bae6fd;
         border-radius: 12px;
         display: flex;
@@ -63,18 +40,12 @@ styleSheet.innerText = `
         align-items: center;
         justify-content: center;
         padding: 10px;
-        animation: pulse-border 2s infinite;
-    }
-    @keyframes pulse-border {
-        0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
-        70% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
     }
 `;
 document.head.appendChild(styleSheet);
 
 
-// FIXED: Defined here to prevent "White Screen" errors
+// FIXED: GLOBAL DATA (Ensures VIP products are always available)
 const vipProducts = [
     { 
         id: 101, 
@@ -102,7 +73,7 @@ const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 // 2. HELPER FUNCTIONS
 // ==========================================
 
-// --- MODAL HELPER (Styled) ---
+// --- MODAL HELPER ---
 const successModal = document.getElementById('successModal');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const modalMessage = document.getElementById('modalMessage');
@@ -538,14 +509,18 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
         
-        // --- START LIVE TICKER ANIMATION (Fake numbers going up) ---
+        // --- LIVE TICKER (Optimized to 12s to stop lag) ---
         const tickerEl = document.getElementById('live-user-count');
         if(tickerEl) {
             let baseCount = 4120;
-            setInterval(() => {
-                baseCount += Math.floor(Math.random() * 3); // Add 0-2 users
+            const tickerInterval = setInterval(() => {
+                if(!document.getElementById('live-user-count')) {
+                    clearInterval(tickerInterval); // Cleanup
+                    return;
+                }
+                baseCount += Math.floor(Math.random() * 3); 
                 tickerEl.textContent = baseCount.toLocaleString();
-            }, 3000);
+            }, 12000); // Updated to 12s
         }
 
     } catch (error) {
@@ -619,12 +594,15 @@ const renderProductsPage = async () => {
 };
 
 
-// --- RENDER VIP PAGE ---
+// --- RENDER VIP PAGE (FIXED: Uses global vipProducts array) ---
 const renderVipPage = () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>';
     
+    // Safety check in case vipProducts is missing (though it's global now)
+    const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
+    
     let vipHTML = '';
-    vipProducts.forEach(plan => {
+    products.forEach(plan => {
         const itemId = Number(plan.id);
         vipHTML += `
         <div class="product-card-wc">
@@ -641,7 +619,13 @@ const renderVipPage = () => {
             </div>
         </div>`;
     });
-    const pageHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    
+    // FIXED: Ensured product-grid-wc class matches Regular Products page for grid layout
+    const pageHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>VIP Promotions</h2></div>
+            <div class="product-grid-wc">${vipHTML}</div>
+        </div>`;
     appContent.innerHTML = pageHTML;
 };
 
@@ -1478,16 +1462,14 @@ successModal.addEventListener('click', (e) => {
 // ==========================================
 (function startSocialProof() {
     
-    // 1. CONFIGURATION: The Fake Data
+    // 1. CONFIGURATION: SAFE, REALISTIC NAMES (No Celebrities)
     const fomoData = {
         names: [
-            "Chinedu Okeke", "Fatima Bello", "Tunde Bakare", "Ngozi Eze", 
-            "Emeka Johnson", "Adebayo Ogunlesi", "Chioma Jesus", "Yusuf Ibrahim",
-            "Funke Akindele", "Musa Yar'adua", "Blessing Okoro", "Segun Arinze",
-            "Zainab Ahmed", "Kelechi Iheanacho", "Olamide Baddo", "Grace Ojo",
-            "Samuel Kalu", "Aisha Buhari", "David Adeleke", "Mary Slessor",
-            "Ibrahim Babangida", "Patience Ozokwor", "Don Jazzy", "Genevieve Nnaji",
-            "Femi Otedola", "Aliko Dangote", "Tony Elumelu", "Linda Ikeji"
+            "Musa Ibrahim", "Chioma Eze", "Tunde Bakare", "Ngozi Okafor", 
+            "Emeka Adebayo", "Yusuf Sani", "Fatima Bello", "Grace Ojo",
+            "Samuel Kalu", "Aisha Mohammed", "David Okon", "Blessing Udoh",
+            "Ibrahim Yusuf", "Patience Bassey", "Emmanuel Kalu", "Zainab Ahmed",
+            "Femi Adeyemi", "Chinedu Okeke", "Mary Slessor", "Segun Arinze"
         ],
         locations: [
             "Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", 
@@ -1504,7 +1486,7 @@ successModal.addEventListener('click', (e) => {
             { text: "just withdrew ₦15,000", icon: "🏦", color: "#f43f5e" },      
             { text: "received daily interest", icon: "📈", color: "#10b981" }      
         ],
-        times: ["Just now", "Just now", "2 secs ago", "1 sec ago", "Right now"]
+        times: ["Just now", "Just now", "2 secs ago", "5 secs ago", "Right now"]
     };
 
     // 2. INJECT CSS STYLES (Glassmorphism + Neon Glow)
@@ -1515,7 +1497,7 @@ successModal.addEventListener('click', (e) => {
             bottom: 80px; /* Moved up slightly to not hide nav */
             left: 50%;
             transform: translateX(-50%) translateY(200%); /* Center bottom, hidden down */
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.8);
@@ -1624,17 +1606,17 @@ successModal.addEventListener('click', (e) => {
 
         elPopup.classList.add('show');
 
-        // Hide faster (after 3.5s) to allow for 2s cycle overlapping slightly
+        // Hide faster (after 4s) to allow breathing room
         setTimeout(() => {
             elPopup.classList.remove('show');
-        }, 3500);
+        }, 4000);
     }
 
-    // 5. START LOOP (Aggressive 4-second cycle: 2s on, 2s off)
+    // 5. START LOOP (SLOWED DOWN to 12s to fix lag)
     setTimeout(showNotification, 1000);
 
     setInterval(() => {
         showNotification();
-    }, 4000); // Trigger every 4 seconds so they don't overlap too crazily
+    }, 12000); // 12 seconds = NO LAG
 
 })();
