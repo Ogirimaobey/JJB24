@@ -1,6 +1,24 @@
-// --- 1. CONFIGURATION & IMPORTS ---
-// If you have a separate vip.js file, keep this import. If not, remove it.
-// import vipProducts from './vip.js'; 
+// --- 1. CONFIGURATION & DATA ---
+
+// defined locally to avoid "import" errors when testing locally
+const vipProducts = [
+    { 
+        id: 101, 
+        name: "Casper VIP Gold", 
+        price: 150000, 
+        total_return: 250000, 
+        duration: 30, 
+        itemimage: "https://placehold.co/300x200/10b981/ffffff?text=VIP+Gold" 
+    },
+    { 
+        id: 102, 
+        name: "Casper VIP Platinum", 
+        price: 500000, 
+        total_return: 900000, 
+        duration: 45, 
+        itemimage: "https://placehold.co/300x200/059669/ffffff?text=VIP+Platinum" 
+    }
+];
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
@@ -408,7 +426,26 @@ const renderHistoryPage = async () => {
     } catch(e) { console.error(e); }
 };
 
-// --- 10. SECONDARY PAGES (Team, Support, etc.) ---
+// --- 10. PAGE: VIP PRODUCTS ---
+const renderVipPage = () => {
+    appContent.innerHTML = `
+        <div class="mb-6"><h2 class="font-display text-2xl font-bold text-gray-900">VIP Plans</h2><p class="text-gray-500 text-sm">Exclusive high-yield opportunities.</p></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+            ${vipProducts.map(item => `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border-2 border-gold-500 flex flex-col h-full relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 bg-gold-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">PREMIUM</div>
+                    <img src="${item.itemimage}" class="w-full h-32 object-cover rounded-xl mb-4 bg-gray-100">
+                    <h3 class="font-bold text-gray-900 text-lg mb-1">${item.name}</h3>
+                    <div class="flex justify-between items-end mt-auto pt-4">
+                        <div><p class="text-xs text-gray-400 uppercase">Entry Price</p><p class="text-lg font-bold text-gray-900">₦${Number(item.price).toLocaleString()}</p></div>
+                        <div class="text-right"><p class="text-xs text-gray-400 uppercase">Total Return</p><p class="text-lg font-bold text-gold-500">₦${Number(item.total_return).toLocaleString()}</p></div>
+                    </div>
+                    <button class="w-full mt-4 bg-gray-900 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-gray-800 transition btn-invest" data-id="${item.id}" data-type="vip">Join VIP</button>
+                </div>`).join('')}
+        </div>`;
+};
+
+// --- 11. SECONDARY PAGES (Team, Support, etc.) ---
 const renderSimplePage = (title, content) => {
     appContent.innerHTML = `
         <div class="max-w-md mx-auto">
@@ -417,7 +454,7 @@ const renderSimplePage = (title, content) => {
         </div>`;
 };
 
-// --- 11. ROUTER & GLOBAL LISTENERS ---
+// --- 12. ROUTER & GLOBAL LISTENERS ---
 const router = () => {
     const hash = window.location.hash || '#login';
     // Hide nav on auth pages
@@ -438,7 +475,7 @@ const router = () => {
         case '#products': renderProductsPage(); break;
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
-        case '#vip': renderProductsPage(); break; 
+        case '#vip': renderVipPage(); break; 
         case '#me': renderMePage(); break;
         case '#history': renderHistoryPage(); break;
         case '#team': renderSimplePage('My Team', '<p class="text-center py-8 text-gray-400">Team visualization coming soon.</p>'); break;
@@ -455,10 +492,17 @@ const router = () => {
 appContent.addEventListener('click', async (e) => {
     if(e.target.classList.contains('btn-invest')) {
         const id = e.target.dataset.id;
+        const type = e.target.dataset.type; // Check if regular or VIP
+        
         if(!confirm('Confirm Investment?')) return;
         e.target.innerText = 'Processing...';
+        
+        // Dynamic endpoint selection
+        let endpoint = `${API_BASE_URL}/investments/createInvestment/${id}`;
+        if(type === 'vip') endpoint = `${API_BASE_URL}/investments/createVipInvestment/${id}`;
+
         try {
-            const res = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${id}`, { method: 'POST' });
+            const res = await fetchWithAuth(endpoint, { method: 'POST' });
             const data = await res.json();
             if(data.success) { showSuccessModal('Investment Successful!'); setTimeout(() => window.location.hash = '#home', 2000); } 
             else { alert(data.message); e.target.innerText = 'Invest Now'; }
