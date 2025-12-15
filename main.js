@@ -2,7 +2,7 @@
 // 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
-// --- INJECT OPTIMIZED CSS STYLES ---
+// --- INJECT COMPLETE CSS STYLES (Fixed Missing Grid) ---
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     /* 1. BOLD BUTTONS (Deposit/Withdraw) */
@@ -40,6 +40,43 @@ styleSheet.innerText = `
         align-items: center;
         justify-content: center;
         padding: 10px;
+    }
+
+    /* 3. MISSING CARD STYLES (This fixes the VIP Display) */
+    .product-grid-wc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+    .product-card-wc {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border: 1px solid #f3f4f6;
+        transition: transform 0.2s ease;
+    }
+    .product-card-wc:hover {
+        transform: translateY(-5px);
+    }
+    .product-image-wc {
+        height: 160px;
+        width: 100%;
+        background: #f0f0f0;
+    }
+    .product-image-wc img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .product-info-wc {
+        padding: 15px;
+    }
+    .product-info-wc h4 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        color: #111;
     }
 `;
 document.head.appendChild(styleSheet);
