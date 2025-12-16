@@ -79,14 +79,7 @@ styleSheet.innerText = `
     }
     .btn-invest-premium:active { transform: scale(0.98); }
 
-    /* 3. LIVE TICKER */
-    .live-ticker-box {
-        background: #f0f9ff; border: 1px solid #bae6fd;
-        border-radius: 12px; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; padding: 10px;
-    }
-
-    /* 4. DESIGNER ALERT NOTIFICATION */
+    /* 3. DESIGNER ALERT NOTIFICATION */
     #successModal {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         justify-content: center; align-items: center;
@@ -298,12 +291,11 @@ const renderHomeScreen = async () => {
                 }
             }
         } catch(e) {}
+        // NOTE: Live Users Ticker REMOVED from the quick-actions section here.
         appContent.innerHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
             <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
-            <div class="home-content"><div class="quick-actions"><div class="live-ticker-box"><i class="fas fa-users" style="color: #0ea5e9; font-size: 1.2rem; margin-bottom: 4px;"></i><span style="font-size: 10px; font-weight: bold; color: #555;">LIVE USERS</span><span id="live-user-count" style="font-size: 16px; font-weight: 800; color: #0284c7;">4,120</span></div><a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a><a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a><a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a><a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a><a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a></div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
-        const tickerEl = document.getElementById('live-user-count');
-        if(tickerEl) { let baseCount = 4120; const tId = setInterval(() => { if(!document.getElementById('live-user-count')) { clearInterval(tId); return; } baseCount += Math.floor(Math.random() * 3); tickerEl.textContent = baseCount.toLocaleString(); }, 12000); }
+            <div class="home-content"><div class="quick-actions"><a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a><a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a><a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a><a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a><a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a></div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
     } catch (error) { logoutUser(); }
 };
 
@@ -334,20 +326,18 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- RESTORED: RENDER TEAM PAGE (Connects to Sahil's new endpoint) ---
+// --- FINAL RENDER TEAM PAGE (Connects to Sahil's new endpoint) ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
     try {
-        // Tries both common endpoints as a fallback, per our strategy
         let response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
         if (!response || !response.ok) {
              response = await fetchWithAuth(`${API_BASE_URL}/users/team`, { method: 'GET' });
         }
-        if (!response || !response.ok) throw new Error('Backend endpoint for Team data not responding or missing.');
+        if (!response || !response.ok) throw new Error('Backend endpoint for Team data not found.');
 
         const data = await response.json();
         const teamMembers = data.referrals || data.team || [];
-        // Assuming Sahil returns total commission in data.total_commission
         const totalCommission = data.total_commission || 0; 
         let teamHTML = '';
 
@@ -365,8 +355,8 @@ const renderTeamPage = async () => {
         }
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${teamMembers.length}</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div><div style="background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 12px; color: #666;"><strong>Commission Rules:</strong><ul style="padding-left: 20px; margin-top: 5px;"><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul></div></div>`;
     } catch (error) {
-        // Fallback on failure: Display nice empty structure
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ 0</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: 0</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3><div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">Waiting for data from the server...</p></div></div></div>`;
+        // Fallback: Display professional empty state if fetch fails
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ 0</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: 0</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3><div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">Share your referral link to build your team!</p></div></div></div>`;
     }
 };
 
@@ -485,7 +475,7 @@ const renderWithdrawPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>'; }
 };
 
-// --- RESTORED: RENDER REWARDS PAGE (Connects to Sahil's new endpoint) ---
+// --- FINAL RENDER REWARDS PAGE (Connects to Sahil's new endpoint) ---
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
     try {
@@ -493,7 +483,6 @@ const renderRewardsPage = async () => {
         if (!response || !response.ok) throw new Error('Failed to load reward history.');
         
         const data = await response.json();
-        // Assuming Sahil's new endpoint returns { total_daily_income: N, history: [...] }
         const totalDailyReward = data.total_daily_income || 0;
         const rewardHistory = data.history || [];
         let detailsHTML = '';
@@ -523,7 +512,10 @@ const renderRewardsPage = async () => {
         }
 
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ ${Number(totalDailyReward).toLocaleString()}</h1><p style="font-size: 12px; opacity: 0.8;">Accumulated daily earnings</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>${detailsHTML}</div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load reward history. Please check backend connection.</p>'; }
+    } catch (e) { 
+        // Fallback: Display professional empty state if fetch fails
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ 0</h1><p style="font-size: 12px; opacity: 0.8;">Accumulated daily earnings</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div><div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;"><p style="color: #666;">No earnings recorded yet. Check back soon!</p><a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Earning</a></div></div>`;
+    }
 };
 
 const renderHistoryPage = async () => { appContent.innerHTML = '<div class="page-container"><h2>History</h2><p style="text-align:center; color:#888;">No records found.</p></div>'; };
@@ -561,7 +553,7 @@ window.addEventListener('hashchange', router); window.addEventListener('DOMConte
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
 // ==========================================
-// 🚀 SOCIAL PROOF (FIXED: ONLY SHOWS ON HOME)
+// 🚀 SOCIAL PROOF (ONLY SHOWS ON HOME)
 // ==========================================
 (function startSocialProof() {
     const fomoData = {
