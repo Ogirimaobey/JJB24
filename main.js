@@ -334,9 +334,40 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- RENDER TEAM PAGE (VISUAL MODE: Displays structure immediately) ---
+// --- RESTORED: RENDER TEAM PAGE (Connects to Sahil's new endpoint) ---
 const renderTeamPage = async () => {
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ 0</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: 0</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3><div class="placeholder-card" style="text-align: center; padding: 30px;"><i class="fas fa-users-slash" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666;">You haven't invited anyone yet.</p></div></div><div style="background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 12px; color: #666;"><strong>Commission Rules:</strong><ul style="padding-left: 20px; margin-top: 5px;"><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul></div></div>`;
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
+    try {
+        // Tries both common endpoints as a fallback, per our strategy
+        let response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
+        if (!response || !response.ok) {
+             response = await fetchWithAuth(`${API_BASE_URL}/users/team`, { method: 'GET' });
+        }
+        if (!response || !response.ok) throw new Error('Backend endpoint for Team data not responding or missing.');
+
+        const data = await response.json();
+        const teamMembers = data.referrals || data.team || [];
+        // Assuming Sahil returns total commission in data.total_commission
+        const totalCommission = data.total_commission || 0; 
+        let teamHTML = '';
+
+        if (teamMembers.length === 0) {
+            teamHTML = `<div class="placeholder-card" style="text-align: center; padding: 30px;"><i class="fas fa-users-slash" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666;">You haven't invited anyone yet. Share your link now!</p></div>`;
+        } else {
+            teamHTML = teamMembers.map(member => `
+                <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 40px; height: 40px; background: #e1bee7; color: #6a0dad; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">${member.full_name ? member.full_name.charAt(0) : 'U'}</div>
+                        <div><h4 style="margin: 0; font-size: 14px;">${member.full_name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(member.created_at).toLocaleDateString()}</small></div>
+                    </div>
+                    <div style="text-align: right;"><span style="display: block; font-size: 12px; color: #888;">Commission</span><strong style="color: #10b981;">+₦${Number(member.commission_earned || 0).toLocaleString()}</strong></div>
+                </div>`).join('');
+        }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${teamMembers.length}</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div><div style="background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 12px; color: #666;"><strong>Commission Rules:</strong><ul style="padding-left: 20px; margin-top: 5px;"><li>Level A: 6%</li><li>Level B: 2%</li><li>Level C: 1%</li></ul></div></div>`;
+    } catch (error) {
+        // Fallback on failure: Display nice empty structure
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ 0</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: 0</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3><div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">Waiting for data from the server...</p></div></div></div>`;
+    }
 };
 
 const renderMePage = async () => { 
@@ -454,9 +485,45 @@ const renderWithdrawPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>'; }
 };
 
-// --- RENDER REWARDS PAGE (VISUAL MODE: Displays structure immediately) ---
+// --- RESTORED: RENDER REWARDS PAGE (Connects to Sahil's new endpoint) ---
 const renderRewardsPage = async () => {
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ 0</h1><p style="font-size: 12px; opacity: 0.8;">Generated automatically every 24 hours</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Active Sources</h3></div><div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;"><i class="fas fa-gift" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666; margin-bottom: 20px;">No active rewards running.</p><a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Earning</a></div></div>`;
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
+        if (!response || !response.ok) throw new Error('Failed to load reward history.');
+        
+        const data = await response.json();
+        // Assuming Sahil's new endpoint returns { total_daily_income: N, history: [...] }
+        const totalDailyReward = data.total_daily_income || 0;
+        const rewardHistory = data.history || [];
+        let detailsHTML = '';
+
+        if (rewardHistory.length === 0) {
+            detailsHTML = `<div class="placeholder-card" style="text-align:center; padding: 40px 20px; background: white; border-radius: 10px; margin-top: 20px;"><i class="fas fa-gift" style="font-size: 40px; color: #ccc; margin-bottom: 15px;"></i><p style="color: #666; margin-bottom: 20px;">No earnings recorded yet.</p><a href="#products" class="btn-auth" style="display:inline-block; text-decoration: none; padding: 10px 20px;">Start Earning</a></div>`;
+        } else {
+            detailsHTML = rewardHistory.map(item => {
+                const typeColor = item.type === 'referral' ? '#8b5cf6' : '#10b981';
+                const icon = item.type === 'referral' ? 'fa-users' : 'fa-chart-line';
+                const source = item.source || (item.type === 'referral' ? 'Referral Bonus' : 'Investment ROI');
+                
+                return `
+                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid ${typeColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas ${icon}" style="color: ${typeColor}; font-size: 18px;"></i>
+                            <div>
+                                <h4 style="margin: 0; font-size: 15px; color: #333; text-transform: capitalize;">${source}</h4>
+                                <small style="color: #888;">${new Date(item.created_at).toLocaleDateString()} at ${new Date(item.created_at).toLocaleTimeString()}</small>
+                            </div>
+                        </div>
+                        <strong style="color: ${typeColor}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);"><small style="opacity: 0.9;">Total Daily Reward Income</small><h1 style="margin: 5px 0; font-size: 28px;">₦ ${Number(totalDailyReward).toLocaleString()}</h1><p style="font-size: 12px; opacity: 0.8;">Accumulated daily earnings</p></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>${detailsHTML}</div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load reward history. Please check backend connection.</p>'; }
 };
 
 const renderHistoryPage = async () => { appContent.innerHTML = '<div class="page-container"><h2>History</h2><p style="text-align:center; color:#888;">No records found.</p></div>'; };
