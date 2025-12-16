@@ -1320,30 +1320,104 @@ const renderPrivacyPolicyPage = () => {
 // --- NEW PLACEHOLDER RENDER FUNCTIONS ---
 // Note: renderHistoryPage is already defined above (line 777)
 
-const renderTeamPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>My Team</h2></div>
-            <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
-                <i class="fas fa-users" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
-                <p>Your team referrals will appear here.</p>
-            </div>
-            <div class="info-card" style="margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                <h4 style="margin-top: 0;">Referral Commission</h4>
-                <ul style="list-style-type: none; padding-left: 0;">
+const renderTeamPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
+    
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, {
+            method: 'GET'
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load team data');
+        }
+
+        const data = await response.json();
+        const teamCount = data.team_count || 0;
+        const totalCommission = data.total_commission || 0;
+        const teamList = data.team_list || [];
+
+        let teamListHTML = '';
+        if (teamList.length === 0) {
+            teamListHTML = `
+                <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
+                    <i class="fas fa-users" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                    <p>No team members yet. Share your referral code to start earning!</p>
+                </div>
+            `;
+        } else {
+            teamListHTML = `
+                <div style="margin: 20px 0;">
+                    <h4 style="margin-bottom: 15px;">Team Members (${teamCount})</h4>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${teamList.map(member => `
+                            <div style="padding: 15px; background: #f9f9f9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${member.name}</strong>
+                                    <p style="margin: 5px 0; font-size: 14px; color: #666;">
+                                        ${member.phone} • Joined: ${new Date(member.joined_date).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 0; font-size: 14px; color: #666;">Balance</p>
+                                    <strong>₦${Number(member.balance).toLocaleString()}</strong>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        const pageHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>My Team</h2></div>
+                
+                <div class="info-card" style="margin: 20px; padding: 20px; background: linear-gradient(135deg, #6a0dad 0%, #8b2fd6 100%); border-radius: 12px; color: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div>
+                            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Commission Earned</p>
+                            <h2 style="margin: 5px 0;">₦${Number(totalCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Team Members</p>
+                            <h2 style="margin: 5px 0;">${teamCount}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                ${teamListHTML}
+
+                <div class="info-card" style="margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+                    <h4 style="margin-top: 0;">Referral Commission</h4>
+                    <ul style="list-style-type: none; padding-left: 0;">
                         <li>Level A: 6%</li>
                         <li>Level B: 2%</li>
                         <li>Level C: 1%</li>
                     </ul>
-                <h4>Team Commission (Daily)</h4>
-                <ul style="list-style-type: none; padding-left: 0;">
+                    <h4>Team Commission (Daily)</h4>
+                    <ul style="list-style-type: none; padding-left: 0;">
                         <li>Level A: 5% Daily</li>
                         <li>Level B: 3% Daily</li>
                         <li>Level C: 2% Daily</li>
                     </ul>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+        
+        appContent.innerHTML = pageHTML;
+    } catch (error) {
+        console.error('Error loading team data:', error);
+        appContent.innerHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>My Team</h2></div>
+                <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <p>Failed to load team data. Please try again later.</p>
+                </div>
+            </div>
+        `;
+    }
 };
 
 const renderSettingsPage = () => {
