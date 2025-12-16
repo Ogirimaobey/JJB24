@@ -207,7 +207,11 @@ const handleResendOTP = async (email) => {
     }
 };
 
+<<<<<<< HEAD
 // --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
+=======
+// --- 5. HANDLE INVEST CLICK (SMART ROUTING - CRITICAL) ---
+>>>>>>> origin/dev
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest')) {
         const rawItemId = event.target.dataset.planId; 
@@ -485,20 +489,37 @@ const renderProductsPage = async () => {
 
         const data = await response.json();
 
+        let productHTML = '';
+<<<<<<< HEAD
+        data.items.forEach(item => {
+        // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
+            
+            const itemId = Number(item.id);
+            if (isNaN(itemId)) {
+                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
+            return; 
+            }
+            productHTML += `
+                <div class="product-card-wc">
+                    <div class="product-image-wc">
+                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
+                    </div>
+                    <div class="product-info-wc">
+                        <h4>${item.itemname}</h4>
+                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
+                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
+                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
+                    </div>
+                </div>`;
+        });
+=======
         const items = data.items || [];
         
         if (items.length === 0) {
             productHTML = '<p style="text-align:center; padding:20px;">No products available.</p>';
         } else {
             items.forEach(item => {
-                // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
-                
                 const itemId = Number(item.id);
-                if (isNaN(itemId)) {
-                    console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
-                    return; 
-                }
-                
                 // Backend might not send 'duration' yet, so we default to 30
                 const duration = item.duration || 30; 
                 
@@ -522,6 +543,7 @@ const renderProductsPage = async () => {
                     </div>`;
             });
         }
+>>>>>>> origin/dev
 
         const pageHTML = `
             <div class="page-container">
@@ -563,15 +585,23 @@ const renderVipPage = async () => {
             </div>
             <div class="product-info-wc">
                 <h4>${plan.name}</h4>
-                <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration_days} days</p>
+<<<<<<< HEAD
+                    <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
+                    <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
+                    <p><strong>Duration:</strong> ${plan.duration_days} days</p>
+                    <p style="font-size: 12px; color: #666;">
+                        (Note: Additional 20% of your investment will be added after maturity)
+                    </p>
+                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
+=======
+                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
+                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
+                <p><strong>Duration:</strong> ${plan.duration} days</p>
                 
-                <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                    (Note: Additional 20% of your investment will be added after maturity)
-                </p>
+                <p style="font-size: 12px; color: #666;">(Daily Withdrawal Available)</p>
                 
-                <button class="btn-invest" data-plan-id="${plan.id}" data-type="vip">Invest</button>
+                <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
+>>>>>>> origin/dev
             </div>
         </div>`;
     });
