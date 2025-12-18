@@ -196,7 +196,6 @@ const handleRegister = async (event) => {
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
     try {
-        // FIXED DISCONNECT: Changed 'referral' to 'referralCode' to match Sahil's userService.js
         const payload = { fullName, phone, email, password, referralCode: referral || undefined };
         const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
@@ -334,14 +333,11 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- CONNECTED: TEAM LOGIC FIXED (Matched Sahil's getUserReferralData) ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
         const data = await response.json();
-        
-        // Use Sahil's backend naming: team_list
         const teamMembers = data.team_list || [];
         const totalCommission = data.total_commission || 0; 
 
@@ -372,38 +368,49 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- FIXED ME PAGE (Targeting Sahil's profile logic) ---
+// --- FIX APPLIED HERE: Targeted balance endpoint to get fullName and Referral Code ---
 const renderMePage = async () => { 
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
     try {
-        // Correcting this endpoint to pull the referral_code directly from Profile
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`, { method: 'GET' });
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
         
-        // Sahil's getUserProfile service uses 'referral_code'
-        const finalReferralCode = data.referral_code || 'N/A';
+        // Match the data structure from your /balance response
+        const user = data.balance || {};
+        const finalReferralCode = user.own_referral_code || user.referral_code || 'N/A';
+        const fullName = user.full_name || 'User';
+        const phone = user.phone_number || '';
         
         appContent.innerHTML = `
             <div class="page-container">
-                <div class="profile-header-card">
-                    <div class="profile-icon"><i class="fas fa-user"></i></div>
-                    <h3>${data.full_name}</h3>
-                    <p>${data.phone_number}</p>
-                    <div class="referral-box" style="background: #f4f4f4; border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
-                        <small>My Referral Code:</small>
-                        <div style="display: flex; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;">
-                            <strong id="referralCode">${finalReferralCode}</strong>
-                            <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; border-radius: 5px;">Copy</button>
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                    <div class="profile-icon" style="margin: 0 auto 10px; background:#f3e8ff; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:#6a0dad;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h3 style="margin-bottom:5px;">${fullName}</h3>
+                    <p style="color:#666; font-size:14px;">${phone}</p>
+                    <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
+                        <small style="font-weight:bold; color:#555;">My Referral Link</small>
+                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px;">
+                            <strong id="referralCode" style="color:#6a0dad;">${finalReferralCode}</strong>
+                            <button id="copyReferralBtn" class="btn-deposit" style="padding:5px 15px; font-size:12px; border-radius:6px !important;">COPY</button>
                         </div>
                     </div>
                 </div>
-                <div class="action-list-card">
-                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>History</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#team" class="action-list-item"><i class="fas fa-users"></i><span>Team</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span><i class="fas fa-chevron-right"></i></a>
+                <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="#" id="logoutButton" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                        <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
+                    </a>
                 </div>
             </div>`;
+        
         document.getElementById('logoutButton').addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
         document.getElementById('copyReferralBtn').addEventListener('click', () => copyReferralLink(finalReferralCode));
     } catch(e) { logoutUser(); }
@@ -451,14 +458,11 @@ const renderWithdrawPage = async () => {
     } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
 
-// --- CONNECTED: REWARDS PAGE FIXED (Targeting Sahil's getRewardHistory logic) ---
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
         const data = await response.json();
-        
-        // Pulling from Sahil's defined structure: { rewards: [...], summary: { total_rewards: ... } }
         const rewardList = data.rewards || [];
         const summary = data.summary || { total_rewards: 0 };
 
@@ -524,9 +528,6 @@ const router = () => {
 window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
-// ==========================================
-// 🚀 SOCIAL PROOF POPUPS FIXED (CENTERED)
-// ==========================================
 (function startSocialProof() {
     const fomoData = {
         names: ["Musa Ibrahim", "Chioma Eze", "Tunde Bakare", "Ngozi Okafor", "Emeka Adebayo", "Yusuf Sani", "Fatima Bello"],
