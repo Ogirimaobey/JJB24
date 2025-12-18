@@ -151,7 +151,7 @@ const getReferralFromUrl = () => {
 
 const logoutUser = () => { localStorage.removeItem('token'); window.location.hash = '#login'; router(); };
 
-// --- FIX 1: THE SILENT GUARD (Updated fetchWithAuth) ---
+// UPDATED fetchWithAuth - Won't log you out on 404
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
@@ -160,10 +160,7 @@ const fetchWithAuth = async (url, options = {}) => {
     
     try {
         const response = await fetch(url, { ...options, headers });
-        
-        // ONLY log out if the token is actually expired (401)
         if (response.status === 401) { 
-            console.log("Token expired, logging out...");
             logoutUser(); 
             return null; 
         }
@@ -195,22 +192,23 @@ const handleLogin = async (event) => {
 
 const handleRegister = async (event) => {
     event.preventDefault();
-    const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
-    const email = (document.getElementById('email') || {}).value?.trim() || '';
-    const phone = (document.getElementById('phone') || {}).value?.trim() || '';
-    const password = (document.getElementById('password') || {}).value || '';
-    const cpassword = (document.getElementById('cpassword') || {}).value || '';
-    const referral = (document.getElementById('referral') || {}).value?.trim() || '';
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const cpassword = document.getElementById('cpassword').value;
+    const referral = document.getElementById('referral').value.trim();
     const agreedToTerms = document.getElementById('termsCheckbox').checked;
+    
     if (!agreedToTerms) return alert('You must agree to the Terms & Conditions.');
-    if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
+    
     try {
         const payload = { fullName, phone, email, password, referralCode: referral || undefined };
         const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        alert(`OTP sent to ${email}. Please check your inbox.`); renderOTPVerificationScreen(email);
+        alert(`OTP sent to ${email}. Check your inbox.`); renderOTPVerificationScreen(email);
     } catch (error) { alert('Could not connect to server.'); }
 };
 
@@ -267,13 +265,13 @@ const renderLoginScreen = () => {
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
     const autoRefCode = getReferralFromUrl();
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Create Account</h2><form id="registerForm"><div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div><div class="form-group"><label>Email</label><input type="email" id="email" required /></div><div class="form-group"><label>Phone</label><input type="tel" id="phone" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><div class="form-group"><label>Confirm</label><input type="password" id="cpassword" required /></div><div class="form-group"><label>Referral Code</label><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /></div><div class="form-group-checkbox" style="flex-direction: row; gap: 10px; margin-top: 15px;"><input type="checkbox" id="termsCheckbox" required style="width: auto;" /><label for="termsCheckbox" style="font-size: 12px; color: #666;">I agree to Terms & Privacy.</label></div><button type="submit" class="btn-auth">Register</button></form><p class="auth-link"><a href="#login">Login here</a></p></div>`;
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Create Account</h2><form id="registerForm"><div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div><div class="form-group"><label>Email</label><input type="email" id="email" required /></div><div class="form-group"><label>Phone</label><input type="tel" id="phone" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><div class="form-group"><label>Confirm</label><input type="password" id="cpassword" required /></div><div class="form-group"><label>Referral Code</label><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /></div><div class="form-group-checkbox" style="display:flex; gap: 10px; margin-top: 15px;"><input type="checkbox" id="termsCheckbox" required style="width: auto;" /><label for="termsCheckbox" style="font-size: 12px; color: #666;">I agree to Terms & Privacy.</label></div><button type="submit" class="btn-auth">Register</button></form><p class="auth-link"><a href="#login">Login here</a></p></div>`;
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
 const renderOTPVerificationScreen = (email) => {
     bottomNav.style.display = 'none';
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify Phone</h2><p>Code sent to ${email}</p><form id="otpForm"><div class="form-group"><label>OTP</label><input type="text" id="otpCode" maxlength="6" required /></div><button type="submit" class="btn-auth">Verify</button></form><p class="auth-link"><a id="resendOTP" style="cursor: pointer;">Resend OTP</a></p><p class="auth-link"><a href="#login">Back to Login</a></p></div>`;
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify Identity</h2><p>Check ${email}</p><form id="otpForm"><div class="form-group"><label>OTP</label><input type="text" id="otpCode" maxlength="6" required /></div><button type="submit" class="btn-auth">Verify</button></form><p class="auth-link"><a id="resendOTP" style="cursor: pointer;">Resend OTP</a></p></div>`;
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
@@ -305,7 +303,7 @@ const renderHomeScreen = async () => {
 
         appContent.innerHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="display:flex; gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
             <div class="home-content"><div class="quick-actions">
                 <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
@@ -322,24 +320,18 @@ const renderProductsPage = async () => {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        let productHTML = ''; const items = data.items || [];
-        if (items.length === 0) productHTML = '<p style="text-align:center;">No products.</p>';
-        else {
-            items.forEach(item => {
-                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>`;
-            });
-        }
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+        const items = data.items || [];
+        const productHTML = items.map(item => `
+            <div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>
+        `).join('');
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML || '<p>No products.</p>'}</div></div>`;
     } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load products.</p>'; }
 };
 
 const renderVipPage = () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP...</p>';
-    const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
-    let vipHTML = '';
-    products.forEach(plan => {
-        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
-    });
+    const vipHTML = vipProducts.map(plan => `
+        <div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>
+    `).join('');
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
@@ -350,62 +342,42 @@ const renderTeamPage = async () => {
         const data = await response.json();
         const teamMembers = data.team_list || [];
         const totalCommission = data.total_commission || 0; 
-
-        let teamHTML = teamMembers.length === 0 ? 
-            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
-            teamMembers.map(member => `
-                <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
-                        <small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
-                    </div>
-                    <div style="text-align: right;">
-                        <span style="display: block; font-size: 12px; color: #888;">Wallet</span>
-                        <strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong>
-                    </div>
-                </div>`).join('');
-
+        const teamHTML = teamMembers.map(member => `
+            <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div><h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small></div>
+                <div style="text-align: right;"><span style="display: block; font-size: 12px; color: #888;">Wallet</span><strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong></div>
+            </div>`).join('');
         appContent.innerHTML = `
             <div class="page-container">
                 <div class="page-header"><h2>My Team</h2></div>
                 <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
-                    <small style="color: #e1bee7;">Total Referral Commission</small>
-                    <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
-                    <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
+                    <small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
                 </div>
-                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML || '<p>No members yet.</p>'}</div>
             </div>`;
-    } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
+    } catch (error) { appContent.innerHTML = '<p>Error loading team data.</p>'; }
 };
 
-// --- FIX 2: THE SYNCING ME PAGE (Updated renderMePage) ---
+// --- FIX: THE SYNCED ME PAGE ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
-        // Targeted balance endpoint as a source for profile info
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-        
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         if (!response || !response.ok) {
-            appContent.innerHTML = `
-                <div style="text-align:center; padding:50px;">
-                    <p>Unable to load profile data (404/Error).</p>
-                    <button onclick="logoutUser()" class="btn-withdraw" style="padding:10px 20px; border-radius:10px; cursor:pointer;">Try Re-logging</button>
-                </div>`;
+            appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Failed to fetch data.</p><button onclick="logoutUser()" class="btn-deposit">Relogin</button></div>';
             return;
         }
-
         const data = await response.json();
         const user = data.balance || {};
+        // Sahil's confirmed key is own_referral_code
         const refCode = user.own_referral_code || user.referral_code || 'N/A';
-        const fullName = user.full_name || 'JJB24 User';
-        const phone = user.phone_number || '';
         
         appContent.innerHTML = `
             <div class="page-container" style="padding:20px;">
                 <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
-                    <h3 style="margin-bottom:5px;">${fullName}</h3>
-                    <p style="color:#666; font-size:14px;">${phone}</p>
+                    <h3 style="margin-bottom:5px;">${user.full_name || 'JJB24 User'}</h3>
+                    <p style="color:#666; font-size:14px;">${user.phone_number || ''}</p>
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
                         <small style="font-weight:bold; color:#555;">My Referral Link</small>
                         <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px;">
@@ -426,51 +398,7 @@ const renderMePage = async () => {
                     </a>
                 </div>
             </div>`;
-    } catch(e) { 
-        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check your connection.</p></div>';
-    }
-};
-
-const renderTaskPage = async () => { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Use Rewards Tab for Earnings.</p>'; };
-
-const renderDepositPage = async () => { 
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Deposit Funds</h2></div><div class="withdraw-card"><form id="depositForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" /></div><button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Proceed to Payment</button></form></div></div>`;
-    document.getElementById('depositForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const amount = document.getElementById('amount').value;
-        try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, { method: 'POST', body: JSON.stringify({ amount: parseFloat(amount) }) });
-            const result = await response.json();
-            if (result.success && result.data.paymentLink) window.location.href = result.data.paymentLink;
-            else alert(result.message);
-        } catch (error) { alert('An error occurred.'); }
-    });
-};
-
-const renderWithdrawPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
-        const data = await response.json();
-        const balance = data.balance?.balance || 0;
-        appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label>Bank Name</label><input type="text" id="bankName" required /></div><div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
-        const amountInput = document.getElementById('amount');
-        amountInput.addEventListener('input', () => {
-            const val = parseFloat(amountInput.value);
-            if (!isNaN(val) && val > 0) {
-                const fee = val * 0.09; const final = val - fee;
-                document.getElementById('feeDisplay').textContent = '- ₦' + fee.toLocaleString();
-                document.getElementById('finalDisplay').textContent = '₦' + final.toLocaleString();
-                document.getElementById('feeContainer').style.display = 'block';
-            } else document.getElementById('feeContainer').style.display = 'none';
-        });
-        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: parseFloat(amountInput.value), bank_name: document.getElementById('bankName').value, account_number: document.getElementById('accountNumber').value, account_name: document.getElementById('accountName').value }) });
-            const r = await res.json(); if(r.ok) showSuccessModal(r.message); else alert(r.message);
-        });
-    } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
+    } catch(e) { appContent.innerHTML = '<p style="text-align:center;">Something went wrong.</p>'; }
 };
 
 const renderRewardsPage = async () => {
@@ -480,37 +408,13 @@ const renderRewardsPage = async () => {
         const data = await response.json();
         const rewardList = data.rewards || [];
         const summary = data.summary || { total_rewards: 0 };
-
-        let itemsHTML = rewardList.length === 0 ? 
-            `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
-            rewardList.map(item => `
-                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h4 style="margin: 0; font-size: 14px; text-transform: capitalize;">${item.source}</h4>
-                        <small style="color: #888;">${new Date(item.date).toLocaleDateString()}</small>
-                    </div>
-                    <strong style="color: ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
-                </div>`).join('');
-
-        appContent.innerHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>My Rewards</h2></div>
-                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
-                    <small>Accumulated ROI</small>
-                    <h1 style="margin: 5px 0;">₦ ${Number(summary.total_rewards).toLocaleString()}</h1>
-                </div>
-                <div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>
-                ${itemsHTML}
-            </div>`;
+        const itemsHTML = rewardList.map(item => `
+            <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; display:flex; justify-content:space-between; align-items:center;">
+                <div><h4 style="margin: 0; font-size: 14px; text-transform: capitalize;">${item.source}</h4><small style="color: #888;">${new Date(item.date).toLocaleDateString()}</small></div>
+                <strong style="color: ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
+            </div>`).join('');
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Accumulated ROI</small><h1 style="margin: 5px 0;">₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML || '<p>No rewards yet.</p>'}</div>`;
     } catch (e) { appContent.innerHTML = '<p>Error loading rewards.</p>'; }
-};
-
-const renderHistoryPage = async () => {
-    appContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Loading History...</p>';
-    const res = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method:'GET' });
-    const data = await res.json();
-    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong style="text-transform:uppercase; font-size:12px;">${t.type.replace(/_/g, ' ')}</strong><br><small>${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? 'green' : 'red'};">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
-    appContent.innerHTML = `<div class="page-container"><h2>Full History</h2><div style="padding: 15px 0;">${list || '<p>No records found.</p>'}</div></div>`;
 };
 
 const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2>Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p>Contact support at:</p><h3 style="color:#6a0dad;">jjb24wines@gmail.com</h3></div></div>'; };
@@ -520,7 +424,7 @@ const router = () => {
     const token = localStorage.getItem('token');
     let hash = window.location.hash || '#home';
     if (hash.includes('?')) hash = hash.split('?')[0];
-    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; if(hash === '#login') renderLoginScreen(); else renderRegisterScreen(); return; }
+    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; hash === '#login' ? renderLoginScreen() : renderRegisterScreen(); return; }
     if (!token) { logoutUser(); return; }
     bottomNav.style.display = 'flex';
     document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('href') === hash) link.classList.add('active'); });
@@ -529,13 +433,10 @@ const router = () => {
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
-        case '#deposit': renderDepositPage(); break;
-        case '#withdraw': renderWithdrawPage(); break;
-        case '#history': renderHistoryPage(); break;
         case '#team': renderTeamPage(); break;
-        case '#certificate': renderCertificatePage(); break;
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
+        case '#certificate': renderCertificatePage(); break;
         default: renderHomeScreen(); 
     }
 };
@@ -543,6 +444,9 @@ const router = () => {
 window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
+// ==========================================
+// 🚀 SOCIAL PROOF POPUPS FIXED (CENTERED)
+// ==========================================
 (function startSocialProof() {
     const fomoData = {
         names: ["Musa Ibrahim", "Chioma Eze", "Tunde Bakare", "Ngozi Okafor", "Emeka Adebayo", "Yusuf Sani", "Fatima Bello"],
