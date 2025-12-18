@@ -105,7 +105,7 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// 2. DATA CONFIGURATION (VIP Products)
+// 2. DATA CONFIGURATION
 const vipProducts = [
     { id: 101, name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+1' },
     { id: 102, name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+2' },
@@ -137,10 +137,7 @@ const closeModal = () => {
 const copyReferralLink = async (referralCode) => {
     if (!referralCode || referralCode === 'N/A') { alert('No referral code available.'); return; }
     const fullLink = `${window.location.origin}/#register?ref=${referralCode}`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        try { await navigator.clipboard.writeText(fullLink); showSuccessModal('Referral link copied!'); return; } catch (err) { }
-    }
-    prompt("Copy your referral link:", fullLink);
+    try { await navigator.clipboard.writeText(fullLink); showSuccessModal('Referral link copied!'); } catch (err) { prompt("Copy your referral link:", fullLink); }
 };
 
 const getReferralFromUrl = () => {
@@ -151,24 +148,17 @@ const getReferralFromUrl = () => {
 
 const logoutUser = () => { localStorage.removeItem('token'); window.location.hash = '#login'; router(); };
 
-// UPDATED fetchWithAuth - Won't log you out on 404
+// fetchWithAuth - The Silent Guard
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
-    
     try {
         const response = await fetch(url, { ...options, headers });
-        if (response.status === 401) { 
-            logoutUser(); 
-            return null; 
-        }
+        if (response.status === 401) { logoutUser(); return null; }
         return response;
-    } catch (e) { 
-        console.error("Network connection failed."); 
-        return null; 
-    }
+    } catch (e) { console.error("Network Error", e); return null; }
 };
 
 // ==========================================
@@ -179,11 +169,9 @@ const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
-    if (!loginIdentifier || !password) return alert('Please provide email/phone and password.');
     const isEmail = loginIdentifier.includes('@');
-    const loginData = { password: password, email: isEmail ? loginIdentifier : '', phone: isEmail ? '' : loginIdentifier };
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password, email: isEmail ? loginIdentifier : '', phone: isEmail ? '' : loginIdentifier }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token); window.location.hash = '#home'; router();
@@ -192,23 +180,19 @@ const handleLogin = async (event) => {
 
 const handleRegister = async (event) => {
     event.preventDefault();
-    const fullName = document.getElementById('fullName').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const password = document.getElementById('password').value;
-    const cpassword = document.getElementById('cpassword').value;
-    const referral = document.getElementById('referral').value.trim();
-    const agreedToTerms = document.getElementById('termsCheckbox').checked;
-    
-    if (!agreedToTerms) return alert('You must agree to the Terms & Conditions.');
-    if (password !== cpassword) return alert('Passwords do not match.');
-    
+    const payload = { 
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        password: document.getElementById('password').value,
+        referralCode: document.getElementById('referral').value.trim() || undefined 
+    };
+    if (!document.getElementById('termsCheckbox').checked) return alert('You must agree to terms.');
     try {
-        const payload = { fullName, phone, email, password, referralCode: referral || undefined };
         const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        alert(`OTP sent to ${email}. Check your inbox.`); renderOTPVerificationScreen(email);
+        alert(`OTP sent to ${payload.email}.`); renderOTPVerificationScreen(payload.email);
     } catch (error) { alert('Could not connect to server.'); }
 };
 
@@ -218,36 +202,21 @@ const handleOTPVerification = async (event, email) => {
         const response = await fetch(`${API_BASE_URL}/users/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: otpCode }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        showSuccessModal('Phone verified!'); renderLoginScreen();
+        showSuccessModal('Account verified!'); renderLoginScreen();
     } catch (error) { alert('Verification failed.'); }
 };
 
-const handleResendOTP = async (email) => { 
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
-        const result = await response.json(); if (!response.ok) return alert(`Error: ${result.message}`); alert('New OTP sent!');
-    } catch (error) { alert('Failed to resend OTP.'); }
-};
-
 const handleInvestClick = async (event) => {
-    if (event.target.classList.contains('btn-invest-premium') || event.target.classList.contains('btn-invest')) {
-        const rawItemId = event.target.dataset.planId;
+    if (event.target.classList.contains('btn-invest-premium')) {
+        const itemId = event.target.dataset.planId;
         const investType = event.target.dataset.type;
-        let itemId = Number(rawItemId);
-        if (isNaN(itemId) || itemId <= 0) return alert('Error: Invalid product ID.');
-        const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
         if (!confirm(`Are you sure you want to invest?`)) return;
-        
-        let endpoint = `${API_BASE_URL}/investments/createInvestment/${itemId}`;
-        if (investType === 'vip') endpoint = `${API_BASE_URL}/investments/createVipInvestment/${itemId}`;
-
+        let endpoint = investType === 'vip' ? `${API_BASE_URL}/investments/createVipInvestment/${itemId}` : `${API_BASE_URL}/investments/createInvestment/${itemId}`;
         try {
             const response = await fetchWithAuth(endpoint, { method: 'POST' });
             const result = await response.json();
-            if (response && response.ok && result.success) {
-                showSuccessModal('Investment Successful!');
-                setTimeout(() => { window.location.hash = '#home'; router(); }, 2000);
-            } else { alert('Error: ' + ((result && result.message) || 'Failed.')); }
+            if (response && response.ok && result.success) { showSuccessModal('Investment Successful!'); setTimeout(() => { window.location.hash = '#home'; router(); }, 2000); }
+            else { alert('Error: ' + (result.message || 'Failed.')); }
         } catch (error) { alert('Investment error.'); }
     }
 };
@@ -256,54 +225,29 @@ const handleInvestClick = async (event) => {
 // 5. RENDER FUNCTIONS
 // ==========================================
 
-const renderLoginScreen = () => {
-    bottomNav.style.display = 'none';
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Welcome Back</h2><form id="loginForm"><div class="form-group"><label>Email/Phone</label><input type="text" id="loginIdentifier" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><button type="submit" class="btn-auth">Login</button></form><p class="auth-link"><a href="#register">Create Account</a></p></div>`;
-    document.getElementById('loginForm').addEventListener('submit', handleLogin);
-};
-
-const renderRegisterScreen = () => {
-    bottomNav.style.display = 'none';
-    const autoRefCode = getReferralFromUrl();
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Create Account</h2><form id="registerForm"><div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div><div class="form-group"><label>Email</label><input type="email" id="email" required /></div><div class="form-group"><label>Phone</label><input type="tel" id="phone" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><div class="form-group"><label>Confirm</label><input type="password" id="cpassword" required /></div><div class="form-group"><label>Referral Code</label><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /></div><div class="form-group-checkbox" style="display:flex; gap: 10px; margin-top: 15px;"><input type="checkbox" id="termsCheckbox" required style="width: auto;" /><label for="termsCheckbox" style="font-size: 12px; color: #666;">I agree to Terms & Privacy.</label></div><button type="submit" class="btn-auth">Register</button></form><p class="auth-link"><a href="#login">Login here</a></p></div>`;
-    document.getElementById('registerForm').addEventListener('submit', handleRegister);
-};
-
-const renderOTPVerificationScreen = (email) => {
-    bottomNav.style.display = 'none';
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify Identity</h2><p>Check ${email}</p><form id="otpForm"><div class="form-group"><label>OTP</label><input type="text" id="otpCode" maxlength="6" required /></div><button type="submit" class="btn-auth">Verify</button></form><p class="auth-link"><a id="resendOTP" style="cursor: pointer;">Resend OTP</a></p></div>`;
-    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
-    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
-};
-
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-    const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
-        if (!response || !response.ok) throw new Error();
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         const data = await response.json();
-        const fullName = data.balance.full_name || 'User'; const balance = data.balance.balance || 0;
+        const user = data.balance || {};
         
         let activityHTML = "<p>No recent activity.</p>";
-        try {
-            const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
-            if (histRes && histRes.ok) {
-                const histData = await histRes.json();
-                if (histData.success && histData.transactions.length > 0) {
-                    activityHTML = histData.transactions.slice(0, 4).map(txn => 
-                        `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
-                            <span style="text-transform: capitalize; font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
-                            <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold; font-size: 13px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
-                        </div>`
-                    ).join('');
-                }
+        const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`);
+        if (histRes && histRes.ok) {
+            const histData = await histRes.json();
+            if (histData.success && histData.transactions.length > 0) {
+                activityHTML = histData.transactions.slice(0, 4).map(txn => 
+                    `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
+                        <span style="font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
+                        <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
+                    </div>`).join('');
             }
-        } catch(e) {}
+        }
 
         appContent.innerHTML = `
-            <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="display:flex; gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
+            <div class="top-header"><div class="user-greeting"><h4>Hello, ${user.full_name.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(user.balance).toLocaleString()}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
             <div class="home-content"><div class="quick-actions">
                 <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
@@ -314,75 +258,33 @@ const renderHomeScreen = async () => {
     } catch (error) { logoutUser(); }
 };
 
-const renderProductsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
-        if (!response || !response.ok) throw new Error();
-        const data = await response.json();
-        const items = data.items || [];
-        const productHTML = items.map(item => `
-            <div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>
-        `).join('');
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML || '<p>No products.</p>'}</div></div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load products.</p>'; }
-};
-
-const renderVipPage = () => {
-    const vipHTML = vipProducts.map(plan => `
-        <div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>
-    `).join('');
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
-};
-
-const renderTeamPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
-        const data = await response.json();
-        const teamMembers = data.team_list || [];
-        const totalCommission = data.total_commission || 0; 
-        const teamHTML = teamMembers.map(member => `
-            <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                <div><h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small></div>
-                <div style="text-align: right;"><span style="display: block; font-size: 12px; color: #888;">Wallet</span><strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong></div>
-            </div>`).join('');
-        appContent.innerHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>My Team</h2></div>
-                <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
-                    <small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
-                </div>
-                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML || '<p>No members yet.</p>'}</div>
-            </div>`;
-    } catch (error) { appContent.innerHTML = '<p>Error loading team data.</p>'; }
-};
-
-// --- FIX: THE SYNCED ME PAGE ---
+// --- MERGED AGGRESSIVE FIX ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
-        if (!response || !response.ok) {
-            appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Failed to fetch data.</p><button onclick="logoutUser()" class="btn-deposit">Relogin</button></div>';
-            return;
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        const user = data.balance || {};
-        // Sahil's confirmed key is own_referral_code
-        const refCode = user.own_referral_code || user.referral_code || 'N/A';
         
+        // --- THE AGGRESSIVE FIX: Mapping keys exactly to backend ---
+        const user = data.balance || {};
+        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
+        const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
+
         appContent.innerHTML = `
             <div class="page-container" style="padding:20px;">
                 <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
-                    <h3 style="margin-bottom:5px;">${user.full_name || 'JJB24 User'}</h3>
+                    <h3 style="margin-bottom:5px;">${user.full_name || 'User'}</h3>
                     <p style="color:#666; font-size:14px;">${user.phone_number || ''}</p>
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
-                        <small style="font-weight:bold; color:#555;">My Referral Link</small>
-                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px;">
-                            <strong id="referralCode" style="color:#6a0dad;">${refCode}</strong>
-                            <button onclick="copyReferralLink('${refCode}')" class="btn-deposit" style="padding:5px 15px; font-size:12px; border-radius:6px !important; cursor:pointer;">COPY</button>
+                        <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
+                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #666; border: 1px solid #eee;">
+                            ${uniqueReferralLink}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
+                            <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
+                            <button onclick="copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
                         </div>
                     </div>
                 </div>
@@ -398,85 +300,86 @@ const renderMePage = async () => {
                     </a>
                 </div>
             </div>`;
-    } catch(e) { appContent.innerHTML = '<p style="text-align:center;">Something went wrong.</p>'; }
+    } catch(e) { appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check backend connection.</p></div>'; }
 };
 
-const renderRewardsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
-        const data = await response.json();
-        const rewardList = data.rewards || [];
-        const summary = data.summary || { total_rewards: 0 };
-        const itemsHTML = rewardList.map(item => `
-            <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; display:flex; justify-content:space-between; align-items:center;">
-                <div><h4 style="margin: 0; font-size: 14px; text-transform: capitalize;">${item.source}</h4><small style="color: #888;">${new Date(item.date).toLocaleDateString()}</small></div>
-                <strong style="color: ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
-            </div>`).join('');
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Accumulated ROI</small><h1 style="margin: 5px 0;">₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML || '<p>No rewards yet.</p>'}</div>`;
-    } catch (e) { appContent.innerHTML = '<p>Error loading rewards.</p>'; }
+const renderProductsPage = async () => {
+    const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`);
+    const data = await response.json();
+    const productHTML = data.items.map(item => `
+        <div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${item.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>
+    `).join('');
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
 };
 
-const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2>Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p>Contact support at:</p><h3 style="color:#6a0dad;">jjb24wines@gmail.com</h3></div></div>'; };
-const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2>Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
+const renderTeamPage = async () => {
+    const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`);
+    const data = await response.json();
+    const teamHTML = (data.team_list || []).map(m => `
+        <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <div><h4 style="margin: 0; font-size: 14px;">${m.name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(m.joined_date).toLocaleDateString()}</small></div>
+            <strong style="color: #10b981;">₦${Number(m.balance || 0).toLocaleString()}</strong>
+        </div>`).join('');
+    appContent.innerHTML = `<div class="page-container"><div class="balance-card" style="background: linear-gradient(135deg, #6a0dad, #8e24aa);"><h2>₦ ${Number(data.total_commission || 0).toLocaleString()}</h2><small>Total Commission</small></div>${teamHTML || '<p>No team yet.</p>'}</div>`;
+};
+
+const renderLoginScreen = () => {
+    bottomNav.style.display = 'none';
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><form id="loginForm"><input type="text" id="loginIdentifier" placeholder="Phone/Email" required /><input type="password" id="password" placeholder="Password" required /><button type="submit" class="btn-deposit">Login</button></form></div>`;
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+};
+
+const renderRegisterScreen = () => {
+    bottomNav.style.display = 'none';
+    const autoRefCode = getReferralFromUrl();
+    appContent.innerHTML = `<div class="auth-container"><h2>Create Account</h2><form id="registerForm"><input type="text" id="fullName" placeholder="Full Name" required /><input type="email" id="email" placeholder="Email" required /><input type="tel" id="phone" placeholder="Phone" required /><input type="password" id="password" placeholder="Password" required /><input type="password" id="cpassword" placeholder="Confirm" required /><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /><input type="checkbox" id="termsCheckbox" required /> Agree to Terms<button type="submit" class="btn-deposit">Register</button></form></div>`;
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+};
+
+const renderOTPVerificationScreen = (email) => {
+    appContent.innerHTML = `<div class="auth-container"><h2>Verify</h2><p>${email}</p><form id="otpForm"><input type="text" id="otpCode" required /><button type="submit" class="btn-deposit">Verify</button></form></div>`;
+    document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+};
 
 const router = () => {
     const token = localStorage.getItem('token');
     let hash = window.location.hash || '#home';
     if (hash.includes('?')) hash = hash.split('?')[0];
-    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; hash === '#login' ? renderLoginScreen() : renderRegisterScreen(); return; }
+    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; if(hash === '#login') renderLoginScreen(); else renderRegisterScreen(); return; }
     if (!token) { logoutUser(); return; }
     bottomNav.style.display = 'flex';
-    document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('href') === hash) link.classList.add('active'); });
     switch (hash) {
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
-        case '#vip': renderVipPage(); break;
-        case '#me': renderMePage(); break;
         case '#team': renderTeamPage(); break;
-        case '#rewards': renderRewardsPage(); break; 
-        case '#support': renderSupportPage(); break;
-        case '#certificate': renderCertificatePage(); break;
+        case '#me': renderMePage(); break;
+        case '#rewards': renderTeamPage(); break; 
         default: renderHomeScreen(); 
     }
 };
 
 window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
-document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
+appContent.addEventListener('click', handleInvestClick);
 
-// ==========================================
-// 🚀 SOCIAL PROOF POPUPS FIXED (CENTERED)
-// ==========================================
+// SOCIAL PROOF POPUPS
 (function startSocialProof() {
     const fomoData = {
-        names: ["Musa Ibrahim", "Chioma Eze", "Tunde Bakare", "Ngozi Okafor", "Emeka Adebayo", "Yusuf Sani", "Fatima Bello"],
-        locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan"],
-        actions: [ { text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }, { text: "invested ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP Gold", icon: "🍷", color: "#eab308" }, { text: "withdrew ₦15,000", icon: "🏦", color: "#f43f5e" } ],
-        times: ["Just now", "2 secs ago", "5 secs ago"]
+        names: ["Musa Ibrahim", "Chioma Eze", "Tunde Bakare", "Ngozi Okafor", "Emeka Adebayo"],
+        actions: [{ text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }]
     };
     const style = document.createElement('style');
-    style.innerHTML = `#fomo-popup { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(200%); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-left: 5px solid #10B981; padding: 12px 16px; border-radius: 16px; box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.15); font-family: sans-serif; z-index: 9999; transition: all 0.5s ease; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 380px; pointer-events: none; } #fomo-popup.show { transform: translateX(-50%) translateY(0); } .fomo-icon-box { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #f3f4f6; flex-shrink: 0; } .fomo-content { display: flex; flex-direction: column; } .fomo-name { font-size: 14px; font-weight: 800; color: #111; } .fomo-desc { font-size: 13px; color: #555; } .fomo-meta { font-size: 11px; color: #999; margin-top: 2px; }`;
+    style.innerHTML = `#fomo-popup { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(200%); background: rgba(255, 255, 255, 0.95); border-left: 5px solid #10B981; padding: 12px 16px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 9999; transition: all 0.5s ease; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 380px; } #fomo-popup.show { transform: translateX(-50%) translateY(0); }`;
     document.head.appendChild(style);
-    const popup = document.createElement('div'); popup.id = 'fomo-popup'; popup.innerHTML = `<div class="fomo-icon-box" id="fomo-icon">👋</div><div class="fomo-content"><span class="fomo-name" id="fomo-name">...</span><span class="fomo-desc" id="fomo-action">...</span><span class="fomo-meta"><span id="fomo-location">Lagos</span> • <span id="fomo-time">Just now</span></span></div>`;
+    const popup = document.createElement('div'); popup.id = 'fomo-popup'; popup.innerHTML = `<div id="fomo-icon">👋</div><div class="fomo-content"><span id="fomo-name" style="font-weight:bold;"></span> <span id="fomo-action"></span></div>`;
     document.body.appendChild(popup);
     function showNotification() {
-        const hash = window.location.hash; if(hash !== '#home' && hash !== '') return; 
+        if(window.location.hash !== '#home' && window.location.hash !== '') return; 
         const name = fomoData.names[Math.floor(Math.random() * fomoData.names.length)];
-        const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
         const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
-        const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
-        const nameEl = document.getElementById('fomo-name');
-        const actEl = document.getElementById('fomo-action');
-        const locEl = document.getElementById('fomo-location');
-        const timeEl = document.getElementById('fomo-time');
-        const iconEl = document.getElementById('fomo-icon');
-        const popupEl = document.getElementById('fomo-popup');
-        
-        if (nameEl && actEl && locEl && timeEl && iconEl && popupEl) {
-            nameEl.innerText = name; actEl.innerText = actionObj.text; locEl.innerText = loc; timeEl.innerText = time; iconEl.innerText = actionObj.icon;
-            popupEl.style.borderLeftColor = actionObj.color;
-            popupEl.classList.add('show'); setTimeout(() => { popupEl.classList.remove('show'); }, 4000);
-        }
+        document.getElementById('fomo-name').innerText = name; 
+        document.getElementById('fomo-action').innerText = actionObj.text;
+        document.getElementById('fomo-popup').classList.add('show');
+        setTimeout(() => document.getElementById('fomo-popup').classList.remove('show'), 4000);
     }
-    setTimeout(showNotification, 2000); setInterval(() => { showNotification(); }, 12000);
+    setInterval(showNotification, 12000);
 })();
