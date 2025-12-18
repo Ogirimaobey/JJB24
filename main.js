@@ -2,7 +2,6 @@
 // 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
-// --- INJECT PREMIUM CSS STYLES ---
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     /* 1. BOLD GLOBAL BUTTONS */
@@ -152,16 +151,27 @@ const getReferralFromUrl = () => {
 
 const logoutUser = () => { localStorage.removeItem('token'); window.location.hash = '#login'; router(); };
 
+// --- FIX 1: THE SILENT GUARD (Updated fetchWithAuth) ---
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
+    
     try {
         const response = await fetch(url, { ...options, headers });
-        if (response.status === 401 || response.status === 403) { logoutUser(); return null; }
+        
+        // ONLY log out if the token is actually expired (401)
+        if (response.status === 401) { 
+            console.log("Token expired, logging out...");
+            logoutUser(); 
+            return null; 
+        }
         return response;
-    } catch (e) { console.error("Network Error", e); return null; }
+    } catch (e) { 
+        console.error("Network connection failed."); 
+        return null; 
+    }
 };
 
 // ==========================================
@@ -368,33 +378,39 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- FIX APPLIED HERE: Targeted balance endpoint to get fullName and Referral Code ---
+// --- FIX 2: THE SYNCING ME PAGE (Updated renderMePage) ---
 const renderMePage = async () => { 
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
-        if (!response || !response.ok) throw new Error();
-        const data = await response.json();
+        // Targeted balance endpoint as a source for profile info
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         
-        // Match the data structure from your /balance response
+        if (!response || !response.ok) {
+            appContent.innerHTML = `
+                <div style="text-align:center; padding:50px;">
+                    <p>Unable to load profile data (404/Error).</p>
+                    <button onclick="logoutUser()" class="btn-withdraw" style="padding:10px 20px; border-radius:10px; cursor:pointer;">Try Re-logging</button>
+                </div>`;
+            return;
+        }
+
+        const data = await response.json();
         const user = data.balance || {};
-        const finalReferralCode = user.own_referral_code || user.referral_code || 'N/A';
-        const fullName = user.full_name || 'User';
+        const refCode = user.own_referral_code || user.referral_code || 'N/A';
+        const fullName = user.full_name || 'JJB24 User';
         const phone = user.phone_number || '';
         
         appContent.innerHTML = `
-            <div class="page-container">
-                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
-                    <div class="profile-icon" style="margin: 0 auto 10px; background:#f3e8ff; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:#6a0dad;">
-                        <i class="fas fa-user"></i>
-                    </div>
+            <div class="page-container" style="padding:20px;">
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
                     <h3 style="margin-bottom:5px;">${fullName}</h3>
                     <p style="color:#666; font-size:14px;">${phone}</p>
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
                         <small style="font-weight:bold; color:#555;">My Referral Link</small>
                         <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px;">
-                            <strong id="referralCode" style="color:#6a0dad;">${finalReferralCode}</strong>
-                            <button id="copyReferralBtn" class="btn-deposit" style="padding:5px 15px; font-size:12px; border-radius:6px !important;">COPY</button>
+                            <strong id="referralCode" style="color:#6a0dad;">${refCode}</strong>
+                            <button onclick="copyReferralLink('${refCode}')" class="btn-deposit" style="padding:5px 15px; font-size:12px; border-radius:6px !important; cursor:pointer;">COPY</button>
                         </div>
                     </div>
                 </div>
@@ -405,15 +421,14 @@ const renderMePage = async () => {
                     <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-                    <a href="#" id="logoutButton" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                    <a href="#" onclick="logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
                         <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
                     </a>
                 </div>
             </div>`;
-        
-        document.getElementById('logoutButton').addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
-        document.getElementById('copyReferralBtn').addEventListener('click', () => copyReferralLink(finalReferralCode));
-    } catch(e) { logoutUser(); }
+    } catch(e) { 
+        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check your connection.</p></div>';
+    }
 };
 
 const renderTaskPage = async () => { appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Use Rewards Tab for Earnings.</p>'; };
