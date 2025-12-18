@@ -106,7 +106,6 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-
 // 2. DATA CONFIGURATION (VIP Products)
 const vipProducts = [
     { id: 101, name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+1' },
@@ -160,11 +159,10 @@ const fetchWithAuth = async (url, options = {}) => {
     if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
     try {
         const response = await fetch(url, { ...options, headers });
-        if (response.status === 401 || response.status === 403) { alert('Session expired.'); logoutUser(); return null; }
+        if (response.status === 401 || response.status === 403) { logoutUser(); return null; }
         return response;
     } catch (e) { console.error("Network Error", e); return null; }
 };
-
 
 // ==========================================
 // 4. ACTION HANDLERS
@@ -198,7 +196,8 @@ const handleRegister = async (event) => {
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
     try {
-        const payload = { fullName, phone, email, password, referral: referral || undefined };
+        // FIXED DISCONNECT: referral -> referralCode to match Sahil's userService.js
+        const payload = { fullName, phone, email, password, referralCode: referral || undefined };
         const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
@@ -246,7 +245,6 @@ const handleInvestClick = async (event) => {
     }
 };
 
-
 // ==========================================
 // 5. RENDER FUNCTIONS
 // ==========================================
@@ -279,6 +277,7 @@ const renderHomeScreen = async () => {
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
         const fullName = data.balance.full_name || 'User'; const balance = data.balance.balance || 0;
+        
         let activityHTML = "<p>No recent activity.</p>";
         try {
             const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
@@ -286,17 +285,25 @@ const renderHomeScreen = async () => {
                 const histData = await histRes.json();
                 if (histData.success && histData.transactions.length > 0) {
                     activityHTML = histData.transactions.slice(0, 4).map(txn => 
-                        `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;"><span>${txn.type.replace(/_/g, ' ')}</span><span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span></div>`
+                        `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
+                            <span style="text-transform: capitalize; font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
+                            <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold; font-size: 13px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
+                        </div>`
                     ).join('');
                 }
             }
         } catch(e) {}
-        
-        // --- LIVE USER BOX REMOVED AS REQUESTED ---
+
         appContent.innerHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
             <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
-            <div class="home-content"><div class="quick-actions"><a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a><a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a><a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a><a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a><a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a></div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
+            <div class="home-content"><div class="quick-actions">
+                <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
+                <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
+                <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+            </div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
     } catch (error) { logoutUser(); }
 };
 
@@ -327,25 +334,42 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- CONNECTED: RENDER TEAM PAGE (SAHIL FIX) ---
+// --- CONNECTED: TEAM LOGIC FIXED (team_list + joined_date) ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
         const data = await response.json();
+        
+        // Match Sahil's getUserReferralData structure
         const teamMembers = data.team_list || [];
         const totalCommission = data.total_commission || 0; 
-        
+
         let teamHTML = teamMembers.length === 0 ? 
-            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members yet. Share your link!</p></div>` :
+            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
             teamMembers.map(member => `
                 <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-                    <div><h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4><small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small></div>
-                    <div style="text-align: right;"><strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong></div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
+                        <small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="display: block; font-size: 12px; color: #888;">Wallet</span>
+                        <strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong>
+                    </div>
                 </div>`).join('');
 
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Team</h2></div><div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);"><small style="color: #e1bee7;">Total Referral Commission</small><h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2><p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p></div><div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div></div>`;
-    } catch (error) { appContent.innerHTML = `<div class="page-container"><p>Error loading team.</p></div>`; }
+        appContent.innerHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>My Team</h2></div>
+                <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
+                    <small style="color: #e1bee7;">Total Referral Commission</small>
+                    <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
+                    <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
+                </div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div>
+            </div>`;
+    } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
 const renderMePage = async () => { 
@@ -354,10 +378,7 @@ const renderMePage = async () => {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        
-        // --- REFERRAL CODE LOGIC RESTORED ---
         const finalReferralCode = data.balance.referral_code || 'N/A';
-        
         appContent.innerHTML = `
             <div class="page-container"><div class="profile-header-card"><div class="profile-icon"><i class="fas fa-user"></i></div><h3>${data.balance.full_name}</h3><p>${data.balance.phone_number}</p><div class="referral-box" style="background: #f4f4f4; border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;"><small>My Referral Code:</small><div style="display: flex; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;"><strong id="referralCode">${finalReferralCode}</strong><button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; border-radius: 5px;">Copy</button></div></div></div><div class="action-list-card"><a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>History</span><i class="fas fa-chevron-right"></i></a><a href="#team" class="action-list-item"><i class="fas fa-users"></i><span>Team</span><i class="fas fa-chevron-right"></i></a><a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span><i class="fas fa-chevron-right"></i></a></div></div>`;
         document.getElementById('logoutButton').addEventListener('click', (e) => { e.preventDefault(); logoutUser(); });
@@ -388,7 +409,7 @@ const renderWithdrawPage = async () => {
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label>Bank Name</label><input type="text" id="bankName" required /></div><div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label>Bank Name</label><input type="text" id="bankName" required /></div><div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
         const amountInput = document.getElementById('amount');
         amountInput.addEventListener('input', () => {
             const val = parseFloat(amountInput.value);
@@ -401,28 +422,44 @@ const renderWithdrawPage = async () => {
         });
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: parseFloat(amountInput.value), bank_name: document.getElementById('bankName').value, account_number: document.getElementById('accountNumber').value }) });
+            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: parseFloat(amountInput.value), bank_name: document.getElementById('bankName').value, account_number: document.getElementById('accountNumber').value, account_name: document.getElementById('accountName').value }) });
             const r = await res.json(); if(r.ok) showSuccessModal(r.message); else alert(r.message);
         });
-    } catch (error) { appContent.innerHTML = '<p>Error.</p>'; }
+    } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
 
-// --- CONNECTED: RENDER REWARDS PAGE (SAHIL FIX) ---
+// --- CONNECTED: REWARDS PAGE (Matches Sahil's getRewardHistory structure) ---
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
         const data = await response.json();
-        const totalDailyReward = data.total_daily_income || 0;
-        const rewardHistory = data.history || [];
+        
+        // Match Sahil's return format: { rewards: [...], summary: { total_rewards: ... } }
+        const rewardList = data.rewards || [];
+        const summary = data.summary || { total_rewards: 0 };
 
-        let itemsHTML = rewardHistory.map(item => `
-            <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #10b981; display:flex; justify-content:space-between;">
-                <div><strong>Daily Profit</strong><br><small>${new Date(item.created_at).toLocaleDateString()}</small></div>
-                <strong style="color: green;">+₦${Number(item.amount).toLocaleString()}</strong>
-            </div>`).join('');
+        let itemsHTML = rewardList.length === 0 ? 
+            `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
+            rewardList.map(item => `
+                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; text-transform: capitalize;">${item.source}</h4>
+                        <small style="color: #888;">${new Date(item.date).toLocaleDateString()}</small>
+                    </div>
+                    <strong style="color: ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
+                </div>`).join('');
 
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Rewards</h2></div><div class="balance-card" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Accumulated Daily Income</small><h1 style="margin: 5px 0;">₦ ${Number(totalDailyReward).toLocaleString()}</h1></div><div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>${itemsHTML || '<p>No records found.</p>'}</div>`;
+        appContent.innerHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>My Rewards</h2></div>
+                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                    <small>Accumulated ROI</small>
+                    <h1 style="margin: 5px 0;">₦ ${Number(summary.total_rewards).toLocaleString()}</h1>
+                </div>
+                <div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>
+                ${itemsHTML}
+            </div>`;
     } catch (e) { appContent.innerHTML = '<p>Error loading rewards.</p>'; }
 };
 
@@ -450,14 +487,13 @@ const router = () => {
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
-        case '#task': renderTaskPage(); break;
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
         case '#team': renderTeamPage(); break;
-        case '#support': renderSupportPage(); break;
         case '#certificate': renderCertificatePage(); break;
         case '#rewards': renderRewardsPage(); break; 
+        case '#support': renderSupportPage(); break;
         default: renderHomeScreen(); 
     }
 };
@@ -486,11 +522,7 @@ document.getElementById('closeModalBtn').addEventListener('click', closeModal); 
         const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
         const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
         const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
-        document.getElementById('fomo-name').innerText = name; 
-        document.getElementById('fomo-action').innerText = actionObj.text; 
-        document.getElementById('fomo-location').innerText = loc; 
-        document.getElementById('fomo-time').innerText = time; 
-        document.getElementById('fomo-icon').innerText = actionObj.icon;
+        document.getElementById('fomo-name').innerText = name; document.getElementById('fomo-action').innerText = actionObj.text; document.getElementById('fomo-location').innerText = loc; document.getElementById('fomo-time').innerText = time; document.getElementById('fomo-icon').innerText = actionObj.icon;
         const elPopup = document.getElementById('fomo-popup'); const elIcon = document.getElementById('fomo-icon'); elPopup.style.borderLeftColor = actionObj.color; elIcon.style.background = actionObj.color + '20'; elIcon.style.color = actionObj.color;
         elPopup.classList.add('show'); setTimeout(() => { elPopup.classList.remove('show'); }, 4000);
     }
