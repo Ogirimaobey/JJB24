@@ -379,21 +379,24 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- FIX: THE SYNCING ME PAGE (Corrected Keys & Link Generation) ---
+// --- FIX 2: THE SYNCING ME PAGE (Updated renderMePage) ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         
         if (!response || !response.ok) {
-            appContent.innerHTML = `<div style="text-align:center; padding:50px;"><p>Unable to load profile.</p><button onclick="logoutUser()" class="btn-withdraw">Try Re-logging</button></div>`;
+            appContent.innerHTML = `
+                <div style="text-align:center; padding:50px;">
+                    <p>Unable to load profile data.</p>
+                    <button onclick="logoutUser()" class="btn-withdraw">Try Re-logging</button>
+                </div>`;
             return;
         }
 
         const data = await response.json();
         const user = data.balance || {};
-        // Aggressive mapping to catch the key Sahil sends (own_referral_code)
-        const refCode = user.own_referral_code || user.referral_code || 'N/A';
+        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
         const fullName = user.full_name || 'JJB24 User';
         const phone = user.phone_number || '';
         
@@ -406,7 +409,6 @@ const renderMePage = async () => {
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
                     <h3 style="margin-bottom:5px;">${fullName}</h3>
                     <p style="color:#666; font-size:14px;">${phone}</p>
-                    
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
                         <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
                         
@@ -416,11 +418,10 @@ const renderMePage = async () => {
 
                         <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
                             <strong id="referralCode" style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
-                            <button onclick="copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
+                            <button onclick="copyReferralLink('${refCode}')" class="btn-deposit" style="padding:5px 15px; font-size:12px; border-radius:6px !important; cursor:pointer;">COPY LINK</button>
                         </div>
                     </div>
                 </div>
-                
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
@@ -434,48 +435,8 @@ const renderMePage = async () => {
                 </div>
             </div>`;
     } catch(e) { 
-        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check connection.</p></div>';
+        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check your connection.</p></div>';
     }
-};
-
-const renderDepositPage = async () => { 
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Deposit Funds</h2></div><div class="withdraw-card"><form id="depositForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" /></div><button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Proceed to Payment</button></form></div></div>`;
-    document.getElementById('depositForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const amount = document.getElementById('amount').value;
-        try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, { method: 'POST', body: JSON.stringify({ amount: parseFloat(amount) }) });
-            const result = await response.json();
-            if (result.success && result.data.paymentLink) window.location.href = result.data.paymentLink;
-            else alert(result.message);
-        } catch (error) { alert('An error occurred.'); }
-    });
-};
-
-const renderWithdrawPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
-        const data = await response.json();
-        const balance = data.balance?.balance || 0;
-        appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1 solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label>Bank Name</label><input type="text" id="bankName" required /></div><div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
-        const amountInput = document.getElementById('amount');
-        amountInput.addEventListener('input', () => {
-            const val = parseFloat(amountInput.value);
-            if (!isNaN(val) && val > 0) {
-                const fee = val * 0.09; const final = val - fee;
-                document.getElementById('feeDisplay').textContent = '- ₦' + fee.toLocaleString();
-                document.getElementById('finalDisplay').textContent = '₦' + final.toLocaleString();
-                document.getElementById('feeContainer').style.display = 'block';
-            } else document.getElementById('feeContainer').style.display = 'none';
-        });
-        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: parseFloat(amountInput.value), bank_name: document.getElementById('bankName').value, account_number: document.getElementById('accountNumber').value, account_name: document.getElementById('accountName').value }) });
-            const r = await res.json(); if(r.ok) showSuccessModal(r.message); else alert(r.message);
-        });
-    } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
 
 const renderRewardsPage = async () => {
