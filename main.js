@@ -150,14 +150,13 @@ const getReferralFromUrl = () => {
     return '';
 };
 
-// --- FIX 1: EXPOSE LOGOUT TO WINDOW ---
-// This was the bug: The function existed but HTML couldn't see it.
+// --- FIX: EXPOSE LOGOUT TO WINDOW (Fixes Logout Bug) ---
 const logoutUser = () => { 
     localStorage.removeItem('token'); 
     window.location.hash = '#login'; 
     router(); 
 };
-window.logoutUser = logoutUser; // Now it is public!
+window.logoutUser = logoutUser;
 
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
@@ -465,6 +464,7 @@ const renderDepositPage = async () => {
     });
 };
 
+// --- FIX 3: RENDER WITHDRAW PAGE (Now with Dropdown!) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     try {
@@ -472,7 +472,27 @@ const renderWithdrawPage = async () => {
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1 solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div><div class="form-group"><label>Bank Name</label><input type="text" id="bankName" required /></div><div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1 solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div>
+            
+            <div class="form-group"><label>Bank Name</label>
+            <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;">
+                <option value="">Select Bank</option>
+                <option value="Paycom">OPay (Paycom)</option>
+                <option value="PalmPay">PalmPay</option>
+                <option value="Kuda Bank">Kuda Bank</option>
+                <option value="Access Bank">Access Bank</option>
+                <option value="Guaranty Trust Bank">Guaranty Trust Bank</option>
+                <option value="Zenith Bank">Zenith Bank</option>
+                <option value="United Bank for Africa">UBA</option>
+                <option value="First Bank of Nigeria">First Bank</option>
+                <option value="Fidelity Bank">Fidelity Bank</option>
+                <option value="VFD Microfinance Bank">VFD Bank</option>
+                <option value="Moniepoint Microfinance Bank">Moniepoint</option>
+            </select>
+            </div>
+            
+            <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+        
         const amountInput = document.getElementById('amount');
         amountInput.addEventListener('input', () => {
             const val = parseFloat(amountInput.value);
@@ -491,7 +511,6 @@ const renderWithdrawPage = async () => {
     } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
 
-// --- UPDATED: RENDER REWARDS PAGE (Includes Referral Link) ---
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
     
