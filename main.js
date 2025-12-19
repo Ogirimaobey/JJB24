@@ -541,7 +541,18 @@ const renderWithdrawPage = async () => {
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required /></div><div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;"><div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div><div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1 solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div></div>
+            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm">
+            
+            <div class="form-group">
+                <label for="amount">Amount (NGN)</label>
+                <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required />
+                <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
+            </div>
+
+            <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
+                <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
+            </div>
             
             <div class="form-group"><label>Bank Name</label>
             <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;">
@@ -608,11 +619,19 @@ const renderWithdrawPage = async () => {
         
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const val = parseFloat(amountInput.value);
+            
+            // --- UPDATED CHECK: ENFORCE 800 MINIMUM ---
+            if (val < 800) {
+                return alert("Minimum withdrawal amount is ₦800");
+            }
+
             const pin = document.getElementById('withdrawPin').value;
+            
             const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
                 method:'POST', 
                 body: JSON.stringify({ 
-                    amount: parseFloat(amountInput.value), 
+                    amount: val, 
                     bank_name: document.getElementById('bankName').value, 
                     account_number: document.getElementById('accountNumber').value, 
                     account_name: document.getElementById('accountName').value,
