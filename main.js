@@ -291,6 +291,7 @@ const renderOTPVerificationScreen = (email) => {
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
+// --- UPDATED: HOME SCREEN (ADDED "MY PLANS" BUTTON) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
@@ -318,13 +319,15 @@ const renderHomeScreen = async () => {
 
         appContent.innerHTML = `
             <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString()}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
             <div class="home-content"><div class="quick-actions">
+                <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
+                
                 <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
                 <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
-                <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                 <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
             </div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
     } catch (error) { logoutUser(); }
 };
@@ -356,11 +359,9 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- UPDATED: RENDER TEAM PAGE (Includes Referral Link) ---
+// --- TEAM PAGE ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
-    
-    // 1. Fetch User Data to get the referral code
     let refCode = 'N/A';
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
@@ -368,7 +369,6 @@ const renderTeamPage = async () => {
         refCode = userData.balance?.own_referral_code || 'N/A';
     } catch(e) {}
 
-    // 2. Fetch Team Data
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
         const data = await response.json();
@@ -403,7 +403,7 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- NEW: SET PIN PAGE (Allows users to create their withdrawal PIN) ---
+// --- SET PIN PAGE ---
 const renderSetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -424,26 +424,53 @@ const renderSetPinPage = async () => {
         e.preventDefault();
         const pin = document.getElementById('pinInput').value;
         if (pin.length !== 4) return alert("PIN must be exactly 4 digits.");
-        
         try {
-            // Call the backend route we just created
-            const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { 
-                method: 'POST', 
-                body: JSON.stringify({ pin }) 
-            });
+            const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin }) });
             const data = await res.json();
-            
             if (res.ok) { 
                 showSuccessModal("PIN Set Successfully!"); 
                 setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
-            } else {
-                alert(data.message || "Failed to set PIN");
-            }
+            } else { alert(data.message || "Failed to set PIN"); }
         } catch (err) { alert("Error connecting to server"); }
     });
 };
 
-// --- UPDATED: RENDER ME PAGE (Added "Set PIN" Button) ---
+// --- NEW: ACTIVE INVESTMENTS PAGE (WITH DAYS LEFT) ---
+const renderActiveInvestmentsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Investments...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
+        const data = await response.json();
+        const investments = data.active_investments || [];
+
+        if (investments.length === 0) {
+            appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Investments</h2></div><div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">You have no active investments.</p><a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a></div></div>`;
+            return;
+        }
+
+        let html = investments.map(inv => `
+            <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <h4 style="margin:0; font-size:16px;">${inv.itemname || 'Investment Plan'}</h4>
+                        <small style="color:#666;">Daily: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
+                    </div>
+                </div>
+                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
+                    <span>Invested: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
+                    <span>Total Earned: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
+                </div>
+            </div>
+        `).join('');
+
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Active Plans</h2></div>${html}</div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load investments.</p>'; }
+};
+
+// --- ME PAGE ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
@@ -477,7 +504,6 @@ const renderMePage = async () => {
                     <a href="#set-pin" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> Set Transaction PIN</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
@@ -508,7 +534,6 @@ const renderDepositPage = async () => {
     });
 };
 
-// --- FIX 3: RENDER WITHDRAW PAGE (Now with MEGA BANK LIST + PIN INPUT) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     try {
@@ -583,9 +608,7 @@ const renderWithdrawPage = async () => {
         
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            // Collect PIN from input
             const pin = document.getElementById('withdrawPin').value;
-            
             const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
                 method:'POST', 
                 body: JSON.stringify({ 
@@ -593,11 +616,11 @@ const renderWithdrawPage = async () => {
                     bank_name: document.getElementById('bankName').value, 
                     account_number: document.getElementById('accountNumber').value, 
                     account_name: document.getElementById('accountName').value,
-                    pin: pin // Send PIN to backend
+                    pin: pin 
                 }) 
             });
             const r = await res.json(); 
-            if(r.ok) showSuccessModal(r.message); else alert(r.message); // Show backend error (e.g., "Incorrect PIN")
+            if(r.ok) showSuccessModal(r.message); else alert(r.message);
         });
     } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
@@ -675,7 +698,8 @@ const router = () => {
         case '#certificate': renderCertificatePage(); break;
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
-        case '#set-pin': renderSetPinPage(); break; // <--- NEW ROUTE
+        case '#set-pin': renderSetPinPage(); break; 
+        case '#my-investments': renderActiveInvestmentsPage(); break; // <--- NEW ROUTE
         default: renderHomeScreen(); 
     }
 };
