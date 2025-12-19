@@ -403,7 +403,47 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- UPDATED: RENDER ME PAGE (Bulletproof Copy) ---
+// --- NEW: SET PIN PAGE (Allows users to create their withdrawal PIN) ---
+const renderSetPinPage = async () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Security PIN</h2></div>
+            <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN to secure your withdrawals.</p>
+                <form id="pinForm">
+                    <div class="form-group">
+                        <label style="font-weight:bold;">Enter 4-Digit PIN</label>
+                        <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
+                </form>
+            </div>
+        </div>`;
+
+    document.getElementById('pinForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pin = document.getElementById('pinInput').value;
+        if (pin.length !== 4) return alert("PIN must be exactly 4 digits.");
+        
+        try {
+            // Call the backend route we just created
+            const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { 
+                method: 'POST', 
+                body: JSON.stringify({ pin }) 
+            });
+            const data = await res.json();
+            
+            if (res.ok) { 
+                showSuccessModal("PIN Set Successfully!"); 
+                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
+            } else {
+                alert(data.message || "Failed to set PIN");
+            }
+        } catch (err) { alert("Error connecting to server"); }
+    });
+};
+
+// --- UPDATED: RENDER ME PAGE (Added "Set PIN" Button) ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
@@ -434,6 +474,10 @@ const renderMePage = async () => {
                     </div>
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="#set-pin" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> Set Transaction PIN</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
@@ -464,7 +508,7 @@ const renderDepositPage = async () => {
     });
 };
 
-// --- FIX 3: RENDER WITHDRAW PAGE (Now with MEGA BANK LIST) ---
+// --- FIX 3: RENDER WITHDRAW PAGE (Now with MEGA BANK LIST + PIN INPUT) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     try {
@@ -517,7 +561,14 @@ const renderWithdrawPage = async () => {
             </select>
             </div>
             
-            <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div><button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+            <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div>
+            
+            <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;">
+                <label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label>
+                <input type="password" id="withdrawPin" maxlength="4" placeholder="Enter 4-digit PIN" required style="letter-spacing: 5px; text-align:center;" />
+            </div>
+
+            <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
         
         const amountInput = document.getElementById('amount');
         amountInput.addEventListener('input', () => {
@@ -529,10 +580,24 @@ const renderWithdrawPage = async () => {
                 document.getElementById('feeContainer').style.display = 'block';
             } else document.getElementById('feeContainer').style.display = 'none';
         });
+        
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: parseFloat(amountInput.value), bank_name: document.getElementById('bankName').value, account_number: document.getElementById('accountNumber').value, account_name: document.getElementById('accountName').value }) });
-            const r = await res.json(); if(r.ok) showSuccessModal(r.message); else alert(r.message);
+            // Collect PIN from input
+            const pin = document.getElementById('withdrawPin').value;
+            
+            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
+                method:'POST', 
+                body: JSON.stringify({ 
+                    amount: parseFloat(amountInput.value), 
+                    bank_name: document.getElementById('bankName').value, 
+                    account_number: document.getElementById('accountNumber').value, 
+                    account_name: document.getElementById('accountName').value,
+                    pin: pin // Send PIN to backend
+                }) 
+            });
+            const r = await res.json(); 
+            if(r.ok) showSuccessModal(r.message); else alert(r.message); // Show backend error (e.g., "Incorrect PIN")
         });
     } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
 };
@@ -610,6 +675,7 @@ const router = () => {
         case '#certificate': renderCertificatePage(); break;
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
+        case '#set-pin': renderSetPinPage(); break; // <--- NEW ROUTE
         default: renderHomeScreen(); 
     }
 };
