@@ -134,7 +134,7 @@ const closeModal = () => {
     if (window.location.hash !== '#home') { window.location.hash = '#home'; } else { router(); }
 };
 
-// --- GLOBAL COPY FUNCTION (FIXED: Attached to Window) ---
+// --- GLOBAL COPY FUNCTION ---
 window.copyReferralLink = async (referralCode) => {
     if (!referralCode || referralCode === 'N/A') { alert('No referral code available.'); return; }
     const fullLink = `${window.location.origin}/#register?ref=${referralCode}`;
@@ -150,7 +150,14 @@ const getReferralFromUrl = () => {
     return '';
 };
 
-const logoutUser = () => { localStorage.removeItem('token'); window.location.hash = '#login'; router(); };
+// --- FIX 1: EXPOSE LOGOUT TO WINDOW ---
+// This was the bug: The function existed but HTML couldn't see it.
+const logoutUser = () => { 
+    localStorage.removeItem('token'); 
+    window.location.hash = '#login'; 
+    router(); 
+};
+window.logoutUser = logoutUser; // Now it is public!
 
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
@@ -159,7 +166,6 @@ const fetchWithAuth = async (url, options = {}) => {
     if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
     try {
         const response = await fetch(url, { ...options, headers });
-        // Only logout on strict unauthorized, not just any error
         if (response.status === 401) { logoutUser(); return null; }
         return response;
     } catch (e) { console.error("Network Error", e); return null; }
@@ -435,7 +441,7 @@ const renderMePage = async () => {
                     <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-                    <a href="#" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                    <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
                         <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
                     </a>
                 </div>
