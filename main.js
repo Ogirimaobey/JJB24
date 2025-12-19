@@ -464,7 +464,7 @@ const renderDepositPage = async () => {
     });
 };
 
-// --- FIX 3: RENDER WITHDRAW PAGE (Now with Dropdown!) ---
+// --- FIX 3: RENDER WITHDRAW PAGE (Now with MEGA BANK LIST) ---
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     try {
@@ -477,17 +477,43 @@ const renderWithdrawPage = async () => {
             <div class="form-group"><label>Bank Name</label>
             <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;">
                 <option value="">Select Bank</option>
-                <option value="Paycom">OPay (Paycom)</option>
-                <option value="PalmPay">PalmPay</option>
-                <option value="Kuda Bank">Kuda Bank</option>
-                <option value="Access Bank">Access Bank</option>
-                <option value="Guaranty Trust Bank">Guaranty Trust Bank</option>
-                <option value="Zenith Bank">Zenith Bank</option>
-                <option value="United Bank for Africa">UBA</option>
-                <option value="First Bank of Nigeria">First Bank</option>
-                <option value="Fidelity Bank">Fidelity Bank</option>
-                <option value="VFD Microfinance Bank">VFD Bank</option>
-                <option value="Moniepoint Microfinance Bank">Moniepoint</option>
+                <optgroup label="Popular Microfinance & Fintech">
+                    <option value="Paycom">OPay (Paycom)</option>
+                    <option value="PalmPay">PalmPay</option>
+                    <option value="Kuda Bank">Kuda Bank</option>
+                    <option value="Moniepoint Microfinance Bank">Moniepoint</option>
+                    <option value="VFD Microfinance Bank">VFD (VBank)</option>
+                    <option value="FairMoney Microfinance Bank">FairMoney</option>
+                    <option value="Carbon">Carbon (Paylater)</option>
+                    <option value="Sparkle Microfinance Bank">Sparkle</option>
+                    <option value="Rubies Bank">Rubies Bank</option>
+                    <option value="Mint Finex MFB">Mint Finex</option>
+                    <option value="Paga">Paga</option>
+                    <option value="Taj Bank">Taj Bank</option>
+                </optgroup>
+                <optgroup label="Commercial Banks">
+                    <option value="Access Bank">Access Bank</option>
+                    <option value="Access Bank (Diamond)">Access (Diamond)</option>
+                    <option value="Guaranty Trust Bank">Guaranty Trust Bank (GTB)</option>
+                    <option value="Zenith Bank">Zenith Bank</option>
+                    <option value="United Bank for Africa">UBA</option>
+                    <option value="First Bank of Nigeria">First Bank</option>
+                    <option value="Fidelity Bank">Fidelity Bank</option>
+                    <option value="FCMB">FCMB</option>
+                    <option value="Union Bank of Nigeria">Union Bank</option>
+                    <option value="Stanbic IBTC Bank">Stanbic IBTC</option>
+                    <option value="Sterling Bank">Sterling Bank</option>
+                    <option value="Ecobank Nigeria">Ecobank</option>
+                    <option value="Wema Bank">Wema Bank</option>
+                    <option value="Keystone Bank">Keystone Bank</option>
+                    <option value="Polaris Bank">Polaris Bank</option>
+                    <option value="Unity Bank">Unity Bank</option>
+                    <option value="Providus Bank">Providus Bank</option>
+                    <option value="Titan Trust Bank">Titan Trust Bank</option>
+                    <option value="SunTrust Bank">SunTrust Bank</option>
+                    <option value="Heritage Bank">Heritage Bank</option>
+                    <option value="Jaiz Bank">Jaiz Bank</option>
+                </optgroup>
             </select>
             </div>
             
