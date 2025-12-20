@@ -63,7 +63,7 @@ const fetchWithAuth = async (url, options = {}) => {
         localStorage.removeItem('authToken');
         alert('Your session has expired. Please log in again.');
         logoutUser();
-        return new Promise(() => {}); 
+        throw new Error('Authentication failed - redirecting to login');
     }
 
     return response;
@@ -458,7 +458,7 @@ const renderHomeScreen = async () => {
             </div>`;
         appContent.innerHTML = homeHTML;
     } catch (error) {
-        if (error.message && error.message.includes('Promise')) { 
+        if (error.message && (error.message.includes('Promise') || error.message.includes('Authentication failed'))) { 
             console.log("Redirecting to login."); 
             return; 
         }
@@ -704,7 +704,7 @@ const renderMePage = async () => {
         document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
 
     } catch (error) { 
-        if (error.message && error.message.includes('Promise')) { 
+        if (error.message && (error.message.includes('Promise') || error.message.includes('Authentication failed'))) { 
             console.log("Redirecting to login."); 
             return; 
         }
@@ -1370,8 +1370,8 @@ const renderTeamPage = async () => {
         }
 
         const pageHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>My Team</h2></div>
+        <div class="page-container">
+            <div class="page-header"><h2>My Team</h2></div>
                 
                 <div class="info-card" style="margin: 20px; padding: 20px; background: linear-gradient(135deg, #6a0dad 0%, #8b2fd6 100%); border-radius: 12px; color: white;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1414,9 +1414,9 @@ const renderTeamPage = async () => {
                 <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
                     <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
                     <p>Failed to load team data. Please try again later.</p>
-                </div>
             </div>
-        `;
+        </div>
+    `;
     }
 };
 
