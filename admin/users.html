@@ -114,7 +114,8 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Full Name</th>
-                                <th>Balance (₦)</th> <th>Email</th> 
+                                <th>Balance (₦)</th> 
+                                <th>Total Deposited</th> <th>Email</th> 
                                 <th>Phone</th>
                                 <th>Status</th> 
                                 <th>Reg. Date</th>
@@ -122,7 +123,7 @@
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="8">Loading users...</td></tr>
+                            <tr><td colspan="9">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -201,7 +202,7 @@
                 tableBody.innerHTML = ''; 
 
                 if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="8">No users found in database.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9">No users found in database.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const row = document.createElement('tr');
@@ -209,6 +210,10 @@
                         
                         // Format Balance
                         const formattedBalance = Number(user.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+                        
+                        // NEW: Format Total Deposited
+                        // (If undefined, defaults to 0)
+                        const formattedDeposit = Number(user.total_deposited || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
                         // Status Logic
                         let statusHtml = '<span class="badge badge-active">Active</span>';
@@ -232,7 +237,8 @@
                         row.innerHTML = `
                             <td>${user.id}</td>
                             <td>${user.full_name}</td>
-                            <td style="font-weight:bold; color: #065f46;">₦${formattedBalance}</td> <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
+                            <td style="font-weight:bold; color: #065f46;">₦${formattedBalance}</td> 
+                            <td style="font-weight:bold; color: #1e40af;">₦${formattedDeposit}</td> <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
                             <td>${user.phone_number}</td>
                             <td>${statusHtml}</td>
                             <td>${date}</td>
@@ -243,7 +249,7 @@
                 }
             } catch (error) {
                 console.error('Error fetching users:', error);
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="9" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
             }
         }
 
