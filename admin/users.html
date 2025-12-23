@@ -172,7 +172,7 @@
             ? 'http://localhost:3000/api'
             : 'https://jjb24-backend.onrender.com/api';
 
-        // --- 1. LOAD USERS ---
+        // --- 1. LOAD USERS (URL FIXED) ---
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
             if (!token) {
@@ -184,7 +184,8 @@
 
         async function loadUsers(token) {
             try {
-                const response = await fetch(`${API_BASE_URL}/admin/users`, {
+                // FIXED: Added /users/ before admin
+                const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
 
@@ -246,7 +247,7 @@
             }
         }
 
-        // --- 2. UPDATE STATUS ---
+        // --- 2. UPDATE STATUS (URL FIXED) ---
         async function updateStatus(userId, newStatus) {
             const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
             const reason = prompt(`Reason for ${action} (Optional):`);
@@ -255,9 +256,10 @@
 
             const token = localStorage.getItem('adminToken');
             try {
-                console.log(`Hitting URL: ${API_BASE_URL}/admin/users/${userId}/status`);
+                console.log(`Hitting URL: ${API_BASE_URL}/users/admin/users/${userId}/status`);
 
-                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
+                // FIXED: Added /users/ before admin
+                const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
                     method: 'PATCH',
                     headers: { 
                         'Authorization': 'Bearer ' + token,
@@ -289,7 +291,7 @@
             }
         }
 
-        // --- 3. EDIT USER MODAL FUNCTIONS ---
+        // --- 3. EDIT USER MODAL FUNCTIONS (URL FIXED) ---
         const modal = document.getElementById('editModal');
         const editForm = document.getElementById('editForm');
 
@@ -326,7 +328,8 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+                // FIXED: Added /users/ before admin
+                const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
                     method: 'PUT',
                     headers: { 
                         'Authorization': 'Bearer ' + token,
