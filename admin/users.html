@@ -186,10 +186,6 @@
 
                 const data = await response.json();
                 
-                // --- DEBUG ALERT: Tells us exactly what the server sent ---
-                // alert("DEBUG DATA:\n" + JSON.stringify(data).substring(0, 500)); 
-                // Uncomment the line above if you need to see the raw data
-                
                 // Robust check: Handle both { users: [...] } AND direct array [...]
                 const users = Array.isArray(data) ? data : (data.users || []);
 
@@ -242,7 +238,7 @@
             }
         }
 
-        // --- 2. UPDATE STATUS (Suspend/Block/Active) ---
+        // --- 2. UPDATE STATUS (DEBUG VERSION) ---
         async function updateStatus(userId, newStatus) {
             const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
             const reason = prompt(`Reason for ${action} (Optional):`);
@@ -251,6 +247,9 @@
 
             const token = localStorage.getItem('adminToken');
             try {
+                // Confirm URL in console
+                console.log(`Hitting URL: ${API_BASE_URL}/admin/users/${userId}/status`);
+
                 const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
                     method: 'PATCH',
                     headers: { 
@@ -260,16 +259,29 @@
                     body: JSON.stringify({ status: newStatus, reason: reason })
                 });
 
-                if (response.ok) {
-                    alert(`User updated to ${newStatus}`);
+                // --- DEBUGGING BLOCK START: Reveal the Real Error ---
+                if (!response.ok) {
+                    const errText = await response.text(); // Get raw error from server
+                    alert(`SERVER ERROR (${response.status}):\n${errText}`); // Show it to user
+                    throw new Error(`Server Error ${response.status}: ${errText}`);
+                }
+                // --- DEBUGGING BLOCK END ---
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Success: User is now ${newStatus}`);
                     loadUsers(token); // Refresh table
                 } else {
-                    const err = await response.json();
-                    alert('Error: ' + err.message);
+                    alert('Server reported failure: ' + (result.message || 'Unknown error'));
                 }
+
             } catch (error) {
                 console.error(error);
-                alert('Connection error');
+                // Only show connection error if we didn't already show the server error
+                if (!error.message.includes('SERVER ERROR')) {
+                    alert('Connection Error:\n' + error.message);
+                }
             }
         }
 
