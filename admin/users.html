@@ -114,7 +114,7 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Full Name</th>
-                                <th>Email</th> 
+                                <th>Balance (₦)</th> <th>Email</th> 
                                 <th>Phone</th>
                                 <th>Status</th> 
                                 <th>Reg. Date</th>
@@ -122,7 +122,7 @@
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="7">Loading users...</td></tr>
+                            <tr><td colspan="8">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -138,18 +138,27 @@
             </div>
             <form id="editForm">
                 <input type="hidden" id="editUserId">
+                
                 <div class="form-group">
                     <label>Full Name</label>
                     <input type="text" id="editName" required>
                 </div>
+                
                 <div class="form-group">
                     <label>Email Address</label>
                     <input type="email" id="editEmail" required>
                 </div>
+
                 <div class="form-group">
                     <label>Phone Number</label>
                     <input type="text" id="editPhone" required>
                 </div>
+
+                <div class="form-group">
+                    <label style="color: #065f46; font-weight: bold;">Wallet Balance (₦)</label>
+                    <input type="number" id="editBalance" step="0.01" required style="font-weight: bold; border: 2px solid #065f46;">
+                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn-action" style="background:#999;" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn-action btn-unblock">Save Changes</button>
@@ -185,20 +194,21 @@
                 }
 
                 const data = await response.json();
-                
-                // Robust check: Handle both { users: [...] } AND direct array [...]
                 const users = Array.isArray(data) ? data : (data.users || []);
 
                 const tableBody = document.getElementById('usersTableBody');
                 tableBody.innerHTML = ''; 
 
                 if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7">No users found in database.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="8">No users found in database.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const row = document.createElement('tr');
                         const date = new Date(user.created_at).toLocaleDateString();
                         
+                        // Format Balance
+                        const formattedBalance = Number(user.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
                         // Status Logic
                         let statusHtml = '<span class="badge badge-active">Active</span>';
                         if (user.account_status === 'suspended') statusHtml = '<span class="badge badge-suspended">Suspended</span>';
@@ -210,20 +220,18 @@
                         `;
 
                         if (user.account_status === 'active' || !user.account_status) {
-                            // Active: Show Suspend & Block
                             buttons += `
                                 <button class="btn-action btn-suspend" onclick="updateStatus('${user.id}', 'suspended')">Suspend</button>
                                 <button class="btn-action btn-block" onclick="updateStatus('${user.id}', 'blocked')">Block</button>
                             `;
                         } else {
-                            // Not Active: Show Unblock
                             buttons += `<button class="btn-action btn-unblock" onclick="updateStatus('${user.id}', 'active')">Unblock</button>`;
                         }
 
                         row.innerHTML = `
                             <td>${user.id}</td>
                             <td>${user.full_name}</td>
-                            <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
+                            <td style="font-weight:bold; color: #065f46;">₦${formattedBalance}</td> <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
                             <td>${user.phone_number}</td>
                             <td>${statusHtml}</td>
                             <td>${date}</td>
@@ -234,20 +242,19 @@
                 }
             } catch (error) {
                 console.error('Error fetching users:', error);
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="7" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
             }
         }
 
-        // --- 2. UPDATE STATUS (DEBUG VERSION) ---
+        // --- 2. UPDATE STATUS ---
         async function updateStatus(userId, newStatus) {
             const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
             const reason = prompt(`Reason for ${action} (Optional):`);
             
-            if (reason === null) return; // User clicked Cancel
+            if (reason === null) return; 
 
             const token = localStorage.getItem('adminToken');
             try {
-                // Confirm URL in console
                 console.log(`Hitting URL: ${API_BASE_URL}/admin/users/${userId}/status`);
 
                 const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
@@ -259,26 +266,23 @@
                     body: JSON.stringify({ status: newStatus, reason: reason })
                 });
 
-                // --- DEBUGGING BLOCK START: Reveal the Real Error ---
                 if (!response.ok) {
-                    const errText = await response.text(); // Get raw error from server
-                    alert(`SERVER ERROR (${response.status}):\n${errText}`); // Show it to user
+                    const errText = await response.text();
+                    alert(`SERVER ERROR (${response.status}):\n${errText}`);
                     throw new Error(`Server Error ${response.status}: ${errText}`);
                 }
-                // --- DEBUGGING BLOCK END ---
 
                 const result = await response.json();
                 
                 if (result.success) {
                     alert(`Success: User is now ${newStatus}`);
-                    loadUsers(token); // Refresh table
+                    loadUsers(token); 
                 } else {
                     alert('Server reported failure: ' + (result.message || 'Unknown error'));
                 }
 
             } catch (error) {
                 console.error(error);
-                // Only show connection error if we didn't already show the server error
                 if (!error.message.includes('SERVER ERROR')) {
                     alert('Connection Error:\n' + error.message);
                 }
@@ -294,6 +298,7 @@
             document.getElementById('editName').value = user.full_name;
             document.getElementById('editEmail').value = user.email || '';
             document.getElementById('editPhone').value = user.phone_number;
+            document.getElementById('editBalance').value = user.balance; // PRE-FILL CURRENT BALANCE
             modal.style.display = 'flex';
         }
 
@@ -301,7 +306,6 @@
             modal.style.display = 'none';
         }
 
-        // Close modal if clicking outside
         window.onclick = function(event) {
             if (event.target == modal) {
                 closeModal();
@@ -317,7 +321,8 @@
             const updateData = {
                 full_name: document.getElementById('editName').value,
                 email: document.getElementById('editEmail').value,
-                phone_number: document.getElementById('editPhone').value
+                phone_number: document.getElementById('editPhone').value,
+                balance: document.getElementById('editBalance').value // SEND NEW BALANCE
             };
 
             try {
@@ -331,7 +336,7 @@
                 });
 
                 if (response.ok) {
-                    alert('User details updated successfully');
+                    alert('User details (including Balance) updated successfully');
                     closeModal();
                     loadUsers(token); // Refresh table
                 } else {
