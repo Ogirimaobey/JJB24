@@ -1,1594 +1,782 @@
-import vipProducts from './vip.js';
+// ==========================================
+// 1. CONFIGURATION & STYLING INJECTION
+// ==========================================
+
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+    /* 1. BOLD GLOBAL BUTTONS */
+    .btn-deposit {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: transform 0.2s ease;
+    }
+    .btn-deposit:active { transform: scale(0.98); }
+
+    .btn-withdraw {
+        background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: transform 0.2s ease;
+    }
+    .btn-withdraw:active { transform: scale(0.98); }
+
+    /* 2. PREMIUM PRODUCT CARDS */
+    .product-grid-wc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+    .product-card-wc {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+        transition: transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-card-wc:hover { transform: translateY(-5px); }
+    .product-image-wc { height: 180px; width: 100%; position: relative; }
+    .product-image-wc img { width: 100%; height: 100%; object-fit: cover; }
+    .card-badge {
+        position: absolute; top: 10px; right: 10px;
+        background: rgba(0,0,0,0.7); color: #fff;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 10px; font-weight: bold; backdrop-filter: blur(4px);
+    }
+    .product-info-wc { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .product-title { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; line-height: 1.2; }
+    
+    .product-stats {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        background: #f9fafb; padding: 10px; border-radius: 12px;
+    }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+    .stat-value { font-size: 14px; font-weight: 700; color: #111; }
+    .stat-value.price { color: #10b981; font-size: 15px; }
+    .stat-value.roi { color: #8b5cf6; }
+
+    .btn-invest-premium {
+        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        color: white; font-weight: 700; border: none;
+        padding: 14px; border-radius: 12px; width: 100%;
+        cursor: pointer; font-size: 14px;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        transition: all 0.2s;
+    }
+    .btn-invest-premium:active { transform: scale(0.98); }
+
+    /* 3. DESIGNER ALERT NOTIFICATION */
+    #successModal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+    }
+    #successModal .modal-content {
+        background: #fff; padding: 30px; border-radius: 24px;
+        text-align: center; max-width: 320px; width: 85%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.8);
+    }
+    @keyframes popIn {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    #closeModalBtn {
+        margin-top: 20px; padding: 12px 30px;
+        background: #10b981; color: white; border: none;
+        border-radius: 12px; font-weight: bold; cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+`;
+document.head.appendChild(styleSheet);
+
+// 2. DATA CONFIGURATION (VIP Products)
+const vipProducts = [
+    { id: 101, name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+1' },
+    { id: 102, name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+2' },
+    { id: 103, name: 'CASPER3', price: 2000000, total_return: 2400000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+3' },
+    { id: 104, name: 'CASPER4', price: 3000000, total_return: 3600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+4' }
+];
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
-// Switch to local backend for testing, change back to Render for production
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000/api'
-    : 'https://jjb24-backend.onrender.com/api';
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
-
-// --- MODAL HELPER ELEMENTS & FUNCTIONS ---
-const successModal = document.getElementById('successModal');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const modalMessage = document.getElementById('modalMessage');
+// ==========================================
+// 3. HELPER FUNCTIONS
+// ==========================================
 
 const showSuccessModal = (message) => {
-    modalMessage.textContent = message;
-    successModal.style.display = 'flex';
+    const successModal = document.getElementById('successModal');
+    const modalMessage = document.getElementById('modalMessage');
+    if (modalMessage) modalMessage.innerHTML = `<i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 15px; display:block;"></i><span style="font-size: 18px; font-weight: 700; color: #333; line-height: 1.4;">${message}</span>`;
+    if (successModal) successModal.style.display = 'flex';
 };
 
 const closeModal = () => {
-    successModal.style.display = 'none';
-    if (window.location.hash !== '#home') {
-        window.location.hash = '#home';
-    } else {
-        router();
-    }
+    const successModal = document.getElementById('successModal');
+    if (successModal) successModal.style.display = 'none';
+    if (window.location.hash !== '#home') { window.location.hash = '#home'; } else { router(); }
 };
 
-// --- NEW: A central function to handle logging the user out ---
-const logoutUser = () => {
-    window.location.hash = '#login';
+// --- GLOBAL COPY FUNCTION ---
+window.copyReferralLink = async (referralCode) => {
+    if (!referralCode || referralCode === 'N/A') { alert('No referral code available.'); return; }
+    const fullLink = `${window.location.origin}/#register?ref=${referralCode}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(fullLink); showSuccessModal('Referral link copied!'); return; } catch (err) { }
+    }
+    prompt("Copy your referral link:", fullLink);
+};
+
+const getReferralFromUrl = () => {
+    const fullHash = window.location.hash;
+    if (fullHash.includes('?ref=')) { const parts = fullHash.split('?ref='); if (parts.length > 1) return parts[1].split('&')[0]; }
+    return '';
+};
+
+// --- FIX: EXPOSE LOGOUT TO WINDOW (Fixes Logout Bug) ---
+const logoutUser = () => { 
+    localStorage.removeItem('token'); 
+    window.location.hash = '#login'; 
     router(); 
 };
+window.logoutUser = logoutUser;
 
 const fetchWithAuth = async (url, options = {}) => {
+    const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
-    if (!headers.has('Content-Type') && options.body) {
-        headers.append('Content-Type', 'application/json');
-    }
-
-    // Add Authorization header with token from localStorage (fallback if cookie doesn't work)
-    const token = localStorage.getItem('authToken');
-    if (token && !headers.has('Authorization')) {
-        headers.append('Authorization', `Bearer ${token}`);
-    }
-
-    console.log('[fetchWithAuth] Making request to:', url);
-    console.log('[fetchWithAuth] Has token:', !!token);
-    console.log('[fetchWithAuth] Headers:', Object.fromEntries(headers));
-
-    const response = await fetch(url, { 
-        ...options, 
-        headers,
-        credentials: 'include'
-    });
-
-    console.log('[fetchWithAuth] Response status:', response.status);
-
-    // If token is expired or invalid, the server sends 401
-    if (response.status === 401 || response.status === 403) {
-        console.error('[fetchWithAuth] Authentication failed, clearing token');
-        localStorage.removeItem('authToken');
-        alert('Your session has expired. Please log in again.');
-        logoutUser();
-        throw new Error('Authentication failed - redirecting to login');
-    }
-
-    return response;
+    if (token) headers.append('Authorization', `Bearer ${token}`);
+    if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401) { logoutUser(); return null; }
+        return response;
+    } catch (e) { console.error("Network Error", e); return null; }
 };
 
-// --- ACTION HANDLERS (for form submissions, button clicks, etc.) ---
+// --- REUSABLE REFERRAL CARD COMPONENT ---
+const getReferralCardHTML = (code) => {
+    const link = `${window.location.origin}/#register?ref=${code}`;
+    return `
+    <div class="referral-box" style="background: #fdf2f8; border: 1px dashed #db2777; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <small style="color: #be185d; font-weight: bold;">INVITE & EARN</small>
+        
+        <div style="margin: 10px 0; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #555; border: 1px solid #fbcfe8;">
+            ${link}
+        </div>
 
-// --- 2. FIXED handleLogin (OURS) ---
+        <div style="display: flex; justify-content: space-between; align-items:center;">
+            <strong style="color:#be185d; font-size: 16px;">${code}</strong>
+            <button onclick="window.copyReferralLink('${code}')" class="btn-deposit" style="background: #db2777 !important; padding: 8px 20px; font-size: 12px; border-radius: 8px !important; cursor:pointer; width: auto; box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3) !important;">COPY</button>
+        </div>
+    </div>`;
+};
+
+// ==========================================
+// 4. ACTION HANDLERS
+// ==========================================
+
 const handleLogin = async (event) => {
     event.preventDefault();
     const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
     const password = document.getElementById('password').value;
-    
-    if (!loginIdentifier || !password) {
-        return alert('Please provide email or phone and password.');
-    }
-    
+    if (!loginIdentifier || !password) return alert('Please provide email/phone and password.');
     const isEmail = loginIdentifier.includes('@');
-    const loginData = {
-        password: password,
-        email: isEmail ? loginIdentifier : '',
-        phone: isEmail ? '' : loginIdentifier
-    };
-
+    const loginData = { password: password, email: isEmail ? loginIdentifier : '', phone: isEmail ? '' : loginIdentifier };
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(loginData),
-            credentials: 'include'
-        });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
         const result = await response.json();
-        console.log('Login response:', result);
         if (!response.ok) return alert(`Error: ${result.message}`);
-        
-        // Store token in localStorage if provided (for Authorization header fallback)
-        if (result.token) {
-            localStorage.setItem('authToken', result.token);
-        }
-        
-        window.location.hash = '#home';
-        router();
-    } catch (error) { 
-        alert('Could not connect to server.'); 
-        console.error('Login error:', error);
-    }
+        localStorage.setItem('token', result.token); window.location.hash = '#home'; router();
+    } catch (error) { alert('Could not connect to server.'); }
 };
 
-// --- 3. FIXED handleRegister (with Terms Check) (OURS) ---
 const handleRegister = async (event) => {
     event.preventDefault();
-
-    // NEW: Check if the terms box is checked
-    const agreeTerms = document.getElementById('agreeTerms').checked;
-    if (!agreeTerms) {
-        return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
-    }
-
     const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
     const email = (document.getElementById('email') || {}).value?.trim() || '';
     const phone = (document.getElementById('phone') || {}).value?.trim() || '';
     const password = (document.getElementById('password') || {}).value || '';
     const cpassword = (document.getElementById('cpassword') || {}).value || '';
     const referral = (document.getElementById('referral') || {}).value?.trim() || '';
-    
-
     const agreedToTerms = document.getElementById('termsCheckbox').checked;
-    if (!agreedToTerms) {
-        return alert('You must agree to the Terms & Conditions and Privacy Policy to register.');
-    }
-    
+    if (!agreedToTerms) return alert('You must agree to the Terms & Conditions.');
     if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
     if (password !== cpassword) return alert('Passwords do not match.');
-    // NOTE: We use the original 'fetch' here because we don't have a token yet.
     try {
-        const payload = { fullName, phone, email, password };
-        if (referral) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/validate-referral`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referral })
-                });
-                const result = await response.json();
-                if (!response.ok) return alert(`Referral Error: ${result.message}`);
-                payload.referral = referral;
-                
-            } catch (error) {
-                return alert('Could not validate referral code.');
-            }
-        }
-        // NOTE: We use the original 'fetch' here
-        const response = await fetch(`${API_BASE_URL}/users/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const payload = { fullName, phone, email, password, referralCode: referral || undefined };
+        const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-
-        alert(`OTP sent to ${email}. Please check your inbox.`);
-        renderOTPVerificationScreen(email);
-    } catch (error) {
-        alert('Could not connect to server.');
-    }
+        alert(`OTP sent to ${email}. Check your inbox.`); renderOTPVerificationScreen(email);
+    } catch (error) { alert('Could not connect to server.'); }
 };
 
 const handleOTPVerification = async (event, email) => {
-    event.preventDefault();
-    const otpCode = document.getElementById('otpCode').value;
+    event.preventDefault(); const otpCode = document.getElementById('otpCode').value;
     try {
-        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, otp: otpCode })
-        });
+        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: otpCode }) });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        
-        alert('Phone verified successfully! Please log in.');
-        renderLoginScreen();
-    } catch (error) {
-        alert('Could not verify OTP. Please try again.');
-    }
+        showSuccessModal('Phone verified!'); renderLoginScreen();
+    } catch (error) { alert('Verification failed.'); }
 };
 
-// --- 4. FIXED handleResendOTP (uses email) ---
 const handleResendOTP = async (email) => { 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email }) 
-        });
-        const result = await response.json();
-        if (!response.ok) return alert(`Error: ${result.message}`);
-        
-        alert('New OTP sent to your email!');
-    } catch (error) {
-        alert('Could not resend OTP. Please try again.');
-    }
+        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+        const result = await response.json(); if (!response.ok) return alert(`Error: ${result.message}`); alert('New OTP sent!');
+    } catch (error) { alert('Failed to resend OTP.'); }
 };
 
-<<<<<<< HEAD
-// --- 5. handleInvestClick (BABATUNDE'S + Our Fix) ---
-=======
-// --- 5. HANDLE INVEST CLICK (SMART ROUTING - CRITICAL) ---
->>>>>>> origin/dev
 const handleInvestClick = async (event) => {
-    if (event.target.classList.contains('btn-invest')) {
-        const rawItemId = event.target.dataset.planId; 
-        // console.log('Raw itemId from button:', rawItemId, 'Type:', typeof rawItemId);
-        
+    if (event.target.classList.contains('btn-invest-premium') || event.target.classList.contains('btn-invest')) {
+        const rawItemId = event.target.dataset.planId;
+        const investType = event.target.dataset.type;
         let itemId = Number(rawItemId);
-        if (isNaN(itemId) || itemId <= 0) {
-            alert('Error: Invalid product ID. Please refresh the page and try again.');
-            // console.error('Invalid itemId:', rawItemId, 'Type:', typeof rawItemId, 'Converted:', itemId);
-            return;
-        }
+        if (isNaN(itemId) || itemId <= 0) return alert('Error: Invalid product ID.');
+        const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
+        if (!confirm(`Are you sure you want to invest?`)) return;
         
-        // console.log('Sending investment request with itemId:', itemId);
-        
-        if (!confirm(`Are you sure you want to invest in this plan?`)) { return; }
-        
+        let endpoint = investType === 'vip' ? `${API_BASE_URL}/investments/createVipInvestment/${itemId}` : `${API_BASE_URL}/investments/createInvestment/${itemId}`;
+
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/investments/createInvestment/${itemId}`, {
-                method: 'POST'
-            });
-            
+            const response = await fetchWithAuth(endpoint, { method: 'POST' });
             const result = await response.json();
-            
-            if (response.ok && result.success) {
-                showSuccessModal('Investment created successfully! Your balance has been updated.');
-                setTimeout(() => {
-                    window.location.hash = '#home';
-                    router();
-                }, 2000);
-            } else {
-                const errorMsg = result.message || 'Failed to create investment. Please try again.';
-                alert('Error: ' + errorMsg);
-            }
-        } catch (error) {
-            console.error('Investment error:', error);
-            alert('An investment error occurred. Please try again.');
-        }
+            if (response && response.ok && result.success) {
+                showSuccessModal('Investment Successful!');
+                setTimeout(() => { window.location.hash = '#home'; router(); }, 2000);
+            } else { alert('Error: ' + ((result && result.message) || 'Failed.')); }
+        } catch (error) { alert('Investment error.'); }
     }
 };
 
-// --- 6. NEW handleCopyReferral ---
-const handleCopyReferral = (event) => {
-    const referralCode = document.getElementById('referralCode')?.textContent;
-    if (!referralCode || referralCode === 'N/A') {
-        alert('No referral code to copy.');
-        return;
-    }
-    
-    const textArea = document.createElement('textarea');
-    textArea.value = referralCode;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        alert('Referral code copied to clipboard!');
-    } catch (err) {
-        alert('Failed to copy referral code.');
-    }
-    document.body.removeChild(textArea);
-};
+// ==========================================
+// 5. RENDER FUNCTIONS
+// ==========================================
 
-// --- RENDER FUNCTIONS (Build the HTML for each page) ---
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Welcome Back</h2>
-            <p>Please log in to your account.</p>
-            <form id="loginForm">
-                <div class="form-group">
-                <label>Email or Phone Number</label>
-                <input type="text" id="loginIdentifier" required />
-                </div>
-                <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" required />
-                </div>
-                <button type="submit" class="btn-auth">Login</button>
-            </form>
-            <p class="auth-link">Don't have an account? <a href="#register">Register here</a></p>
-        </div>
-    `;
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Welcome Back</h2><form id="loginForm"><div class="form-group"><label>Email/Phone</label><input type="text" id="loginIdentifier" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><button type="submit" class="btn-auth">Login</button></form><p class="auth-link"><a href="#register">Create Account</a></p></div>`;
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
-// --- 7. FIXED renderRegisterScreen (with Terms HTML) (OURS) ---
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Create Account</h2>
-            <p>Start your journey with us today.</p>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="fullName" required />
-                </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="email" required />
-                </div>
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel" id="phone" required />
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" required />
-                </div>
-                <div class="form-group">
-                    <label>Confirm Password</label>
-                    <input type="password" id="cpassword"  required />
-                </div>
-                <div class="form-group">
-                    <label>Referral Code (Optional)</label>
-                    <input type="text" id="referral" />
-                </div>
-                <!-- NEW: Terms and Conditions Checkbox -->
-                <div class="form-group-checkbox" style="flex-direction: row; align-items: center; display: flex; gap: 10px; margin-top: 15px;">
-                    <input type="checkbox" id="termsCheckbox" required style="width: auto; height: auto; margin: 0;" />
-                    <label for="termsCheckbox" style="margin: 0; font-size: 12px; font-weight: normal; color: #666;">
-                        I agree to the 
-                        <a href="#terms" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Terms & Conditions</a> 
-                        and 
-                        <a href="#privacy" class="terms-link" style="color: #6a0dad; text-decoration: underline;">Privacy Policy</a>.
-                    </label>
-                </div>
-                <button type="submit" class="btn-auth">Register</button>
-            </form>
-            <p class="auth-link">Already have an account? <a href="#login">Login here</a></p>
-        </div>
-    `;
+    const autoRefCode = getReferralFromUrl();
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Create Account</h2><form id="registerForm"><div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div><div class="form-group"><label>Email</label><input type="email" id="email" required /></div><div class="form-group"><label>Phone</label><input type="tel" id="phone" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><div class="form-group"><label>Confirm</label><input type="password" id="cpassword" required /></div><div class="form-group"><label>Referral Code</label><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /></div><div class="form-group-checkbox" style="flex-direction: row; gap: 10px; margin-top: 15px;"><input type="checkbox" id="termsCheckbox" required style="width: auto;" /><label for="termsCheckbox" style="font-size: 12px; color: #666;">I agree to Terms & Privacy.</label></div><button type="submit" class="btn-auth">Register</button></form><p class="auth-link"><a href="#login">Login here</a></p></div>`;
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
 const renderOTPVerificationScreen = (email) => {
     bottomNav.style.display = 'none';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2>Verify Your Account</h2>
-            <p>Enter the 6-digit code sent to ${email}</p>
-            
-            <form id="otpForm">
-                <div class="form-group">
-                    <label>OTP Code</label>
-                    <input type="text" 
-                            id="otpCode" 
-                            maxlength="6" 
-                            pattern="[0-9]{6}" 
-                            placeholder="000000"
-                            class="otp-input"
-                            required 
-                            autocomplete="one-time-code" />
-                </div>
-                
-                <button type="submit" class="btn-auth">Verify</button>
-            </form>
-            
-            <p class="auth-link">
-                Didn't receive code? 
-                <a id="resendOTP" style="cursor: pointer; color: #6a0dad;">Resend OTP</a>
-            </p>
-            
-            <p class="auth-link">
-                <a href="#login">Back to Login</a>
-            </p>
-        </div>
-    `;
-    
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify Phone</h2><p>Code sent to ${email}</p><form id="otpForm"><div class="form-group"><label>OTP</label><input type="text" id="otpCode" maxlength="6" required /></div><button type="submit" class="btn-auth">Verify</button></form><p class="auth-link"><a id="resendOTP" style="cursor: pointer;">Resend OTP</a></p><p class="auth-link"><a href="#login">Back to Login</a></p></div>`;
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
-// --- 8. FIXED renderHomeScreen (with Certificate Button) ---
+// --- UPDATED: HOME SCREEN (ADDED "MY PLANS" BUTTON) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
-
+    const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: "GET"
-        });
-
-        if (!response.ok) {
-        const err = await response.text();
-        throw new Error('Failed to load data.');
-        }
-
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
+        if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        const fullName = data.balance.full_name || 'User';
-        const balance = data.balance.balance || 0;
+        const fullName = data.balance.full_name || 'User'; const balance = data.balance.balance || 0;
+        
+        let activityHTML = "<p>No recent activity.</p>";
+        try {
+            const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
+            if (histRes && histRes.ok) {
+                const histData = await histRes.json();
+                if (histData.success && histData.transactions.length > 0) {
+                    activityHTML = histData.transactions.slice(0, 4).map(txn => 
+                        `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
+                            <span style="text-transform: capitalize; font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
+                            <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold; font-size: 13px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
+                        </div>`
+                    ).join('');
+                }
+            }
+        } catch(e) {}
 
-        const activityHTML = "<p>No recent activity yet.</p>";
-
-        const homeHTML = `
-            <div class="top-header">
-                <div class="user-greeting">
-                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
-                    <p>Welcome back!</p>
-                </div>
-                <div class="profile-icon">
-                    <i class="fas fa-user"></i>
-                </div>
-            </div>
-            <div class="balance-card">
-                <small>Total Assets (NGN)</small>
-                <h2>₦ ${Number(balance).toLocaleString()}</h2>
-                <div class="header-buttons">
-                    <a href="#deposit" class="btn-deposit">Deposit</a>
-                    <a href="#withdraw" class="btn-withdraw">Withdraw</a>
-                </div>
-            </div>
-
-            <div class="home-content">
-                <div class="quick-actions">
-                    <a href="#team" class="action-button">
-                        <i class="fas fa-users"></i>
-                        <span>My Team</span>
-                    </a>
-                    <a href="#history" class="action-button">
-                        <i class="fas fa-history"></i>
-                        <span>History</span>
-                    </a>
-                    <a href="#support" class="action-button">
-                        <i class="fas fa-headset"></i>
-                        <span>Support</span>
-                    </a>
-                    <a href="#rewards" class="action-button">
-                        <i class="fas fa-gift"></i>
-                        <span>Rewards</span>
-                    </a>
-                    <!-- NEW: Certificate Button -->
-                    <a href="#certificate" class="action-button">
-                        <i class="fas fa-file-certificate"></i>
-                        <span>Certificate</span>
-                    </a>
-                </div>
-                <div class="activity-card">
-                    <h3>Recent Activity</h3>
-                    <div class="activity-list">${activityHTML}</div>
-                </div>
-            </div>`;
-        appContent.innerHTML = homeHTML;
-    } catch (error) {
-        if (error.message && (error.message.includes('Promise') || error.message.includes('Authentication failed'))) { 
-            console.log("Redirecting to login."); 
-            return; 
-        }
         appContent.innerHTML = `
-            <div class="page-container" style="text-align: center; margin-top: 50px;">
-                <p>Could not load dashboard. Please try again.</p>
-                <a href="#" id="logoutButton" class="btn-auth" style="display: inline-block; margin-top: 20px;">Logout</a>
-            </div>
-        `;
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser(); 
-        });
-    }
+            <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
+            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
+            <div class="home-content"><div class="quick-actions">
+                <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
+                
+                <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
+                <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
+                <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+            </div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
+    } catch (error) { logoutUser(); }
 };
 
-// --- 9. FIXED renderProductsPage (uses API fetch with validation) ---
 const renderProductsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
-    
     try {
-        const response = await fetch(`${API_BASE_URL}/users/allItems`, {
-            credentials: 'include'
-        });
-        // console.log('Response from products backend:', response);
-
-        if (!response.ok) throw new Error('Failed to load data.');
-
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
+        if (!response || !response.ok) throw new Error();
         const data = await response.json();
-
-        let productHTML = '';
-<<<<<<< HEAD
-        data.items.forEach(item => {
-        // console.log('Processing item:', { id: item.id, idType: typeof item.id, itemname: item.itemname });
-            
-            const itemId = Number(item.id);
-            if (isNaN(itemId)) {
-                console.error('Invalid item ID:', item.id, 'Type:', typeof item.id, 'for item:', item.itemname);
-            return; 
-            }
-            productHTML += `
-                <div class="product-card-wc">
-                    <div class="product-image-wc">
-                        <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
-                    </div>
-                    <div class="product-info-wc">
-                        <h4>${item.itemname}</h4>
-                        <p>Price: ₦${Number(item.price).toLocaleString()}</p>
-                        <p>Daily Income: ₦${Number(item.dailyincome).toLocaleString()}</p>
-                        <button class="btn-invest" data-plan-id="${itemId}">Invest</button>
-                    </div>
-                </div>`;
-        });
-=======
-        const items = data.items || [];
-        
-        if (items.length === 0) {
-            productHTML = '<p style="text-align:center; padding:20px;">No products available.</p>';
-        } else {
+        let productHTML = ''; const items = data.items || [];
+        if (items.length === 0) productHTML = '<p style="text-align:center;">No products.</p>';
+        else {
             items.forEach(item => {
-                const itemId = Number(item.id);
-                // Backend might not send 'duration' yet, so we default to 30
-                const duration = item.duration || 30; 
-                
-                productHTML += `
-                    <div class="product-card-wc">
-                        <div class="product-image-wc">
-                            <img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Image+Error'">
-                        </div>
-                        <div class="product-info-wc">
-                            <h4>${item.itemname}</h4>
-                            <p><strong>Price:</strong> ₦${Number(item.price).toLocaleString()}</p>
-                            <p><strong>Daily Income:</strong> ₦${Number(item.dailyincome).toLocaleString()}</p>
-                            <p><strong>Duration:</strong> ${duration} days</p>
-                            
-                            <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                                (Daily Withdrawal Available)
-                            </p>
-                            
-                            <button class="btn-invest" data-plan-id="${itemId}" data-type="regular">Invest</button>
-                        </div>
-                    </div>`;
+                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>`;
             });
         }
->>>>>>> origin/dev
-
-        const pageHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>Investment Products</h2></div>
-                <div class="product-grid-wc">${productHTML}</div>
-            </div>`;
-        appContent.innerHTML = pageHTML;
-    } catch (error) {
-        console.error('Error rendering products:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load products.</p>';
-    }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load products.</p>'; }
 };
 
-// --- 10. FIXED renderVipPage (uses API) ---
-const renderVipPage = async () => {
-    appContent.innerHTML = `<p style="text-align: center; margin-top: 50px;">Loading VIP Plans...</p>`;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/investments/allVipInvestment`, {
-            credentials: 'include'
-        });
-
-        if (!response.ok) throw new Error('Failed to load data.');
-
-        const data = await response.json();
-
-        if (!data.vips || !Array.isArray(data.vips)) {
-            throw new Error("VIP list missing from backend response");
-        }
-
-        let vipHTML = "";
-
-        data.vips.forEach(plan => {
-        vipHTML += `
-        <div class="product-card-wc">
-            <div class="product-image-wc">
-                    <img src="${plan.image}" alt="${plan.name}"
-                    onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=Image+Error'">
-            </div>
-            <div class="product-info-wc">
-                <h4>${plan.name}</h4>
-<<<<<<< HEAD
-                    <p><strong>Price:</strong> ₦${Number(plan.price).toLocaleString()}</p>
-                    <p><strong>Total Return:</strong> ₦${Number(plan.total_returns).toLocaleString()}</p>
-                    <p><strong>Duration:</strong> ${plan.duration_days} days</p>
-                    <p style="font-size: 12px; color: #666;">
-                        (Note: Additional 20% of your investment will be added after maturity)
-                    </p>
-                <button class="btn-invest" data-plan-id="${plan.id}">Invest</button>
-=======
-                <p><strong>Price:</strong> ₦${plan.price.toLocaleString()}</p>
-                <p><strong>Total Return:</strong> ₦${plan.total_return.toLocaleString()}</p>
-                <p><strong>Duration:</strong> ${plan.duration} days</p>
-                
-                <p style="font-size: 12px; color: #666;">(Daily Withdrawal Available)</p>
-                
-                <button class="btn-invest" data-plan-id="${itemId}" data-type="vip">Invest</button>
->>>>>>> origin/dev
-            </div>
-        </div>`;
+const renderVipPage = () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP...</p>';
+    const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
+    let vipHTML = '';
+    products.forEach(plan => {
+        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
     });
-
-        const pageHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>VIP Promotions</h2></div>
-            <div class="product-grid-wc">${vipHTML}</div>
-        </div>`;
-
-    appContent.innerHTML = pageHTML;
-
-        document.querySelectorAll(".btn-invest").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const planId = btn.getAttribute("data-plan-id");
-                investInPlan(planId);
-            });
-        });
-
-    } catch (error) {
-        console.error('Error rendering VIP plans:', error);
-        appContent.innerHTML = `<p style="text-align: center; color: red; margin-top: 50px;">Unable to load VIP plans.</p>`;
-    }
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-//Investment plan ID
-const investInPlan = async (planId) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/investments/createVipInvestment/${planId}`, {
-            method: "POST",
-            credentials: "include"
-        });
-
-        const data = await response.json();
-        console.log("Investment response:", data);
-
-        if (data.success) {
-            alert("Investment purchased successfully!");
-            router(); 
-        } else {
-            alert(data.message || "Investment failed");
-        }
-
-    } catch (error) {
-        console.error("Investment error:", error);
-        alert("Error processing investment. Try again.");
-    }
-};
-
-// --- 11. FIXED renderMePage (uses /users/balance) (OURS) ---
-const renderMePage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/user_profile`, { method: 'GET' });
-        if (!response.ok) { throw new Error('Failed to load data.'); }
-        // console.log('Response from /users/balance:', response);
-        const data = await response.json();
-        
-        // Handle both data structures (user vs profile)
-        const userData = data.user || data.profile || {};
-        const referralCode = userData.referral_code || 'N/A';
-        const email = userData.email || 'No email provided';
-        const phone = userData.phone_number || 'No phone provided';
-        const fullName = userData.full_name || 'User';
-
-        const pageHTML = `
-            <div class="page-container me-page">
-                <div class="profile-header-card">
-                    <div class="profile-icon"><i class="fas fa-user"></i></div>
-                    <h3>${fullName}</h3>
-                    <p>${phone}</p>
-                    <p style="font-size: 14px; color: #666; margin-top: 5px;">${email}</p>
-                    <div class="referral-box" style="background: #f4f4f4; border-radius: 8px; padding: 10px; margin-top: 15px; text-align: center;">
-                        <small style="font-size: 12px; color: #555;">My Referral Code:</small>
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px; background: #fff; padding: 5px 10px; border-radius: 5px;">
-                            <strong id="referralCode" style="font-size: 16px; color: #333;">${referralCode}</strong>
-                            <button id="copyReferralBtn" class="btn-copy" style="background: #6a0dad; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Copy</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- NEW: Standard Global Action List -->
-                <div class="action-list-card">
-                    <a href="#history" class="action-list-item"><i class="fas fa-history"></i><span>Transaction History</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#team" class="action-list-item"><i class="fas fa-users"></i><span>My Team</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#settings" class="action-list-item"><i class="fas fa-key"></i><span>Change Password</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#about" class="action-list-item"><i class="fas fa-info-circle"></i><span>About Us</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#support" class="action-list-item"><i class="fas fa-headset"></i><span>Customer Support</span><i class="fas fa-chevron-right"></i></a>
-                    <a href="#" id="logoutButton" class="action-list-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span><i class="fas fa-chevron-right"></i></a>
-                </div>
-            </div>
-        `;
-        appContent.innerHTML = pageHTML;
-        
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser(); 
-        });
-        
-        document.getElementById('copyReferralBtn').addEventListener('click', handleCopyReferral);
-
-    } catch (error) { 
-        if (error.message && (error.message.includes('Promise') || error.message.includes('Authentication failed'))) { 
-            console.log("Redirecting to login."); 
-            return; 
-        }
-        appContent.innerHTML = `
-            <div class="page-container" style="text-align: center; margin-top: 50px;">
-                <p>Could not load profile. Please try again.</p>
-                <a href="#" id="logoutButton" class="btn-auth" style="display: inline-block; margin-top: 20px;">Logout</a>
-            </div>
-        `;
-        document.getElementById('logoutButton').addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutUser(); 
-        });
-    }
-};
-
-// --- 12. FIXED renderTaskPage (new Earnings Dashboard) (OURS) ---
-const renderTaskPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Earnings...</p>';
-    
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/earnings-summary`, { method: 'GET' });
-        if (!response.ok) throw new Error('Failed to load earnings.');
-        const data = await response.json();
-        
-        const earnings = {
-            today: data.today || 0.00,
-            yesterday: data.yesterday || 0.00,
-            total: data.total || 0.00
-        };
-
-        const pageHTML = `
-            <div class="page-container task-page">
-                <div class="page-header"><h2>Daily Earnings</h2></div>
-                
-                <div class="earnings-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div class="earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <small style="font-size: 12px; color: var(--text-secondary); display: block;">Today's Earning</small>
-                        <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.today).toLocaleString()}</p>
-                    </div>
-                    <div class="earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <small style="font-size: 12px; color: var(--text-secondary); display: block;">Yesterday's Earning</small>
-                        <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.yesterday).toLocaleString()}</p>
-                    </div>
-                </div>
-
-                <div class="earnings-card total-earnings-card" style="background: var(--card-background); border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <small style="font-size: 12px; color: var(--text-secondary); display: block;">Total Earnings</small>
-                    <p style="font-size: 1.5rem; font-weight: 700; color: #6a0dad; margin: 5px 0 0 0;">₦ ${Number(earnings.total).toLocaleString()}</p>
-                </div>
-
-                <div class="info-card" style="margin-top: 20px; text-align: center; background: var(--card-background); padding: 10px; border-radius: 8px; font-size: 14px;">
-                    <i class="fas fa-clock" style="color: #6a0dad; margin-right: 8px;"></i>
-                    <span>Daily income drops at 12:00 am.</span>
-                </div>
-            </div>`;
-        appContent.innerHTML = pageHTML;
-
-    } catch (error) { 
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load earnings. Please try again.</p>'; 
-    }
-};
-
-// --- 13. renderDepositPage (BABATUNDE'S + Our Fix) ---
-const renderDepositPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-
-    let email, phone, userId;
-    try {
-        const userResponse = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: 'GET'
-        });
-        if (!userResponse.ok) {
-            throw new Error('Failed to load user data');
-        }
-        const userData = await userResponse.json();
-        userId = userData.balance.id;
-        email = userData.balance.email;
-        phone = userData.balance.phone_number;
-    } catch (e) {
-        console.error("Failed to get user info:", e);
-        alert("Your session is invalid. Please log in again.");
-        logoutUser(); 
-        return;
-    }
-
-
-    const pageHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>Deposit Funds</h2></div>
-            <div class="withdraw-card">
-                <form id="depositForm">
-                    <div class="form-group">
-                        <label for="amount">Amount (NGN)</label>
-                        <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
-                    </div>
-                    <button type="submit" class="btn-auth">Proceed to Payment</button>
-                </form>
-            </div>
-        </div>`;
-    appContent.innerHTML = pageHTML;
-
-    document.getElementById('depositForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const amount = document.getElementById('amount').value;
-        
-        if (!amount || parseFloat(amount) <= 0) {
-            return alert('Please enter a valid amount.');
-        }
-
-        try {
-            console.log('[Deposit] Initializing payment...', { amount, email, phone, userId });
-            
-            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    userId,
-                    amount: parseFloat(amount),
-                    email,
-                    name: phone || 'User'
-                })
-            });
-            if (!response) return;
-
-            console.log('[Deposit] Response status:', response.status);
-            const result = await response.json();
-            console.log('[Deposit] Response data:', result);
-            
-            if (!response.ok) {
-                console.error('[Deposit] Error response:', result);
-                return alert('Error: ' + result.message);
-            }
-
-            if (result.success && result.data && result.data.paymentLink) {
-                console.log('[Deposit] Payment link received:', result.data.paymentLink);
-                window.location.href = result.data.paymentLink;
-            } else {
-                console.error('[Deposit] Invalid response structure:', result);
-                alert('Failed to get payment link. Check console for details.');
-            }
-        } catch (error) {
-            if (error.message && error.message.includes('Promise')) { 
-                console.log("Redirecting to login."); 
-                return; 
-            }
-            console.error('[Deposit] Exception:', error);
-            alert('An error occurred. Please check console and try again.');
-        }
-    });
-};
-
-// --- 14. renderHistoryPage (BABATUNDE'S + Our Fix) ---
-const renderHistoryPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading History...</p>';
-
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/payment/history`, {
-            method: 'GET'
-        });
-
-        if (!response.ok) throw new Error('Failed to load history.');
-
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.message || 'Failed to load history.');
-        }
-
-        const transactions = data.transactions || [];
-        let historyHTML = '';
-
-        if (transactions.length === 0) {
-            historyHTML = '<p style="text-align: center; color: var(--text-secondary);">No transaction history yet.</p>';
-        } else {
-            transactions.forEach(txn => {
-                const date = new Date(txn.created_at).toLocaleString();
-                const amount = Number(txn.amount).toLocaleString();
-                // Sahil's audit mentioned 'type' might be missing. We add a fallback.
-                const type = txn.type || 'transaction'; 
-                const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-                const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
-                const statusBadge = txn.status === 'success' ? 'success' : txn.status === 'pending' ? 'pending' : 'failed';
-                const statusColor = txn.status === 'success' ? '#4ade80' : txn.status === 'pending' ? '#fbbf24' : '#ff5252';
-
-                historyHTML += `
-                    <div class="history-item" data-transaction-id="${txn.id}" style="background: var(--card-background); border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.3)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 1.2rem;"></i>
-                                <div>
-                                    <p style="font-weight: 600; margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</p>
-                                    <small style="color: var(--text-secondary);">${date}</small>
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <p style="font-weight: 700; font-size: 1.1rem; margin: 0; color: ${typeColor};">₦${amount}</p>
-                                <span style="font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize;">${txn.status}</span>
-                            </div>
-                        </div>
-                        <small style="color: var(--text-secondary);">Ref: ${txn.reference}</small>
-                    </div>
-                `;
-            });
-        }
-
-        const pageHTML = `
-            <div class="page-container">
-                <div class="page-header">
-                    <h2>Transaction History</h2>
-                </div>
-                <div style="margin-top: 1.5rem;">
-                    ${historyHTML}
-                </div>
-            </div>
-        `;
-        
-        appContent.innerHTML = pageHTML;
-        
-        document.querySelectorAll('.history-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const transactionId = item.dataset.transactionId;
-                const transaction = transactions.find(t => t.id.toString() === transactionId);
-                if (transaction) {
-                    showTransactionDetails(transaction);
-                }
-            });
-        });
-    } catch (error) {
-        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
-        console.error('Error loading history:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load transaction history. Please try again.</p>';
-    }
-};
-
-// --- 15. showTransactionDetails (BABATUNDE'S) ---
-const showTransactionDetails = (transaction) => {
-    const date = new Date(transaction.created_at).toLocaleString();
-    const amount = Number(transaction.amount).toLocaleString();
-    const type = transaction.type || 'transaction'; // Add fallback
-    const typeIcon = type === 'deposit' ? 'fa-arrow-down' : 'fa-arrow-up';
-    const typeColor = type === 'deposit' ? 'var(--primary-color)' : '#ff5252';
-    const statusColor = transaction.status === 'success' ? '#4ade80' : transaction.status === 'pending' ? '#fbbf24' : '#ff5252';
-    
-    const bankDetails = transaction.bank_name || transaction.account_number || transaction.account_name;
-    
-    let detailsHTML = `
-        <div style="text-align: left;">
-            <div style="margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                    <i class="fas ${typeIcon}" style="color: ${typeColor}; font-size: 2rem;"></i>
-                    <div>
-                        <h3 style="margin: 0; text-transform: capitalize;">${type.replace('_', ' ')}</h3>
-                        <span style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 0.5rem; background: ${statusColor}20; color: ${statusColor}; text-transform: capitalize; display: inline-block; margin-top: 0.5rem;">${transaction.status}</span>
-                    </div>
-                </div>
-                <p style="font-size: 2rem; font-weight: 700; color: ${typeColor}; margin: 0;">₦${amount}</p>
-            </div>
-            
-            <div style="display: grid; gap: 1rem;">
-                <div>
-                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Transaction ID</small>
-                    <p style="margin: 0; font-weight: 600;">${transaction.id}</p>
-                </div>
-                
-                <div>
-                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Reference</small>
-                    <p style="margin: 0; font-weight: 600;">${transaction.reference}</p>
-                </div>
-                
-                <div>
-                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Date & Time</small>
-                    <p style="margin: 0; font-weight: 600;">${date}</p>
-                </div>
-                
-                <div>
-                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Type</small>
-                    <p style="margin: 0; font-weight: 600; text-transform: capitalize;">${type.replace('_', ' ')}</p>
-                </div>
-                
-                <div>
-                    <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Status</small>
-                    <p style="margin: 0; font-weight: 600; text-transform: capitalize; color: ${statusColor};">${transaction.status}</p>
-                </div>
-    `;
-    
-    if (bankDetails) {
-        detailsHTML += `
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                    <h4 style="margin-bottom: 1rem; color: var(--text-primary);">Bank Details</h4>
-                    ${transaction.bank_name ? `
-                    <div style="margin-bottom: 0.75rem;">
-                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Bank Name</small>
-                        <p style="margin: 0; font-weight: 600;">${transaction.bank_name}</p>
-                    </div>
-                    ` : ''}
-                    ${transaction.account_number ? `
-                    <div style="margin-bottom: 0.75rem;">
-                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Number</small>
-                        <p style="margin: 0; font-weight: 600;">${transaction.account_number}</p>
-                    </div>
-                    ` : ''}
-                    ${transaction.account_name ? `
-                    <div style="margin-bottom: 0.75rem;">
-                        <small style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Account Name</small>
-                        <p style="margin: 0; font-weight: 600;">${transaction.account_name}</p>
-                    </div>
-                    ` : ''}
-                </div>
-        `;
-    }
-    
-    detailsHTML += `
-            </div>
-        </div>
-    `;
-    
-    const modalHTML = `
-        <div id="transactionDetailModal" class="modal-overlay" style="display: flex;">
-            <div class="modal-content" style="max-width: 400px; width: 90%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h2 style="margin: 0;">Transaction Details</h2>
-                    <button id="closeTransactionModal" style="background: none; border: none; color: var(--text-primary); font-size: 1.5rem; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
-                </div>
-                ${detailsHTML}
-                <button id="closeTransactionModalBtn" class="btn-cta" style="margin-top: 1.5rem; width: 100%;">Close</button>
-            </div>
-        </div>
-    `;
-    
-    const existingModal = document.getElementById('transactionDetailModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
-    document.getElementById('closeTransactionModal').addEventListener('click', () => {
-        document.getElementById('transactionDetailModal').remove();
-    });
-    
-    document.getElementById('closeTransactionModalBtn').addEventListener('click', () => {
-        document.getElementById('transactionDetailModal').remove();
-    });
-    
-    document.getElementById('transactionDetailModal').addEventListener('click', (e) => {
-        if (e.target.id === 'transactionDetailModal') {
-            e.target.remove();
-        }
-    });
-};
-
-// --- 16. renderWithdrawPage (BABATUNDE'S + Our Fix) ---
-const renderWithdrawPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, {
-            method: 'GET'
-        });
-        if (!response.ok) throw new Error('Failed to load data.');
-        const data = await response.json();
-        const balance = data.balance?.balance || 0;
-        
-        const pageHTML = `
-            <div class="page-container">
-                <div class="page-header"><h2>Request Withdrawal</h2></div>
-                <div class="withdraw-card">
-                    <div class="balance-display">
-                        <small>Available Balance</small>
-                        <p>₦ ${Number(balance).toLocaleString()}</p>
-                    </div>
-                    <form id="withdrawForm">
-                        <div class="form-group">
-                            <label for="amount">Amount (NGN)</label>
-                            <input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" />
-                        </div>
-                        <div class="form-group">
-                            <label for="bankName">Bank Name</label>
-                            <input type="text" id="bankName" required placeholder="Enter bank name" />
-                        </div>
-                        <div class="form-group">
-                            <label for="accountNumber">Account Number</label>
-                            <input type="text" id="accountNumber" required placeholder="Enter account number" />
-                        </div>
-                        <div class="form-group">
-                            <label for="accountName">Account Name</label>
-                            <input type="text" id="accountName" required placeholder="Enter account name" />
-                        </div>
-                        <button type="submit" class="btn-auth">Submit Request</button>
-                    </form>
-                </div>
-            </div>`;
-        appContent.innerHTML = pageHTML;
-        
-        document.getElementById('withdrawForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const amount = parseFloat(document.getElementById('amount').value);
-            const bankName = document.getElementById('bankName').value.trim();
-            const accountNumber = document.getElementById('accountNumber').value.trim();
-            const accountName = document.getElementById('accountName').value.trim();
-
-            if (!amount || amount <= 0) {
-                return alert('Please enter a valid amount.');
-            }
-            
-            // --- TODO: We need the minimum withdrawal amount rule ---
-            // if (amount < 800) {
-            //     return alert('Minimum withdrawal is ₦800.');
-            // }
-
-            if (amount > balance) {
-                return alert('Insufficient balance. Available: ₦' + balance.toLocaleString());
-            }
-
-            if (!confirm(`Request withdrawal of ₦${amount.toLocaleString()}?`)) return;
-
-            try {
-                const withdrawResponse = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        amount,
-                        bank_name: bankName,
-                        account_number: accountNumber,
-                        account_name: accountName
-                    })
-                });
-                if (!withdrawResponse) return;
-                
-                const result = await withdrawResponse.json();
-                if (!withdrawResponse.ok) return alert('Error: ' + result.message);
-                
-                showSuccessModal(result.message || 'Withdrawal request submitted successfully!');
-            } catch (error) {
-                if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
-                alert('An error occurred. Please try again.');
-            }
-        });
-    } catch (error) {
-        if (error.message && error.message.includes('Promise')) { console.log("Redirecting to login."); return; }
-        console.error('Error loading withdrawal page:', error);
-        appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Could not load page. Please try again.</p>';
-    }
-};
-
-// --- NEW RENDER FUNCTIONS FOR LEGAL PAGES ---
-const renderTermsPage = () => {
-    bottomNav.style.display = 'none'; // Hide nav on legal pages
-    appContent.innerHTML = `
-        <div class="page-container legal-page" style="padding: 15px;">
-            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="${localStorage.getItem('authToken') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
-                <h2 style="margin-top: 10px;">Terms & Conditions</h2>
-            </div>
-            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
-                <p>Welcome to JJB24, Nigeria’s first online winery investment platform. By creating an account or using our services, you agree to the following Terms & Conditions. Please read them carefully.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Acceptance of Terms</h4>
-                <p>By accessing or using this platform, you confirm that you are at least 18 years old and legally capable of entering into an investment agreement under Nigerian law.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Nature of Service</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>JJB24 provides opportunities to invest in winery-related projects (production, importation, storage, and distribution).</li>
-                    <li>We are an investment platform, not a bank or savings scheme.</li>
-                    <li>Returns are subject to market conditions and may vary.</li>
-                </ul>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Investment & Returns</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Minimum and maximum investment amounts will be specified on the platform.</li>
-                    <li>Returns on investment (ROI) will be paid according to the package selected.</li>
-                    <li>All payouts are subject to project performance and timelines.</li>
-                    <li>Past performance does not guarantee future results.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Risks Disclaimer</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>All investments carry risks, including possible loss of capital.</li>
-                    <li>By investing, you acknowledge that you understand and accept these risks.</li>
-                    <li>We do not guarantee profits, only projected estimates based on industry performance.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">User Responsibilities</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Provide accurate and truthful information during registration.</li>
-                    <li>Keep login details secure and confidential.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Platform Responsibilities</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Provide transparent information about all investment opportunities.</li>
-                    <li>Use secure payment channels for deposits and withdrawals.</li>
-                    <li>Maintain accurate records of your investments and transactions.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Fees & Charge</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Some transactions may attract administrative or processing fees (clearly stated before payment).</li>
-                    <li>Fees are non-refundable unless stated otherwise.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Withdrawal Policy</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Withdrawals of ROI will be processed within [3 business days] of request.</li>
-                    <li>Early withdrawal of invested capital may not be possible until the project cycle ends.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Limitation of Liability</h4>
-                <p>[jjb24] will not be liable for:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Losses caused by market downturns.</li>
-                    <li>Delays due to third-party partners or financial institutions.</li>
-                    <li>Technical issues beyond our control (e.g., internet downtime, payment gateway errors).</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Termination of Account</h4>
-                <p>We reserve the right to suspend or terminate any account involved in fraud, false information, or violation of these Terms.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Intellectual Property</h4>
-                <p>All content, branding, and materials on this platform are owned by JJB24 and cannot be copied or reused without permission.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Governing Law</h4>
-                <p>These Terms & Conditions are governed by the laws of the Federal Republic of Nigeria. Any disputes will be resolved in Nigerian courts.</p>
-                
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Amendments</h4>
-                <p>We may update these Terms from time to time. Continued use of the platform means you accept the updated Terms.</p>
-                
-                <p style="margin-top: 20px;"><strong>✅ By signing up, you agree that you have read, understood and accepted these Terms & Conditions.</strong></p>
-            </div>
-        </div>
-    `;
-};
-
-const renderPrivacyPolicyPage = () => {
-    bottomNav.style.display = 'none'; // Hide nav on legal pages
-    appContent.innerHTML = `
-        <div class="page-container legal-page" style="padding: 15px;">
-            <div class="page-header" style="padding-bottom: 10px; border-bottom: 1px solid #eee;">
-                <a href="${localStorage.getItem('authToken') ? '#me' : '#register'}" class="back-link" style="color: #6a0dad; text-decoration: none; font-weight: bold;">&larr; Back</a>
-                <h2 style="margin-top: 10px;">Privacy Policy</h2>
-            </div>
-            <div class="legal-content" style="padding-top: 10px; font-size: 14px; line-height: 1.6;">
-                <p>Effective Date: now</p>
-                <p>At JJB24 we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, store, and protect your data when you use our online winery investment platform.</p>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Information We Collect</h4>
-                <p>When you register or use our platform, we may collect the following information:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Personal details (name, date of birth, gender).</li>
-                    <li>Contact information (email address, phone number)</li>
-                    <li>Financial information (bank account details, payment card details)</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">How We Use Your Information</h4>
-                <p>We use the information collected to:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Verify your identity and comply with KYC (Know Your Customer regulations.</li>
-                    <li>Process investments, deposits, and withdrawals.</li>
-                    <li>Provide customer support and respond to inquiries.</li>
-                    <li>Improve our platform’s performance and user experience.</li>
-                    <li>Send important updates, newsletters, or promotional offers (you can opt out anytime).</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Sharing of Information</h4>
-                <p>We do not sell your personal information. However, we may share it with:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Regulatory bodies (SEC, CBN, NDIC) when required by law.</li>
-                    <li>Third-party partners (payment processors, verification services, auditors).</li>
-                    <li>Law enforcement agencies in cases of fraud, money laundering, or illegal activity.</li>
-                </ul>
-
-                <h4 style."margin-top: 15px; margin-bottom: 5px;">Data Protection & Security</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>We use encryption, firewalls, and secure servers to protect your data.</li>
-                    <li>Only authorized staff have access to sensitive information.</li>
-                    <li>Despite our efforts, no system is 100% secure. Users are encouraged to protect their login details.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Cookies & Tracking</h4>
-                <p>Our website may use cookies to:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Remember your login details.</li>
-                    <li>Personalize your browsing experience.</li>
-                    <li>Track usage statistics for platform improvement.</li>
-                </ul>
-                <p>You may disable cookies in your browser, but some features may not work properly.</p>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Data Retention</h4>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>We retain your personal information for as long as necessary to provide services or comply with legal obligations.</li>
-                    <li>If you close your account, we may still keep certain records for regulatory or tax purposes.</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Your Rights</h4>
-                <p>Under the Nigeria Data Protection Regulation (NDPR), you have the right to:</p>
-                <ul style="list-style-type: disc; padding-left: 20px;">
-                    <li>Access the personal data we hold about you.</li>
-                    <li>Request correction or deletion of your data.</li>
-                    <li>Withdraw consent for certain data uses (e.g., marketing).</li>
-                </ul>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Updates to Policy</h4>
-                <p>We may update this Privacy Policy from time to time. Any changes will be communicated through our website or by email.</p>
-
-                <h4 style="margin-top: 15px; margin-bottom: 5px;">Contact Us</h4>
-                <p>For questions or concerns about this Privacy Policy, please contact: Contact the customer care on telegram</p>
-
-                <p style="margin-top: 20px;"><strong>✅ By using our platform, you agree to the terms of this Privacy Policy.</strong></p>
-            </div>
-        </div>
-    `;
-};
-
-// --- NEW PLACEHOLDER RENDER FUNCTIONS ---
-// Note: renderHistoryPage is already defined above (line 777)
-
+// --- TEAM PAGE ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
-    
+    let refCode = 'N/A';
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, {
-            method: 'GET'
-        });
+        const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        const userData = await userRes.json();
+        refCode = userData.balance?.own_referral_code || 'N/A';
+    } catch(e) {}
 
-        if (!response.ok) {
-            throw new Error('Failed to load team data');
-        }
-
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
         const data = await response.json();
-        const teamCount = data.team_count || 0;
-        const totalCommission = data.total_commission || 0;
-        const teamList = data.team_list || [];
+        const teamMembers = data.team_list || [];
+        const totalCommission = data.total_commission || 0; 
 
-        let teamListHTML = '';
-        if (teamList.length === 0) {
-            teamListHTML = `
-                <div class="placeholder-content" style="text-align: center; padding: 40px 20px;">
-                    <i class="fas fa-users" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
-                    <p>No team members yet. Share your referral code to start earning!</p>
-                </div>
-            `;
-        } else {
-            teamListHTML = `
-                <div style="margin: 20px 0;">
-                    <h4 style="margin-bottom: 15px;">Team Members (${teamCount})</h4>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
-                        ${teamList.map(member => `
-                            <div style="padding: 15px; background: #f9f9f9; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                                <div>
-                                    <strong>${member.name}</strong>
-                                    <p style="margin: 5px 0; font-size: 14px; color: #666;">
-                                        ${member.phone} • Joined: ${new Date(member.joined_date).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <div style="text-align: right;">
-                                    <p style="margin: 0; font-size: 14px; color: #666;">Balance</p>
-                                    <strong>₦${Number(member.balance).toLocaleString()}</strong>
-                                </div>
-                            </div>
-                        `).join('')}
+        let teamHTML = teamMembers.length === 0 ? 
+            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
+            teamMembers.map(member => `
+                <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
+                        <small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
                     </div>
-                </div>
-            `;
-        }
-
-        const pageHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>My Team</h2></div>
-                
-                <div class="info-card" style="margin: 20px; padding: 20px; background: linear-gradient(135deg, #6a0dad 0%, #8b2fd6 100%); border-radius: 12px; color: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div>
-                            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Total Commission Earned</p>
-                            <h2 style="margin: 5px 0;">₦${Number(totalCommission).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-                        </div>
-                        <div style="text-align: right;">
-                            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Team Members</p>
-                            <h2 style="margin: 5px 0;">${teamCount}</h2>
-                        </div>
+                    <div style="text-align: right;">
+                        <span style="display: block; font-size: 12px; color: #888;">Wallet</span>
+                        <strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong>
                     </div>
-                </div>
+                </div>`).join('');
 
-                ${teamListHTML}
-
-                <div class="info-card" style="margin: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
-                    <h4 style="margin-top: 0;">Referral Commission</h4>
-                    <ul style="list-style-type: none; padding-left: 0;">
-                        <li>Level A: 6%</li>
-                        <li>Level B: 2%</li>
-                        <li>Level C: 1%</li>
-                    </ul>
-                    <h4>Team Commission (Daily)</h4>
-                    <ul style="list-style-type: none; padding-left: 0;">
-                        <li>Level A: 5% Daily</li>
-                        <li>Level B: 3% Daily</li>
-                        <li>Level C: 2% Daily</li>
-                    </ul>
-                </div>
-            </div>
-        `;
-        
-        appContent.innerHTML = pageHTML;
-    } catch (error) {
-        console.error('Error loading team data:', error);
         appContent.innerHTML = `
             <div class="page-container">
                 <div class="page-header"><h2>My Team</h2></div>
-                <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
-                    <p>Failed to load team data. Please try again later.</p>
-            </div>
-        </div>
-    `;
-    }
+                ${getReferralCardHTML(refCode)}
+                <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
+                    <small style="color: #e1bee7;">Total Referral Commission</small>
+                    <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
+                    <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
+                </div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div>
+            </div>`;
+    } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-const renderSettingsPage = () => {
+// --- SET PIN PAGE ---
+const renderSetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <div class="page-header"><h2>Change Password</h2></div>
-            <div class="placeholder-card" style="max-width: 400px; margin: 20px auto; padding: 20px;">
-                <form id="changePasswordForm">
+            <div class="page-header"><h2>Security PIN</h2></div>
+            <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN to secure your withdrawals.</p>
+                <form id="pinForm">
                     <div class="form-group">
-                        <label>Current Password</label>
-                        <input type="password" id="currentPassword" required />
+                        <label style="font-weight:bold;">Enter 4-Digit PIN</label>
+                        <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
                     </div>
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" id="newPassword" required />
-                    </div>
-                    <div class="form-group">
-                        <label>Confirm New Password</label>
-                        <input type="password" id="confirmNewPassword" required />
-                    </div>
-                    <button type="submit" class="btn-auth">Update Password</button>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
                 </form>
-                <small style="text-align: center; display: block; margin-top: 15px;">(Feature in development)</small>
             </div>
-        </div>
-    `;
-    document.getElementById('changePasswordForm').addEventListener('submit', (e) => {
+        </div>`;
+
+    document.getElementById('pinForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        alert('Password change feature is in development.');
+        const pin = document.getElementById('pinInput').value;
+        if (pin.length !== 4) return alert("PIN must be exactly 4 digits.");
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin }) });
+            const data = await res.json();
+            if (res.ok) { 
+                showSuccessModal("PIN Set Successfully!"); 
+                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
+            } else { alert(data.message || "Failed to set PIN"); }
+        } catch (err) { alert("Error connecting to server"); }
     });
 };
-const renderSupportPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>Customer Support</h2></div>
-            <div class="placeholder-card" style="text-align: center; padding: 40px 20px;">
-                <p>For any assistance, please contact our customer care via email.</p>
-                <a href="mailto:jjb24wines@gmail.com" class="btn-auth" style="display: inline-block; text-decoration: none; margin-top: 20px; padding: 12px 20px;">
-                    jjb24wines@gmail.com
-                </a>
-            </div>
-        </div>
-    `;
-};
 
-const renderRewardsPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>Rewards</h2></div>
-            <div class="placeholder-card" style="text-align: center; padding: 40px 20px;">
-                <p>Your rewards and bonuses will appear here.</p>
-                <small>(Feature in development)</small>
-            </div>
-        </div>
-    `;
-};
+// --- NEW: ACTIVE INVESTMENTS PAGE (WITH DAYS LEFT) ---
+const renderActiveInvestmentsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Investments...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
+        const data = await response.json();
+        const investments = data.active_investments || [];
 
-// --- 18. NEW Certificate Page ---
-const renderCertificatePage = () => {
-    const certificateUrl = 'https://placehold.co/600x850/ffffff/333333?text=Company+Registration+Certificate+(CAC)';
-    
-    appContent.innerHTML = `
-        <div class="page-container">
-            <div class="page-header"><h2>Company Registration</h2></div>
-            <div class="placeholder-card" style="padding: 10px;">
-                <img src="${certificateUrl}" 
-                     alt="JJB24 Company Registration Certificate" 
-                     style="width: 100%; max-width: 600px; margin: 0 auto; display: block; border: 1px solid #eee;"
-                     onerror="this.src='https://placehold.co/600x850/ffffff/333333?text=Image+Not+Found'">
-            </div>
-        </div>
-    `;
-};
-
-// --- 19. NEW LEGAL PAGES (OURS) ---
-const renderAboutPage = () => {
-    appContent.innerHTML = `
-        <div class="page-container legal-page">
-            <div class="page-header"><h2>About Us</h2></div>
-            <div class="legal-content">
-                <p>Wine is more than just a drink – it’s a growing global business worth billions of dollars. For decades, wine investments have been reserved for wealthy collectors and foreign investors. Today, we are changing that. JJB24 wines] is Nigeria’s first online winery investment platform designed to give everyday people the chance to participate in the lucrative wine industry. Through our platform, you can invest in wine production, storage, and distribution, while earning attractive returns as the market grows.</p>
-                
-                <h4>Why Wine Investment?</h4>
-                <ul>
-                    <li><strong>Stable & Growing Market</strong> – The global wine industry is valued at over $400 billion and continues to expand, especially in emerging markets like Africa.</li>
-                    <li><strong>Hedge Against Inflation</strong> – Fine wines and winery projects often increase in value over time, making them a secure alternative investment.</li>
-                    <li><strong>Diversification</strong> – Instead of putting all your money into real estate or stocks, wine investment gives you a unique way to balance your portfolio.</li>
-                </ul>
-
-                <h4>🍷 Our Vision</h4>
-                <p>We believe Africa – and Nigeria in particular – can play a bigger role in the global wine market. By opening the doors of winery investment to Nigerians, we are not only creating wealth opportunities but also supporting the growth of a local wine culture and industry.</p>
-
-                <h4>🔒 Why Trust Us?</h4>
-                <ul>
-                    <li><strong>Transparency</strong> – All investments are backed by real projects with verifiable documentation.</li>
-                    <li><strong>Partnerships</strong> – We collaborate with experienced wine producers, importers, and distributors locally and abroad.</li>
-                    <li><strong>Security</strong> – Your funds are protected with regulated financial partners and insured investment structures.</li>
-                </ul>
-
-                <h4>🚀 Be Part of the Future</h4>
-                <p>With JJB24 you don’t need to be a billionaire or a wine expert to invest. Whether you are an entrepreneur, a professional, or someone simply looking for a smart passive income opportunity, this is your chance to take part in an exciting industry.</p>
-                <p>👉 Invest today, grow with us, and let’s put Nigeria on the global wine map.</p>
-            </div>
-        </div>
-    `;
-};
-
-// --- 20. FINAL, MERGED ROUTER (OURS + BABATUNDE'S) ---
-// Note: renderTermsPage is already defined above (line 1070)
-// Note: renderPrivacyPolicyPage is already defined above (line 1157)
-const router = () => {
-    const hash = window.location.hash || '#home';
-    
-    if (['#login', '#register', '#terms', '#privacy'].includes(hash)) {
-        bottomNav.style.display = 'none';
-
-        switch(hash) {
-            case '#login': renderLoginScreen(); break;
-            case '#register': renderRegisterScreen(); break;
-            case '#terms': renderTermsPage(); break;
-            case '#privacy': renderPrivacyPolicyPage(); break;
-            default: renderLoginScreen(); // Default to login
+        if (investments.length === 0) {
+            appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Investments</h2></div><div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">You have no active investments.</p><a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a></div></div>`;
+            return;
         }
-        return;
+
+        let html = investments.map(inv => `
+            <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <h4 style="margin:0; font-size:16px;">${inv.itemname || 'Investment Plan'}</h4>
+                        <small style="color:#666;">Daily: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
+                    </div>
+                </div>
+                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
+                    <span>Invested: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
+                    <span>Total Earned: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
+                </div>
+            </div>
+        `).join('');
+
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Active Plans</h2></div>${html}</div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load investments.</p>'; }
+};
+
+// --- ME PAGE ---
+const renderMePage = async () => { 
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        if (!response || !response.ok) throw new Error();
+        
+        const data = await response.json();
+        const user = data.balance || {};
+        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
+        const fullName = user.full_name || 'JJB24 User';
+        const phone = user.phone_number || '';
+        const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
+
+        appContent.innerHTML = `
+            <div class="page-container" style="padding:20px;">
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
+                    <h3 style="margin-bottom:5px;">${fullName}</h3>
+                    <p style="color:#666; font-size:14px;">${phone}</p>
+                    
+                    <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
+                        <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
+                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #666; border: 1px solid #eee;">${uniqueReferralLink}</div>
+                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
+                            <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
+                            <button onclick="window.copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="#set-pin" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> Set Transaction PIN</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                        <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
+                    </a>
+                </div>
+            </div>`;
+    } catch(e) { 
+        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check connection.</p></div>';
     }
+};
 
-    bottomNav.style.display = 'flex';
-
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === '#home' && (hash === '#home' || hash === '')) {
-            link.classList.add('active');
-        } 
-        else if (link.getAttribute('href') === hash) { 
-            link.classList.add('active'); 
-        }
-        else if (link.getAttribute('href') === '#me' && ['#history', '#team', '#settings', '#about', '#support'].includes(hash)) {
-            link.classList.add('active');
-        }
+const renderDepositPage = async () => { 
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Deposit Funds</h2></div><div class="withdraw-card"><form id="depositForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" /></div><button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Proceed to Payment</button></form></div></div>`;
+    document.getElementById('depositForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const amount = document.getElementById('amount').value;
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, { method: 'POST', body: JSON.stringify({ amount: parseFloat(amount) }) });
+            const result = await response.json();
+            if (result.success && result.data.paymentLink) window.location.href = result.data.paymentLink;
+            else alert(result.message);
+        } catch (error) { alert('An error occurred.'); }
     });
+};
+
+const renderWithdrawPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
+        const data = await response.json();
+        const balance = data.balance?.balance || 0;
+        appContent.innerHTML = `
+            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm">
+            
+            <div class="form-group">
+                <label for="amount">Amount (NGN)</label>
+                <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required />
+                <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
+            </div>
+
+            <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
+                <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
+            </div>
+            
+            <div class="form-group"><label>Bank Name</label>
+            <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;">
+                <option value="">Select Bank</option>
+                <optgroup label="Popular Microfinance & Fintech">
+                    <option value="Paycom">OPay (Paycom)</option>
+                    <option value="PalmPay">PalmPay</option>
+                    <option value="Kuda Bank">Kuda Bank</option>
+                    <option value="Moniepoint Microfinance Bank">Moniepoint</option>
+                    <option value="VFD Microfinance Bank">VFD (VBank)</option>
+                    <option value="FairMoney Microfinance Bank">FairMoney</option>
+                    <option value="Carbon">Carbon (Paylater)</option>
+                    <option value="Sparkle Microfinance Bank">Sparkle</option>
+                    <option value="Rubies Bank">Rubies Bank</option>
+                    <option value="Mint Finex MFB">Mint Finex</option>
+                    <option value="Paga">Paga</option>
+                    <option value="Taj Bank">Taj Bank</option>
+                </optgroup>
+                <optgroup label="Commercial Banks">
+                    <option value="Access Bank">Access Bank</option>
+                    <option value="Access Bank (Diamond)">Access (Diamond)</option>
+                    <option value="Guaranty Trust Bank">Guaranty Trust Bank (GTB)</option>
+                    <option value="Zenith Bank">Zenith Bank</option>
+                    <option value="United Bank for Africa">UBA</option>
+                    <option value="First Bank of Nigeria">First Bank</option>
+                    <option value="Fidelity Bank">Fidelity Bank</option>
+                    <option value="FCMB">FCMB</option>
+                    <option value="Union Bank of Nigeria">Union Bank</option>
+                    <option value="Stanbic IBTC Bank">Stanbic IBTC</option>
+                    <option value="Sterling Bank">Sterling Bank</option>
+                    <option value="Ecobank Nigeria">Ecobank</option>
+                    <option value="Wema Bank">Wema Bank</option>
+                    <option value="Keystone Bank">Keystone Bank</option>
+                    <option value="Polaris Bank">Polaris Bank</option>
+                    <option value="Unity Bank">Unity Bank</option>
+                    <option value="Providus Bank">Providus Bank</option>
+                    <option value="Titan Trust Bank">Titan Trust Bank</option>
+                    <option value="SunTrust Bank">SunTrust Bank</option>
+                    <option value="Heritage Bank">Heritage Bank</option>
+                    <option value="Jaiz Bank">Jaiz Bank</option>
+                </optgroup>
+            </select>
+            </div>
+            
+            <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div>
+            
+            <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;">
+                <label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label>
+                <input type="password" id="withdrawPin" maxlength="4" placeholder="Enter 4-digit PIN" required style="letter-spacing: 5px; text-align:center;" />
+            </div>
+
+            <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+        
+        const amountInput = document.getElementById('amount');
+        amountInput.addEventListener('input', () => {
+            const val = parseFloat(amountInput.value);
+            if (!isNaN(val) && val > 0) {
+                const fee = val * 0.09; const final = val - fee;
+                document.getElementById('feeDisplay').textContent = '- ₦' + fee.toLocaleString();
+                document.getElementById('finalDisplay').textContent = '₦' + final.toLocaleString();
+                document.getElementById('feeContainer').style.display = 'block';
+            } else document.getElementById('feeContainer').style.display = 'none';
+        });
+        
+        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const val = parseFloat(amountInput.value);
+            
+            // --- UPDATED CHECK: ENFORCE 800 MINIMUM ---
+            if (val < 800) {
+                return alert("Minimum withdrawal amount is ₦800");
+            }
+
+            const pin = document.getElementById('withdrawPin').value;
+            
+            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
+                method:'POST', 
+                body: JSON.stringify({ 
+                    amount: val, 
+                    bank_name: document.getElementById('bankName').value, 
+                    account_number: document.getElementById('accountNumber').value, 
+                    account_name: document.getElementById('accountName').value,
+                    pin: pin 
+                }) 
+            });
+            const r = await res.json(); 
+            if(r.ok) showSuccessModal(r.message); else alert(r.message);
+        });
+    } catch (error) { appContent.innerHTML = '<p>Error loading page.</p>'; }
+};
+
+const renderRewardsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
     
+    // 1. Fetch User Data to get the referral code
+    let refCode = 'N/A';
+    try {
+        const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        const userData = await userRes.json();
+        refCode = userData.balance?.own_referral_code || 'N/A';
+    } catch(e) {}
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
+        const data = await response.json();
+        const rewardList = data.rewards || [];
+        const summary = data.summary || { total_rewards: 0 };
+
+        let itemsHTML = rewardList.length === 0 ? 
+            `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
+            rewardList.map(item => `
+                <div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; text-transform: capitalize;">${item.source}</h4>
+                        <small style="color: #888;">${new Date(item.date).toLocaleDateString()}</small>
+                    </div>
+                    <strong style="color: ${item.type === 'referral_bonus' ? '#8b5cf6' : '#10b981'}; font-size: 16px;">+₦${Number(item.amount).toLocaleString()}</strong>
+                </div>`).join('');
+
+        appContent.innerHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2>My Rewards</h2></div>
+                ${getReferralCardHTML(refCode)}
+                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                    <small>Accumulated ROI</small>
+                    <h1 style="margin: 5px 0;">₦ ${Number(summary.total_rewards).toLocaleString()}</h1>
+                </div>
+                <div style="margin-bottom: 10px;"><h3 style="font-size: 16px; color: #333;">Reward History</h3></div>
+                ${itemsHTML}
+            </div>`;
+    } catch (e) { appContent.innerHTML = '<p>Error loading rewards.</p>'; }
+};
+
+const renderHistoryPage = async () => {
+    appContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Loading History...</p>';
+    const res = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method:'GET' });
+    const data = await res.json();
+    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong style="text-transform:uppercase; font-size:12px;">${t.type.replace(/_/g, ' ')}</strong><br><small>${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? 'green' : 'red'};">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
+    appContent.innerHTML = `<div class="page-container"><h2>Full History</h2><div style="padding: 15px 0;">${list || '<p>No records found.</p>'}</div></div>`;
+};
+
+const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2>Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p>Contact support at:</p><h3 style="color:#6a0dad;">jjb24wines@gmail.com</h3></div></div>'; };
+const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2>Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
+
+const router = () => {
+    const token = localStorage.getItem('token');
+    let hash = window.location.hash || '#home';
+    if (hash.includes('?')) hash = hash.split('?')[0];
+    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; if(hash === '#login') renderLoginScreen(); else renderRegisterScreen(); return; }
+    if (!token) { logoutUser(); return; }
+    bottomNav.style.display = 'flex';
+    document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('href') === hash) link.classList.add('active'); });
     switch (hash) {
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
         case '#vip': renderVipPage(); break;
         case '#me': renderMePage(); break;
-        case '#task': renderTaskPage(); break;
-        
         case '#deposit': renderDepositPage(); break;
         case '#withdraw': renderWithdrawPage(); break;
         case '#history': renderHistoryPage(); break;
         case '#team': renderTeamPage(); break;
-        case '#settings': renderSettingsPage(); break;
-        case '#about': renderAboutPage(); break;
-        case '#support': renderSupportPage(); break;
-        case '#rewards': renderRewardsPage(); break;
         case '#certificate': renderCertificatePage(); break;
-
-        default: 
-            renderHomeScreen();
+        case '#rewards': renderRewardsPage(); break; 
+        case '#support': renderSupportPage(); break;
+        case '#set-pin': renderSetPinPage(); break; 
+        case '#my-investments': renderActiveInvestmentsPage(); break; // <--- NEW ROUTE
+        default: renderHomeScreen(); 
     }
 };
 
-// --- GLOBAL EVENT LISTENERS ---
-window.addEventListener('hashchange', router);
-window.addEventListener('DOMContentLoaded', router);
-appContent.addEventListener('click', handleInvestClick);
-closeModalBtn.addEventListener('click', closeModal);
-successModal.addEventListener('click', (e) => {
-    if (e.target.id === 'successModal') { closeModal(); }
-});
+window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
+document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
-
-
+(function startSocialProof() {
+    const fomoData = {
+        names: [
+            "Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", 
+            "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed",
+            "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman",
+            "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji",
+            "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo",
+            "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba",
+            "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara",
+            "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo",
+            "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello",
+            "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi",
+            "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto",
+            "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed",
+            "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke",
+            "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi",
+            "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed",
+            "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya",
+            "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa",
+            "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor",
+            "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola",
+            "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako"
+        ],
+        locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan"],
+        actions: [ { text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }, { text: "invested ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP Gold", icon: "🍷", color: "#eab308" }, { text: "withdrew ₦15,000", icon: "🏦", color: "#f43f5e" } ],
+        times: ["Just now", "2 secs ago", "5 secs ago"]
+    };
+    const style = document.createElement('style');
+    style.innerHTML = `#fomo-popup { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(200%); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-left: 5px solid #10B981; padding: 12px 16px; border-radius: 16px; box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.15); font-family: sans-serif; z-index: 9999; transition: all 0.5s ease; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 380px; pointer-events: none; } #fomo-popup.show { transform: translateX(-50%) translateY(0); } .fomo-icon-box { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #f3f4f6; flex-shrink: 0; } .fomo-content { display: flex; flex-direction: column; } .fomo-name { font-size: 14px; font-weight: 800; color: #111; } .fomo-desc { font-size: 13px; color: #555; } .fomo-meta { font-size: 11px; color: #999; margin-top: 2px; }`;
+    document.head.appendChild(style);
+    const popup = document.createElement('div'); popup.id = 'fomo-popup'; popup.innerHTML = `<div class="fomo-icon-box" id="fomo-icon">👋</div><div class="fomo-content"><span class="fomo-name" id="fomo-name">...</span><span class="fomo-desc" id="fomo-action">...</span><span class="fomo-meta"><span id="fomo-location">Lagos</span> • <span id="fomo-time">Just now</span></span></div>`;
+    document.body.appendChild(popup);
+    function showNotification() {
+        const hash = window.location.hash; if(hash !== '#home' && hash !== '') return; 
+        const name = fomoData.names[Math.floor(Math.random() * fomoData.names.length)];
+        const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
+        const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
+        const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
+        const nameEl = document.getElementById('fomo-name');
+        const actEl = document.getElementById('fomo-action');
+        const locEl = document.getElementById('fomo-location');
+        const timeEl = document.getElementById('fomo-time');
+        const iconEl = document.getElementById('fomo-icon');
+        const popupEl = document.getElementById('fomo-popup');
+        
+        if (nameEl && actEl && locEl && timeEl && iconEl && popupEl) {
+            nameEl.innerText = name; actEl.innerText = actionObj.text; locEl.innerText = loc; timeEl.innerText = time; iconEl.innerText = actionObj.icon;
+            popupEl.style.borderLeftColor = actionObj.color;
+            popupEl.classList.add('show'); setTimeout(() => { popupEl.classList.remove('show'); }, 4000);
+        }
+    }
+    setTimeout(showNotification, 2000); setInterval(() => { showNotification(); }, 12000);
+})();
