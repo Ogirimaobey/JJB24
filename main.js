@@ -161,7 +161,7 @@ const fetchWithAuth = async (url, options = {}) => {
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     
-    // IMPORTANT: Let browser set multipart boundary if sending FormData
+    // IMPORTANT: FormData should not have a manual Content-Type header
     const isFormData = options.body instanceof FormData;
     if (!isFormData && !headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
@@ -171,7 +171,10 @@ const fetchWithAuth = async (url, options = {}) => {
         const response = await fetch(url, { ...options, headers });
         if (response.status === 401) { logoutUser(); return null; }
         return response;
-    } catch (e) { console.error("Network Error", e); return null; }
+    } catch (e) { 
+        console.error("Network Error Details:", e); 
+        throw e; // Throw so local catch blocks can handle UI alerts
+    }
 };
 
 const getReferralCardHTML = (code) => {
@@ -357,15 +360,13 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
-// --- TEAM PAGE ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
     let refCode = 'N/A';
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         const userData = await userRes.json();
-        const u = userData.balance || {};
-        refCode = u.own_referral_code || u.referral_code || 'N/A';
+        refCode = userData.balance?.own_referral_code || 'N/A';
     } catch(e) {}
 
     try {
@@ -516,7 +517,7 @@ const renderMePage = async () => {
 };
 
 // ==========================================
-// ADJUSTED: renderDepositPage (FIXED UI & 24H NOTICE)
+// ADJUSTED: renderDepositPage (MATCHING SAHIL BACKEND & HIGH VISIBILITY)
 // ==========================================
 const renderDepositPage = async () => { 
     appContent.innerHTML = `
@@ -538,7 +539,7 @@ const renderDepositPage = async () => {
                 <form id="manualDepositForm">
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Amount Transferred (₦)</label>
-                        <input type="number" id="depositAmountInput" placeholder="Enter exact amount sent" required 
+                        <input type="number" id="depositAmountInput" placeholder="Enter amount sent" required 
                                style="width:100%; padding:15px; border:2px solid #eee; border-radius:12px; font-size:18px; color: #111111 !important; font-weight:700; background-color: #ffffff !important; outline: none; -webkit-appearance: none;">
                     </div>
                     <div class="form-group" style="margin-bottom:20px;">
@@ -549,7 +550,6 @@ const renderDepositPage = async () => {
                     <button type="submit" id="submitBtn" class="btn-deposit" style="width:100%; padding:18px; border-radius:15px; font-weight:800; cursor:pointer;">SUBMIT FOR APPROVAL</button>
                 </form>
             </div>
-            <p style="text-align:center; font-size:11px; color:#999; margin-top:15px;">Please ensure the screenshot clearly shows the transaction ID.</p>
         </div>`;
 
     const form = document.getElementById('manualDepositForm');
@@ -561,7 +561,7 @@ const renderDepositPage = async () => {
         const amount = document.getElementById('depositAmountInput').value;
         const fileInput = document.getElementById('receiptFileInput');
         
-        if (!fileInput.files[0]) return alert("Please select a screenshot of your receipt.");
+        if (!fileInput.files[0]) return alert("Please select a screenshot.");
 
         const formData = new FormData();
         formData.append('amount', amount);
@@ -572,7 +572,7 @@ const renderDepositPage = async () => {
         submitBtn.innerText = "SENDING TO ADMIN...";
 
         try {
-            // MATCHED PATH TO SAHIL'S BACKEND
+            // FIXED URL: Based on Sahil's Route file, the path is /payment/deposit/manual
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/deposit/manual`, {
                 method: 'POST',
                 body: formData
@@ -588,8 +588,8 @@ const renderDepositPage = async () => {
                 submitBtn.innerText = "SUBMIT FOR APPROVAL";
             }
         } catch (error) {
-            console.error("Upload Error:", error);
-            alert('A network error occurred. Please check your connection.');
+            // Catching the network connection drop or CORS block
+            alert('A network error occurred. Admin: Please check Cloudinary/Multer settings.');
             submitBtn.disabled = false;
             submitBtn.innerText = "SUBMIT FOR APPROVAL";
         }
