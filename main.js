@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURATION & STYLING INJECTION
+// 1. CONFIGURATION & STYLING INJECTION (PRESERVED)
 // ==========================================
 
 const styleSheet = document.createElement("style");
@@ -161,7 +161,7 @@ const fetchWithAuth = async (url, options = {}) => {
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     
-    // ADJUSTMENT: Only set JSON Content-Type if we aren't sending a file (FormData)
+    // IMPORTANT FIX: Don't set Content-Type if we are sending a file (FormData)
     if (!(options.body instanceof FormData) && !headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
@@ -310,8 +310,7 @@ const renderHomeScreen = async () => {
                         `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
                             <span style="text-transform: capitalize; font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
                             <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold; font-size: 13px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
-                        </div>`
-                    ).join('');
+                        </div>`).join('');
                 }
             }
         } catch(e) {}
@@ -534,28 +533,28 @@ const renderDepositPage = async () => {
             <div class="withdraw-card" style="background:white; padding:20px; border-radius:20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                 <form id="manualDepositForm">
                     <div class="form-group" style="margin-bottom:15px;">
-                        <label>Amount Transferred (₦)</label>
-                        <input type="number" id="depositAmount" placeholder="e.g. 5000" required 
-                               style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size: 16px;">
+                        <label for="depositAmountInput">Amount Transferred (₦)</label>
+                        <input type="number" id="depositAmountInput" placeholder="e.g. 5000" required 
+                               style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px; font-size: 16px; outline: none;">
                     </div>
                     <div class="form-group" style="margin-bottom:15px;">
-                        <label>Upload Payment Proof (Screenshot)</label>
-                        <input type="file" id="receiptFile" accept="image/*" required 
+                        <label for="receiptFileInput">Upload Payment Proof (Screenshot)</label>
+                        <input type="file" id="receiptFileInput" accept="image/*" required 
                                style="width:100%; padding:10px; border:1px dashed #6a0dad; border-radius:10px; background:#f3e8ff;">
                     </div>
-                    <button type="submit" id="submitBtn" class="btn-deposit" style="width:100%; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">SUBMIT FOR APPROVAL</button>
+                    <button type="submit" id="submitReceiptBtn" class="btn-deposit" style="width:100%; padding:15px; border-radius:12px; font-weight:800; cursor:pointer;">SUBMIT FOR APPROVAL</button>
                 </form>
             </div>
         </div>`;
 
     const form = document.getElementById('manualDepositForm');
-    const submitBtn = document.getElementById('submitBtn');
+    const submitBtn = document.getElementById('submitReceiptBtn');
 
     form.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevents page reload
+        event.preventDefault(); // CRITICAL: Stop page from refreshing
         
-        const amount = document.getElementById('depositAmount').value;
-        const fileInput = document.getElementById('receiptFile');
+        const amount = document.getElementById('depositAmountInput').value;
+        const fileInput = document.getElementById('receiptFileInput');
         
         if (!fileInput.files[0]) {
             return alert("Please select a screenshot of your receipt.");
@@ -566,14 +565,14 @@ const renderDepositPage = async () => {
         formData.append('amount', amount);
         formData.append('receipt', fileInput.files[0]);
 
-        // UI Feedback
+        // UI Feedback - Show loading state
         submitBtn.disabled = true;
         submitBtn.innerText = "UPLOADING...";
 
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/transactions/upload-receipt`, {
                 method: 'POST',
-                body: formData // Browser handles headers for FormData
+                body: formData // fetchWithAuth is now patched to allow boundary auto-set
             });
 
             if (response && response.ok) {
@@ -587,7 +586,7 @@ const renderDepositPage = async () => {
             }
         } catch (error) {
             console.error("Upload Error:", error);
-            alert('A network error occurred. Please try again.');
+            alert('A network error occurred. Please check your connection.');
             submitBtn.disabled = false;
             submitBtn.innerText = "SUBMIT FOR APPROVAL";
         }
@@ -757,7 +756,7 @@ document.getElementById('closeModalBtn').addEventListener('click', closeModal); 
 // SOCIAL PROOF POPUPS
 (function startSocialProof() {
     const fomoData = {
-        names: ["Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako"],
+        names: ["Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereere", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako"],
         locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan"],
         actions: [ { text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }, { text: "invested ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP Gold", icon: "🍷", color: "#eab308" }, { text: "withdrew ₦15,000", icon: "🏦", color: "#f43f5e" } ],
         times: ["Just now", "2 secs ago", "5 secs ago"]
