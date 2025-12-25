@@ -27,6 +27,8 @@
         .badge-active { background-color: #d1fae5; color: #065f46; } /* Green */
         .badge-suspended { background-color: #fef3c7; color: #92400e; } /* Orange */
         .badge-blocked { background-color: #fee2e2; color: #991b1b; } /* Red */
+        /* Badge for Receipt Link */
+        .badge-receipt { background-color: #f3e8ff; color: #6a0dad; border: 1px solid #d8b4fe; text-decoration: none; display: inline-block; }
 
         /* --- ACTION BUTTONS --- */
         .btn-action {
@@ -115,15 +117,16 @@
                                 <th>ID</th>
                                 <th>Full Name</th>
                                 <th>Balance (₦)</th> 
-                                <th>Total Deposited</th> <th>Email</th> 
+                                <th>Total Deposited</th> 
+                                <th>Email</th> 
                                 <th>Phone</th>
-                                <th>Status</th> 
+                                <th>Receipt Proof</th> <th>Status</th> 
                                 <th>Reg. Date</th>
                                 <th>Actions</th> 
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="9">Loading users...</td></tr>
+                            <tr><td colspan="10">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -173,7 +176,7 @@
             ? 'http://localhost:3000/api'
             : 'https://jjb24-backend.onrender.com/api';
 
-        // --- 1. LOAD USERS (URL FIXED) ---
+        // --- 1. LOAD USERS ---
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
             if (!token) {
@@ -185,7 +188,6 @@
 
         async function loadUsers(token) {
             try {
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -202,18 +204,20 @@
                 tableBody.innerHTML = ''; 
 
                 if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="9">No users found in database.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="10">No users found in database.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const row = document.createElement('tr');
                         const date = new Date(user.created_at).toLocaleDateString();
                         
-                        // Format Balance
                         const formattedBalance = Number(user.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 });
-                        
-                        // NEW: Format Total Deposited
-                        // (If undefined, defaults to 0)
                         const formattedDeposit = Number(user.total_deposited || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+
+                        // NEW: RECEIPT LOGIC
+                        let receiptHtml = '<span style="color:#ccc;">No Proof</span>';
+                        if (user.receipt_url) {
+                            receiptHtml = `<a href="${user.receipt_url}" target="_blank" class="badge badge-receipt"><i class="fas fa-image"></i> VIEW</a>`;
+                        }
 
                         // Status Logic
                         let statusHtml = '<span class="badge badge-active">Active</span>';
@@ -238,9 +242,10 @@
                             <td>${user.id}</td>
                             <td>${user.full_name}</td>
                             <td style="font-weight:bold; color: #065f46;">₦${formattedBalance}</td> 
-                            <td style="font-weight:bold; color: #1e40af;">₦${formattedDeposit}</td> <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
+                            <td style="font-weight:bold; color: #1e40af;">₦${formattedDeposit}</td> 
+                            <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
                             <td>${user.phone_number}</td>
-                            <td>${statusHtml}</td>
+                            <td>${receiptHtml}</td> <td>${statusHtml}</td>
                             <td>${date}</td>
                             <td>${buttons}</td>
                         `;
@@ -249,11 +254,11 @@
                 }
             } catch (error) {
                 console.error('Error fetching users:', error);
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="9" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="10" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
             }
         }
 
-        // --- 2. UPDATE STATUS (URL FIXED) ---
+        // --- 2. UPDATE STATUS ---
         async function updateStatus(userId, newStatus) {
             const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
             const reason = prompt(`Reason for ${action} (Optional):`);
@@ -262,9 +267,6 @@
 
             const token = localStorage.getItem('adminToken');
             try {
-                console.log(`Hitting URL: ${API_BASE_URL}/users/admin/users/${userId}/status`);
-
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
                     method: 'PATCH',
                     headers: { 
@@ -297,7 +299,7 @@
             }
         }
 
-        // --- 3. EDIT USER MODAL FUNCTIONS (URL FIXED) ---
+        // --- 3. EDIT USER MODAL FUNCTIONS ---
         const modal = document.getElementById('editModal');
         const editForm = document.getElementById('editForm');
 
@@ -306,7 +308,7 @@
             document.getElementById('editName').value = user.full_name;
             document.getElementById('editEmail').value = user.email || '';
             document.getElementById('editPhone').value = user.phone_number;
-            document.getElementById('editBalance').value = user.balance; // PRE-FILL CURRENT BALANCE
+            document.getElementById('editBalance').value = user.balance; 
             modal.style.display = 'flex';
         }
 
@@ -320,7 +322,6 @@
             }
         }
 
-        // Handle Edit Form Submit
         editForm.onsubmit = async function(e) {
             e.preventDefault();
             const userId = document.getElementById('editUserId').value;
@@ -330,11 +331,10 @@
                 full_name: document.getElementById('editName').value,
                 email: document.getElementById('editEmail').value,
                 phone_number: document.getElementById('editPhone').value,
-                balance: document.getElementById('editBalance').value // SEND NEW BALANCE
+                balance: document.getElementById('editBalance').value 
             };
 
             try {
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
                     method: 'PUT',
                     headers: { 
@@ -345,9 +345,9 @@
                 });
 
                 if (response.ok) {
-                    alert('User details (including Balance) updated successfully');
+                    alert('User details updated successfully');
                     closeModal();
-                    loadUsers(token); // Refresh table
+                    loadUsers(token); 
                 } else {
                     const err = await response.json();
                     alert('Error: ' + err.message);
