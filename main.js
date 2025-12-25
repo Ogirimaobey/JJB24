@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURATION & STYLING INJECTION
+// 1. CONFIGURATION & STYLING INJECTION (PRESERVED)
 // ==========================================
 
 const styleSheet = document.createElement("style");
@@ -161,7 +161,9 @@ const fetchWithAuth = async (url, options = {}) => {
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     
-    if (!(options.body instanceof FormData) && !headers.has('Content-Type') && options.body) {
+    // IMPORTANT: Let browser set multipart boundary if sending FormData
+    const isFormData = options.body instanceof FormData;
+    if (!isFormData && !headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
 
@@ -355,13 +357,15 @@ const renderVipPage = () => {
     appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
+// --- TEAM PAGE ---
 const renderTeamPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
     let refCode = 'N/A';
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         const userData = await userRes.json();
-        refCode = userData.balance?.own_referral_code || 'N/A';
+        const u = userData.balance || {};
+        refCode = u.own_referral_code || u.referral_code || 'N/A';
     } catch(e) {}
 
     try {
@@ -534,7 +538,7 @@ const renderDepositPage = async () => {
                 <form id="manualDepositForm">
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Amount Transferred (₦)</label>
-                        <input type="number" id="depositAmountInput" placeholder="Enter amount sent" required 
+                        <input type="number" id="depositAmountInput" placeholder="Enter exact amount sent" required 
                                style="width:100%; padding:15px; border:2px solid #eee; border-radius:12px; font-size:18px; color: #111111 !important; font-weight:700; background-color: #ffffff !important; outline: none; -webkit-appearance: none;">
                     </div>
                     <div class="form-group" style="margin-bottom:20px;">
@@ -563,12 +567,13 @@ const renderDepositPage = async () => {
         formData.append('amount', amount);
         formData.append('receipt', fileInput.files[0]);
 
-        // Show loading feedback
+        // Feedback state
         submitBtn.disabled = true;
         submitBtn.innerText = "SENDING TO ADMIN...";
 
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/transactions/upload-receipt`, {
+            // MATCHED PATH TO SAHIL'S BACKEND
+            const response = await fetchWithAuth(`${API_BASE_URL}/payment/deposit/manual`, {
                 method: 'POST',
                 body: formData
             });
