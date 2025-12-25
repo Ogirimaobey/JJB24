@@ -150,7 +150,7 @@ const getReferralFromUrl = () => {
     return '';
 };
 
-// --- FIX: EXPOSE LOGOUT TO WINDOW (Fixes Logout Bug) ---
+// --- FIX: EXPOSE LOGOUT TO WINDOW ---
 const logoutUser = () => { 
     localStorage.removeItem('token'); 
     window.location.hash = '#login'; 
@@ -158,16 +158,30 @@ const logoutUser = () => {
 };
 window.logoutUser = logoutUser;
 
+// --- UPDATED SECURITY GUARD (Silence 404s) ---
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
-    if (!headers.has('Content-Type') && options.body) headers.append('Content-Type', 'application/json');
+    
+    // Don't set JSON header if body is FormData (for receipts)
+    if (!(options.body instanceof FormData) && !headers.has('Content-Type') && options.body) {
+        headers.append('Content-Type', 'application/json');
+    }
+
     try {
         const response = await fetch(url, { ...options, headers });
-        if (response.status === 401) { logoutUser(); return null; }
+        // Only kick out on 401 (Unauthorized/Expired)
+        if (response.status === 401) { 
+            console.warn("Session expired.");
+            logoutUser(); 
+            return null; 
+        }
         return response;
-    } catch (e) { console.error("Network Error", e); return null; }
+    } catch (e) { 
+        console.error("Network Error", e); 
+        return null; 
+    }
 };
 
 // --- REUSABLE REFERRAL CARD COMPONENT ---
@@ -176,11 +190,9 @@ const getReferralCardHTML = (code) => {
     return `
     <div class="referral-box" style="background: #fdf2f8; border: 1px dashed #db2777; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
         <small style="color: #be185d; font-weight: bold;">INVITE & EARN</small>
-        
         <div style="margin: 10px 0; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #555; border: 1px solid #fbcfe8;">
             ${link}
         </div>
-
         <div style="display: flex; justify-content: space-between; align-items:center;">
             <strong style="color:#be185d; font-size: 16px;">${code}</strong>
             <button onclick="window.copyReferralLink('${code}')" class="btn-deposit" style="background: #db2777 !important; padding: 8px 20px; font-size: 12px; border-radius: 8px !important; cursor:pointer; width: auto; box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3) !important;">COPY</button>
@@ -291,7 +303,6 @@ const renderOTPVerificationScreen = (email) => {
     document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
 };
 
-// --- UPDATED: HOME SCREEN (ADDED "MY PLANS" BUTTON) ---
 const renderHomeScreen = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
@@ -322,7 +333,6 @@ const renderHomeScreen = async () => {
             <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
             <div class="home-content"><div class="quick-actions">
                 <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
-                
                 <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
                 <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
                 <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
@@ -366,7 +376,8 @@ const renderTeamPage = async () => {
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
         const userData = await userRes.json();
-        refCode = userData.balance?.own_referral_code || 'N/A';
+        const u = userData.balance || {};
+        refCode = u.own_referral_code || u.referral_code || 'N/A';
     } catch(e) {}
 
     try {
@@ -435,7 +446,7 @@ const renderSetPinPage = async () => {
     });
 };
 
-// --- NEW: ACTIVE INVESTMENTS PAGE (WITH DAYS LEFT) ---
+// --- ACTIVE INVESTMENTS PAGE ---
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Investments...</p>';
     try {
@@ -470,17 +481,21 @@ const renderActiveInvestmentsPage = async () => {
     } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load investments.</p>'; }
 };
 
-// --- ME PAGE ---
+// --- FIX: UPDATED ME PAGE (Targeting balance endpoint and handling 404/Nulls) ---
 const renderMePage = async () => { 
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-        if (!response || !response.ok) throw new Error();
+        if (!response || !response.ok) {
+            appContent.innerHTML = `<div style="text-align:center; padding:50px;"><p>Profile temporarily unavailable.</p><button onclick="window.logoutUser()" class="btn-withdraw">Logout</button></div>`;
+            return;
+        }
         
         const data = await response.json();
         const user = data.balance || {};
+        // Deep search for referral code
         const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
-        const fullName = user.full_name || 'JJB24 User';
+        const fullName = user.full_name || data.full_name || 'JJB24 User';
         const phone = user.phone_number || '';
         const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
 
@@ -520,17 +535,53 @@ const renderMePage = async () => {
     }
 };
 
+// --- UPDATED DEPOSIT PAGE (Manual System with your bank details) ---
 const renderDepositPage = async () => { 
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Deposit Funds</h2></div><div class="withdraw-card"><form id="depositForm"><div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="1" step="0.01" required placeholder="Enter amount" /></div><button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Proceed to Payment</button></form></div></div>`;
+    appContent.innerHTML = `
+        <div class="page-container" style="padding:20px;">
+            <div class="page-header"><h2>Deposit Funds</h2></div>
+            
+            <div style="background: #1e293b; color: white; padding: 25px; border-radius: 20px; margin-bottom: 20px;">
+                <small style="opacity:0.7;">PAYMENT ACCOUNT</small>
+                <h3 style="margin: 10px 0 5px 0; color: #10b981;">6669586597</h3>
+                <p style="margin:0; font-weight:bold;">JJB BRANDED WINES LTD</p>
+                <p style="margin:0; opacity:0.8;">Moniepoint MFB</p>
+            </div>
+
+            <div class="withdraw-card" style="background:white; padding:20px; border-radius:20px;">
+                <form id="depositForm">
+                    <div class="form-group">
+                        <label>Amount Transferred (₦)</label>
+                        <input type="number" id="depositAmount" placeholder="e.g 5000" required style="width:100%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ddd;">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload Proof (Screenshot)</label>
+                        <input type="file" id="receiptFile" accept="image/*" required style="width:100%; padding:10px; border:1px dashed #6a0dad; border-radius:10px;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; padding:15px; margin-top:10px;">Submit Proof</button>
+                </form>
+            </div>
+        </div>`;
+
     document.getElementById('depositForm').addEventListener('submit', async (event) => {
         event.preventDefault();
-        const amount = document.getElementById('amount').value;
+        const formData = new FormData();
+        formData.append('amount', document.getElementById('depositAmount').value);
+        formData.append('receipt', document.getElementById('receiptFile').files[0]);
+
+        appContent.innerHTML = '<p style="text-align:center; margin-top:100px;">Uploading proof...</p>';
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/payment/initialize`, { method: 'POST', body: JSON.stringify({ amount: parseFloat(amount) }) });
-            const result = await response.json();
-            if (result.success && result.data.paymentLink) window.location.href = result.data.paymentLink;
-            else alert(result.message);
-        } catch (error) { alert('An error occurred.'); }
+            const res = await fetchWithAuth(`${API_BASE_URL}/transactions/upload-receipt`, { 
+                method: 'POST', 
+                body: formData 
+            });
+            if (res && res.ok) {
+                showSuccessModal('Submitted! Admin will verify your payment.');
+            } else {
+                alert('Upload failed. Try again.');
+                renderDepositPage();
+            }
+        } catch (error) { alert('An error occurred.'); renderDepositPage(); }
     });
 };
 
@@ -557,42 +608,18 @@ const renderWithdrawPage = async () => {
             <div class="form-group"><label>Bank Name</label>
             <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;">
                 <option value="">Select Bank</option>
-                <optgroup label="Popular Microfinance & Fintech">
+                <optgroup label="Popular Fintech">
                     <option value="Paycom">OPay (Paycom)</option>
                     <option value="PalmPay">PalmPay</option>
                     <option value="Kuda Bank">Kuda Bank</option>
                     <option value="Moniepoint Microfinance Bank">Moniepoint</option>
-                    <option value="VFD Microfinance Bank">VFD (VBank)</option>
-                    <option value="FairMoney Microfinance Bank">FairMoney</option>
-                    <option value="Carbon">Carbon (Paylater)</option>
-                    <option value="Sparkle Microfinance Bank">Sparkle</option>
-                    <option value="Rubies Bank">Rubies Bank</option>
-                    <option value="Mint Finex MFB">Mint Finex</option>
-                    <option value="Paga">Paga</option>
-                    <option value="Taj Bank">Taj Bank</option>
                 </optgroup>
                 <optgroup label="Commercial Banks">
                     <option value="Access Bank">Access Bank</option>
-                    <option value="Access Bank (Diamond)">Access (Diamond)</option>
-                    <option value="Guaranty Trust Bank">Guaranty Trust Bank (GTB)</option>
+                    <option value="Guaranty Trust Bank">GTB</option>
                     <option value="Zenith Bank">Zenith Bank</option>
                     <option value="United Bank for Africa">UBA</option>
                     <option value="First Bank of Nigeria">First Bank</option>
-                    <option value="Fidelity Bank">Fidelity Bank</option>
-                    <option value="FCMB">FCMB</option>
-                    <option value="Union Bank of Nigeria">Union Bank</option>
-                    <option value="Stanbic IBTC Bank">Stanbic IBTC</option>
-                    <option value="Sterling Bank">Sterling Bank</option>
-                    <option value="Ecobank Nigeria">Ecobank</option>
-                    <option value="Wema Bank">Wema Bank</option>
-                    <option value="Keystone Bank">Keystone Bank</option>
-                    <option value="Polaris Bank">Polaris Bank</option>
-                    <option value="Unity Bank">Unity Bank</option>
-                    <option value="Providus Bank">Providus Bank</option>
-                    <option value="Titan Trust Bank">Titan Trust Bank</option>
-                    <option value="SunTrust Bank">SunTrust Bank</option>
-                    <option value="Heritage Bank">Heritage Bank</option>
-                    <option value="Jaiz Bank">Jaiz Bank</option>
                 </optgroup>
             </select>
             </div>
@@ -620,14 +647,8 @@ const renderWithdrawPage = async () => {
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const val = parseFloat(amountInput.value);
-            
-            // --- UPDATED CHECK: ENFORCE 800 MINIMUM ---
-            if (val < 800) {
-                return alert("Minimum withdrawal amount is ₦800");
-            }
+            if (val < 800) return alert("Minimum withdrawal amount is ₦800");
 
-            const pin = document.getElementById('withdrawPin').value;
-            
             const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
                 method:'POST', 
                 body: JSON.stringify({ 
@@ -635,7 +656,7 @@ const renderWithdrawPage = async () => {
                     bank_name: document.getElementById('bankName').value, 
                     account_number: document.getElementById('accountNumber').value, 
                     account_name: document.getElementById('accountName').value,
-                    pin: pin 
+                    pin: document.getElementById('withdrawPin').value
                 }) 
             });
             const r = await res.json(); 
@@ -646,8 +667,6 @@ const renderWithdrawPage = async () => {
 
 const renderRewardsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
-    
-    // 1. Fetch User Data to get the referral code
     let refCode = 'N/A';
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
@@ -718,7 +737,7 @@ const router = () => {
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
         case '#set-pin': renderSetPinPage(); break; 
-        case '#my-investments': renderActiveInvestmentsPage(); break; // <--- NEW ROUTE
+        case '#my-investments': renderActiveInvestmentsPage(); break;
         default: renderHomeScreen(); 
     }
 };
@@ -726,30 +745,10 @@ const router = () => {
 window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
+// SOCIAL PROOF POPUPS
 (function startSocialProof() {
     const fomoData = {
-        names: [
-            "Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", 
-            "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed",
-            "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman",
-            "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji",
-            "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo",
-            "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba",
-            "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara",
-            "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo",
-            "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello",
-            "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi",
-            "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto",
-            "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed",
-            "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke",
-            "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi",
-            "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed",
-            "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya",
-            "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa",
-            "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor",
-            "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola",
-            "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako"
-        ],
+        names: ["Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed"],
         locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan"],
         actions: [ { text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }, { text: "invested ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP Gold", icon: "🍷", color: "#eab308" }, { text: "withdrew ₦15,000", icon: "🏦", color: "#f43f5e" } ],
         times: ["Just now", "2 secs ago", "5 secs ago"]
