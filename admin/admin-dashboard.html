@@ -45,6 +45,18 @@
         .btn-fund:hover {
             background-color: #6d28d9;
         }
+
+        /* STYLE FOR THE NEW RECEIPT BUTTON */
+        .btn-receipt {
+            background-color: #6366f1;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
         /* Make it stack on mobile */
         @media (max-width: 768px) {
             .fund-form { grid-template-columns: 1fr; }
@@ -111,6 +123,28 @@
                 <p style="padding: 10px 20px; color: #666; font-size: 13px;">
                     <i class="fas fa-info-circle"></i> <b>Warning:</b> This adds real money to the user's wallet immediately.
                 </p>
+            </section>
+
+            <section class="data-card" style="border-top: 4px solid #6366f1;">
+                <div class="stat-header">
+                    <i class="fas fa-camera" style="color: #6366f1;"></i>
+                    <h2>New Payment Receipts (Manual)</h2>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User Email</th>
+                                <th>Claimed Amount</th>
+                                <th>Screenshot</th>
+                                <th>Date Sent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manualReceiptsTable">
+                            <tr><td colspan="4">Checking for new receipts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section class="data-card">
@@ -184,7 +218,7 @@
                 window.location.href = 'admin-login.html';
             });
 
-            // --- 1. NEW: HANDLE FUNDING FORM ---
+            // --- 1. HANDLE FUNDING FORM ---
             document.getElementById('fundUserForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -192,11 +226,10 @@
                 const amount = document.getElementById('fundAmount').value;
                 const submitBtn = e.target.querySelector('button');
 
-                if(!confirm(`⚠️ ARE YOU SURE?\n\nYou are about to send ₦${Number(amount).toLocaleString()} to ${email}.\n\nThis cannot be undone.`)) {
+                if(!confirm(`⚠️ ARE YOU SURE?\n\nYou are about to send ₦${Number(amount).toLocaleString()} to ${email}.`)) {
                     return;
                 }
 
-                // Disable button to prevent double clicks
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = 'Sending...';
 
@@ -213,35 +246,23 @@
                     const result = await response.json();
 
                     if (response.ok) {
-                        alert(`✅ SUCCESS!\n\n${result.message || 'Funds sent successfully.'}`);
+                        alert(`✅ SUCCESS!\n\nFunds sent successfully.`);
                         document.getElementById('fundEmail').value = '';
                         document.getElementById('fundAmount').value = '';
+                        location.reload(); // Refresh to see updated stats
                     } else {
                         alert(`❌ FAILED: ${result.message}`);
                     }
                 } catch (error) {
-                    console.error("Funding Error:", error);
-                    alert("Error connecting to server. Please try again.");
+                    alert("Error connecting to server.");
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
                 }
             });
 
-            // --- 2. VERIFY TOKEN & LOAD STATS ---
+            // --- 2. LOAD STATS & DATA ---
             try {
-                // Verify Token
-                const verifyResponse = await fetch(`${API_BASE_URL}/admin/vip`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                
-                if (verifyResponse.status === 401 || verifyResponse.status === 403) {
-                    localStorage.removeItem('adminToken');
-                    window.location.href = 'admin-login.html';
-                    return;
-                }
-
-                // Load Stats
                 const response = await fetch(`${API_BASE_URL}/admin/stats`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -251,60 +272,79 @@
                     document.getElementById('totalUsersStat').textContent = data.totalUsers || 0;
                     document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments || 0;
                     const totalAmount = Number(data.totalAmountInvested || 0);
-                    document.getElementById('totalAmountStat').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    document.getElementById('totalAmountStat').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
                     
-                    // Load Recent Users
                     const usersTableBody = document.getElementById('recentUsersTable');
                     usersTableBody.innerHTML = '';
                     if (data.recentUsers && data.recentUsers.length > 0) {
                         data.recentUsers.forEach(user => {
                             const row = document.createElement('tr');
-                            const registrationDate = new Date(user.created_at).toLocaleString();
-                            row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${registrationDate}</td>`;
+                            row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${new Date(user.created_at).toLocaleString()}</td>`;
                             usersTableBody.appendChild(row);
                         });
                     } else {
                         usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
                     }
                 }
-            } catch (error) { 
-                console.error('Error fetching admin stats:', error);
-            }
+            } catch (error) { console.error('Error stats:', error); }
 
-            // Load Pending Withdrawals
+            // Load Other Tables
             await loadPendingWithdrawals();
+            await loadManualReceipts(token, API_BASE_URL); // Load the receipts
         });
 
-        // --- GLOBAL FUNCTIONS ---
+        // --- NEW: LOAD MANUAL DEPOSIT RECEIPTS ---
+        async function loadManualReceipts(token, API_BASE_URL) {
+            const tableBody = document.getElementById('manualReceiptsTable');
+            try {
+                // Backend endpoint that returns transactions where receipt_url is not null and status is pending
+                const response = await fetch(`${API_BASE_URL}/payment/deposits/pending`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                
+                if (data.deposits && data.deposits.length > 0) {
+                    tableBody.innerHTML = data.deposits.map(d => `
+                        <tr>
+                            <td>${d.email || 'N/A'}</td>
+                            <td style="font-weight:bold; color:green;">₦${Number(d.amount).toLocaleString()}</td>
+                            <td>
+                                <a href="${d.receipt_url}" target="_blank" class="btn-receipt">
+                                   <i class="fas fa-eye"></i> CHECK RECEIPT
+                                </a>
+                            </td>
+                            <td>${new Date(d.created_at).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tableBody.innerHTML = '<tr><td colspan="4">No new manual receipts to check.</td></tr>';
+                }
+            } catch (e) {
+                tableBody.innerHTML = '<tr><td colspan="4">No new receipts.</td></tr>';
+            }
+        }
 
         async function loadPendingWithdrawals() {
             const token = localStorage.getItem('adminToken');
             const API_BASE_URL = getApiUrl();
-
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/withdrawals/pending`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-
-                if (!response.ok) throw new Error('Failed to fetch pending withdrawals');
-
                 const data = await response.json();
                 const tableBody = document.getElementById('pendingWithdrawalsTable');
-                
                 if (data.withdrawals && data.withdrawals.length > 0) {
                     tableBody.innerHTML = '';
                     data.withdrawals.forEach(withdrawal => {
                         const row = document.createElement('tr');
-                        const date = new Date(withdrawal.created_at).toLocaleString();
                         const bankDetails = `${withdrawal.bank_name || 'N/A'}<br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
-                        
                         row.innerHTML = `
                             <td>${withdrawal.full_name || 'N/A'}</td>
                             <td>${withdrawal.phone_number || 'N/A'}</td>
-                            <td>₦${Number(withdrawal.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            <td>₦${Number(withdrawal.amount).toLocaleString()}</td>
                             <td>${bankDetails}</td>
                             <td>${withdrawal.reference}</td>
-                            <td>${date}</td>
+                            <td>${new Date(withdrawal.created_at).toLocaleString()}</td>
                             <td>
                                 <button class="btn-approve" onclick="handleWithdrawalAction('${withdrawal.reference}', true)">Approve</button>
                                 <button class="btn-reject" onclick="handleWithdrawalAction('${withdrawal.reference}', false)">Reject</button>
@@ -315,37 +355,21 @@
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="7">No pending withdrawals.</td></tr>';
                 }
-            } catch (error) {
-                console.error('Error loading pending withdrawals:', error);
-                document.getElementById('pendingWithdrawalsTable').innerHTML = '<tr><td colspan="7">Unable to load pending withdrawals.</td></tr>';
-            }
+            } catch (error) { console.error('Error withdrawals:', error); }
         }
 
         async function handleWithdrawalAction(reference, approve) {
             const token = localStorage.getItem('adminToken');
             const API_BASE_URL = getApiUrl();
-
             if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this withdrawal?`)) return;
-
             try {
                 const response = await fetch(`${API_BASE_URL}/payment/approve/${reference}`, {
                     method: 'PATCH',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ approve })
                 });
-
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Failed to process withdrawal');
-
-                alert(data.message || `Withdrawal ${approve ? 'approved' : 'rejected'} successfully`);
-                await loadPendingWithdrawals();
-            } catch (error) {
-                console.error('Error processing withdrawal:', error);
-                alert('Error: ' + error.message);
-            }
+                if (response.ok) { alert("Done"); await loadPendingWithdrawals(); }
+            } catch (error) { alert('Error: ' + error.message); }
         }
     </script>
 </body>
