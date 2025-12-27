@@ -403,6 +403,81 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
+// --- NEW: RENDER CHANGE PASSWORD PAGE ---
+const renderChangePasswordPage = async () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Change Password</h2></div>
+            <div style="background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <form id="changePasswordForm">
+                    <div class="form-group" style="margin-bottom:15px;">
+                        <label>Current Password</label>
+                        <input type="password" id="oldPassword" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:15px;">
+                        <label>New Password</label>
+                        <input type="password" id="newPassword" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; padding:15px; border-radius:12px;">Update Password</button>
+                </form>
+            </div>
+        </div>`;
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { 
+                method: 'POST', 
+                body: JSON.stringify({ oldPassword, newPassword }) 
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showSuccessModal("Password changed successfully!");
+                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
+            } else { alert(data.message || "Failed to change password"); }
+        } catch (err) { alert("Server error"); }
+    });
+};
+
+// --- UPDATED: RENDER RESET PIN PAGE ---
+const renderResetPinPage = async () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <div class="page-header"><h2>Reset Transaction PIN</h2></div>
+            <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN to secure your withdrawals.</p>
+                <form id="resetPinForm">
+                    <div class="form-group">
+                        <label style="font-weight:bold;">New 4-Digit PIN</label>
+                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
+                               style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update PIN</button>
+                </form>
+            </div>
+        </div>`;
+
+    document.getElementById('resetPinForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPin = document.getElementById('newPinInput').value;
+        if (newPin.length !== 4) return alert("PIN must be exactly 4 digits.");
+        try {
+            const res = await fetchWithAuth(`${API_BASE_URL}/users/reset-pin`, { 
+                method: 'POST', 
+                body: JSON.stringify({ newPin }) 
+            });
+            const data = await res.json();
+            if (res.ok) { 
+                showSuccessModal("PIN Updated Successfully!"); 
+                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
+            } else { alert(data.message || "Failed to update PIN"); }
+        } catch (err) { alert("Error connecting to server"); }
+    });
+};
+
 const renderSetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -497,8 +572,11 @@ const renderMePage = async () => {
                     </div>
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
-                    <a href="#set-pin" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
-                        <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> Set Transaction PIN</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    </a>
+                    <a href="#reset-pin" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
+                        <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> Reset Transaction PIN</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
                         <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
@@ -567,12 +645,10 @@ const renderDepositPage = async () => {
         formData.append('amount', amount);
         formData.append('receipt', fileInput.files[0]);
 
-        // Feedback state
         submitBtn.disabled = true;
         submitBtn.innerText = "SENDING TO ADMIN...";
 
         try {
-            // FIXED URL: Based on Sahil's Route file, the path is /payment/deposit/manual
             const response = await fetchWithAuth(`${API_BASE_URL}/payment/deposit/manual`, {
                 method: 'POST',
                 body: formData
@@ -588,7 +664,6 @@ const renderDepositPage = async () => {
                 submitBtn.innerText = "SUBMIT FOR APPROVAL";
             }
         } catch (error) {
-            // Catching the network connection drop or CORS block
             alert('A network error occurred. Admin: Please check Cloudinary/Multer settings.');
             submitBtn.disabled = false;
             submitBtn.innerText = "SUBMIT FOR APPROVAL";
@@ -748,6 +823,8 @@ const router = () => {
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
         case '#set-pin': renderSetPinPage(); break; 
+        case '#change-password': renderChangePasswordPage(); break; // NEW
+        case '#reset-pin': renderResetPinPage(); break; // NEW
         case '#my-investments': renderActiveInvestmentsPage(); break;
         default: renderHomeScreen(); 
     }
