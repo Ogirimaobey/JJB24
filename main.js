@@ -161,7 +161,6 @@ const fetchWithAuth = async (url, options = {}) => {
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
     
-    // UPDATED: Automatically handle headers based on body type
     const isFormData = options.body instanceof FormData;
     if (!isFormData && !headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
@@ -201,8 +200,11 @@ const handleLogin = async (event) => {
     const id = document.getElementById('loginIdentifier').value.trim();
     const pass = document.getElementById('password').value;
     if (!id || !pass) return alert('Please provide email/phone and password.');
+    
     const isEmail = id.includes('@');
-    const loginData = { password: pass, email: isEmail ? id : '', phone: isEmail ? '' : id };
+    const loginData = { password: pass };
+    if (isEmail) loginData.email = id; else loginData.phone = id;
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
         const result = await response.json();
@@ -320,16 +322,37 @@ const renderHomeScreen = async () => {
         } catch(e) {}
 
         appContent.innerHTML = `
-            <div class="top-header"><div class="user-greeting"><h4>Hello, ${fullName.split(' ')[0]}</h4><p>Welcome back!</p></div><div class="profile-icon"><i class="fas fa-user"></i></div></div>
-            <div class="balance-card"><small>Total Assets (NGN)</small><h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2><div class="header-buttons" style="gap: 15px;"><a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a><a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a></div></div>
-            <div class="home-content"><div class="quick-actions">
-                <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
-                <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
-                <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
-                <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
-                <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
-                <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
-            </div><div class="activity-card"><h3>Recent Activity</h3><div class="activity-list">${activityHTML}</div></div></div>`;
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
+                    <p>Welcome back!</p>
+                </div>
+                <div class="profile-icon"><i class="fas fa-user"></i></div>
+            </div>
+            
+            <div class="balance-card">
+                <small>Total Assets (NGN)</small>
+                <h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2>
+                <div class="header-buttons" style="gap: 15px;">
+                    <a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a>
+                    <a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a>
+                </div>
+            </div>
+            
+            <div class="home-content">
+                <div class="quick-actions">
+                    <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
+                    <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
+                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
+                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                </div>
+                <div class="activity-card">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list">${activityHTML}</div>
+                </div>
+            </div>`;
     } catch (error) { logoutUser(); }
 };
 
@@ -403,107 +426,72 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
 };
 
-// --- NEW SECURITY PAGES INTEGRATED ---
+// --- NEW SECURITY ACTION RENDERERS ---
 const renderChangePasswordPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <div class="page-header"><h2>Change Password</h2></div>
+            <h2>Change Password</h2>
             <div style="background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <form id="changePasswordForm">
-                    <div class="form-group" style="margin-bottom:15px;">
+                    <div class="form-group">
                         <label>Current Password</label>
-                        <input type="password" id="oldPassword" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="password" id="oldP" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
                     </div>
-                    <div class="form-group" style="margin-bottom:15px;">
+                    <div class="form-group" style="margin-top:15px;">
                         <label>New Password</label>
-                        <input type="password" id="newPassword" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                        <input type="password" id="newP" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
                     </div>
-                    <button type="submit" class="btn-deposit" style="width:100%; padding:15px; border-radius:12px;">Update Password</button>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update Password</button>
                 </form>
             </div>
         </div>`;
-
     document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const oldPassword = document.getElementById('oldPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        try {
-            const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { 
-                method: 'POST', 
-                body: JSON.stringify({ oldPassword, newPassword }) 
-            });
-            const data = await res.json();
-            if (res.ok) {
-                showSuccessModal("Password changed successfully!");
-                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
-            } else { alert(data.message || "Failed to change password"); }
-        } catch (err) { alert("Server error"); }
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { method: 'POST', body: JSON.stringify({ oldPassword: oldP.value, newPassword: newP.value }) });
+        const result = await res.json();
+        if (res.ok) { showSuccessModal("Password Updated!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert(result.message || "Failed"); }
     });
 };
 
 const renderResetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <div class="page-header"><h2>Reset Transaction PIN</h2></div>
+            <h2>Reset Transaction PIN</h2>
             <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN to secure your withdrawals.</p>
+                <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN.</p>
                 <form id="resetPinForm">
                     <div class="form-group">
-                        <label style="font-weight:bold;">New 4-Digit PIN</label>
-                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
-                               style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
+                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update PIN</button>
                 </form>
             </div>
         </div>`;
-
     document.getElementById('resetPinForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const newPin = document.getElementById('newPinInput').value;
-        if (newPin.length !== 4) return alert("PIN must be exactly 4 digits.");
-        try {
-            const res = await fetchWithAuth(`${API_BASE_URL}/users/reset-pin`, { 
-                method: 'POST', 
-                body: JSON.stringify({ newPin }) 
-            });
-            const data = await res.json();
-            if (res.ok) { 
-                showSuccessModal("PIN Updated Successfully!"); 
-                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
-            } else { alert(data.message || "Failed to update PIN"); }
-        } catch (err) { alert("Error connecting to server"); }
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/reset-pin`, { method: 'POST', body: JSON.stringify({ newPin: newPinInput.value }) });
+        if (res.ok) { showSuccessModal("PIN Updated!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert("Failed to update PIN"); }
     });
 };
 
 const renderSetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <div class="page-header"><h2>Security PIN</h2></div>
+            <h2>Security PIN</h2>
             <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-                <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN to secure your withdrawals.</p>
+                <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN.</p>
                 <form id="pinForm">
                     <div class="form-group">
-                        <label style="font-weight:bold;">Enter 4-Digit PIN</label>
                         <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
                 </form>
             </div>
         </div>`;
-
     document.getElementById('pinForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const pin = document.getElementById('pinInput').value;
-        if (pin.length !== 4) return alert("PIN must be exactly 4 digits.");
-        try {
-            const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin }) });
-            const data = await res.json();
-            if (res.ok) { 
-                showSuccessModal("PIN Set Successfully!"); 
-                setTimeout(() => { window.location.hash = '#me'; router(); }, 2000);
-            } else { alert(data.message || "Failed to set PIN"); }
-        } catch (err) { alert("Error connecting to server"); }
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin: pinInput.value }) });
+        if (res.ok) { showSuccessModal("PIN Set!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert("Failed to set PIN"); }
     });
 };
 
@@ -515,7 +503,14 @@ const renderActiveInvestmentsPage = async () => {
         const investments = data.active_investments || [];
 
         if (investments.length === 0) {
-            appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>My Investments</h2></div><div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">You have no active investments.</p><a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a></div></div>`;
+            appContent.innerHTML = `
+                <div class="page-container">
+                    <div class="page-header"><h2>My Investments</h2></div>
+                    <div class="placeholder-card" style="text-align:center; padding: 40px;">
+                        <p style="color: #666;">You have no active investments.</p>
+                        <a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a>
+                    </div>
+                </div>`;
             return;
         }
 
@@ -554,7 +549,6 @@ const renderMePage = async () => {
         const phone = user.phone_number || '';
         const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
 
-        // PIN LOGIC CHECK: Show Reset if user has a PIN, otherwise Set PIN
         const pinActionText = user.has_pin ? "Reset Transaction PIN" : "Set Transaction PIN";
         const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
 
@@ -603,7 +597,6 @@ const renderDepositPage = async () => {
     appContent.innerHTML = `
         <div class="page-container" style="padding:20px; background:#f8fafc; min-height:100vh;">
             <div class="page-header"><h2 style="color:#1e293b;">Deposit Funds</h2></div>
-            
             <div style="background: #1e293b; color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
                 <small style="opacity:0.7; text-transform:uppercase; letter-spacing:1px;">Transfer to Account Below</small>
                 <h3 style="margin: 15px 0 5px 0; color: #10b981; font-size: 28px; letter-spacing:1px;">6669586597</h3>
@@ -611,7 +604,7 @@ const renderDepositPage = async () => {
                 <p style="margin:0; opacity:0.8;">Moniepoint MFB</p>
                 
                 <div style="margin-top:15px; padding:12px; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; font-size:12px; color: #fbbf24; font-weight:bold;">
-                    <i class="fas fa-clock"></i> Deposit payment will be confirmed within 24hrs.
+                    <i class="fas fa-clock"></i> Confirmation takes up to 24hrs.
                 </div>
             </div>
 
@@ -632,22 +625,17 @@ const renderDepositPage = async () => {
             </div>
         </div>`;
 
-    const form = document.getElementById('manualDepositForm');
-    const submitBtn = document.getElementById('submitBtn');
-
-    form.addEventListener('submit', async (event) => {
+    document.getElementById('manualDepositForm').addEventListener('submit', async (event) => {
         event.preventDefault();
-        
         const amount = document.getElementById('depositAmountInput').value;
         const fileInput = document.getElementById('receiptFileInput');
-        
         if (!fileInput.files[0]) return alert("Please select a screenshot.");
 
         const formData = new FormData();
         formData.append('amount', amount);
-        formData.append('receipt', fileInput.files[0]);
+        formData.append('receipt', fileInput.files[0]); // MATCHES BACKEND KEY
 
-        // Feedback state
+        const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
         submitBtn.innerText = "SENDING TO ADMIN...";
 
@@ -656,25 +644,21 @@ const renderDepositPage = async () => {
                 method: 'POST',
                 body: formData
             });
-
             if (response && response.ok) {
-                showSuccessModal('Receipt submitted! Admin will verify and credit your wallet within 24hrs.');
-                setTimeout(() => { window.location.hash = '#home'; router(); }, 3500);
+                showSuccessModal('Receipt submitted! Admin will verify soon.');
+                setTimeout(() => { window.location.hash = '#home'; router(); }, 2500);
             } else {
-                const errorData = await response.json();
-                alert('Upload failed: ' + (errorData.message || 'Please try again.'));
+                const err = await response.json();
+                alert('Upload failed: ' + err.message);
                 submitBtn.disabled = false;
-                submitBtn.innerText = "SUBMIT FOR APPROVAL";
             }
         } catch (error) {
-            alert('A network error occurred. Admin: Please check Cloudinary/Multer settings.');
+            alert('Connection error.');
             submitBtn.disabled = false;
-            submitBtn.innerText = "SUBMIT FOR APPROVAL";
         }
     });
 };
 
-// ... [Withdraw, Rewards, History pages kept exactly as they were] ...
 const renderWithdrawPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
     try {
@@ -682,16 +666,28 @@ const renderWithdrawPage = async () => {
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
-            <div class="page-container"><div class="page-header"><h2>Request Withdrawal</h2></div><div class="withdraw-card"><div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div><form id="withdrawForm">
-            <div class="form-group"><label for="amount">Amount (NGN)</label><input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required /><small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small></div>
-            <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
-                <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
-                <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
-            </div>
-            <div class="form-group"><label>Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
-            <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div><div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div>
-            <div class="form-group"><label>Withdrawal PIN</label><input type="password" id="withdrawPin" maxlength="4" placeholder="Enter PIN" required /></div>
-            <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button></form></div></div>`;
+            <div class="page-container">
+                <div class="page-header"><h2>Request Withdrawal</h2></div>
+                <div class="withdraw-card">
+                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div>
+                    <form id="withdrawForm">
+                        <div class="form-group">
+                            <label for="amount">Amount (NGN)</label>
+                            <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required />
+                            <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
+                        </div>
+                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
+                            <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
+                        </div>
+                        <div class="form-group"><label>Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
+                        <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div>
+                        <div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div>
+                        <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" maxlength="4" placeholder="Enter PIN" required /></div>
+                        <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
+                    </form>
+                </div>
+            </div>`;
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: amount.value, bank_name: bankName.value, account_number: accountNumber.value, account_name: accountName.value, pin: withdrawPin.value })});
@@ -756,7 +752,7 @@ window.addEventListener('hashchange', router); window.addEventListener('DOMConte
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
 // ==========================================
-// 6. SOCIAL PROOF POPUPS (PRESERVED EXACTLY)
+// 6. SOCIAL PROOF POPUPS (FULL ORIGINAL VERSION)
 // ==========================================
 (function startSocialProof() {
     const fomoData = {
