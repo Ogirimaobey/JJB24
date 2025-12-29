@@ -102,6 +102,17 @@ styleSheet.innerText = `
         border-radius: 12px; font-weight: bold; cursor: pointer;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
+
+    /* 4. INPUT VISIBILITY FIX (FOR SECURITY PAGES) */
+    .security-input {
+        width: 100% !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #ddd !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 16px !important;
+    }
 `;
 document.head.appendChild(styleSheet);
 
@@ -141,6 +152,21 @@ window.copyReferralLink = async (referralCode) => {
         try { await navigator.clipboard.writeText(fullLink); showSuccessModal('Referral link copied!'); return; } catch (err) { }
     }
     prompt("Copy your referral link:", fullLink);
+};
+
+window.copyAccountNumber = (accNumber) => {
+    navigator.clipboard.writeText(accNumber).then(() => {
+        const copyBtn = document.getElementById('copyAccBtn');
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "COPIED!";
+        copyBtn.style.background = "#059669";
+        setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.style.background = "rgba(16, 185, 129, 0.2)";
+        }, 2000);
+    }).catch(err => {
+        alert("Failed to copy. Account number is: " + accNumber);
+    });
 };
 
 const getReferralFromUrl = () => {
@@ -200,11 +226,8 @@ const handleLogin = async (event) => {
     const id = document.getElementById('loginIdentifier').value.trim();
     const pass = document.getElementById('password').value;
     if (!id || !pass) return alert('Please provide email/phone and password.');
-    
     const isEmail = id.includes('@');
-    const loginData = { password: pass };
-    if (isEmail) loginData.email = id; else loginData.phone = id;
-
+    const loginData = { password: pass, email: isEmail ? id : '', phone: isEmail ? '' : id };
     try {
         const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
         const result = await response.json();
@@ -434,12 +457,12 @@ const renderChangePasswordPage = async () => {
             <div style="background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <form id="changePasswordForm">
                     <div class="form-group">
-                        <label>Current Password</label>
-                        <input type="password" id="oldP" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                        <label style="color:#111;">Current Password</label>
+                        <input type="password" id="oldP" class="security-input" required placeholder="Enter old password">
                     </div>
                     <div class="form-group" style="margin-top:15px;">
-                        <label>New Password</label>
-                        <input type="password" id="newP" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                        <label style="color:#111;">New Password</label>
+                        <input type="password" id="newP" class="security-input" required placeholder="Enter new password">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update Password</button>
                 </form>
@@ -461,7 +484,8 @@ const renderResetPinPage = async () => {
                 <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN.</p>
                 <form id="resetPinForm">
                     <div class="form-group">
-                        <input type="password" id="newPinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
+                        <input type="password" id="newPinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update PIN</button>
                 </form>
@@ -482,7 +506,8 @@ const renderSetPinPage = async () => {
                 <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN.</p>
                 <form id="pinForm">
                     <div class="form-group">
-                        <input type="password" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" required style="text-align:center; letter-spacing:10px; font-size:24px; padding:15px; border-radius:12px; border:2px solid #ddd; width:80%; margin:0 auto; display:block;">
+                        <input type="password" id="pinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
                 </form>
@@ -591,16 +616,22 @@ const renderMePage = async () => {
 };
 
 // ==========================================
-// ADJUSTED: renderDepositPage (MATCHING SAHIL BACKEND & HIGH VISIBILITY)
+// ADJUSTED: renderDepositPage (COPY BOX ADDED)
 // ==========================================
 const renderDepositPage = async () => { 
+    const accountNumber = "6669586597";
     appContent.innerHTML = `
         <div class="page-container" style="padding:20px; background:#f8fafc; min-height:100vh;">
             <div class="page-header"><h2 style="color:#1e293b;">Deposit Funds</h2></div>
             <div style="background: #1e293b; color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
                 <small style="opacity:0.7; text-transform:uppercase; letter-spacing:1px;">Transfer to Account Below</small>
-                <h3 style="margin: 15px 0 5px 0; color: #10b981; font-size: 28px; letter-spacing:1px;">6669586597</h3>
-                <p style="margin:0; font-weight:bold; font-size:16px;">JJB BRANDED WINES LTD</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top:15px;">
+                    <h3 style="margin: 0; color: #10b981; font-size: 28px; letter-spacing:1px;">${accountNumber}</h3>
+                    <button id="copyAccBtn" onclick="window.copyAccountNumber('${accountNumber}')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">COPY</button>
+                </div>
+                
+                <p style="margin:10px 0 0 0; font-weight:bold; font-size:16px;">JJB BRANDED WINES LTD</p>
                 <p style="margin:0; opacity:0.8;">Moniepoint MFB</p>
                 
                 <div style="margin-top:15px; padding:12px; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; font-size:12px; color: #fbbf24; font-weight:bold;">
@@ -613,7 +644,7 @@ const renderDepositPage = async () => {
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Amount Transferred (₦)</label>
                         <input type="number" id="depositAmountInput" placeholder="Enter amount sent" required 
-                               style="width:100%; padding:15px; border:2px solid #eee; border-radius:12px; font-size:18px; color: #111111 !important; font-weight:700; background-color: #ffffff !important; outline: none; -webkit-appearance: none;">
+                               class="security-input">
                     </div>
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Upload Receipt Screenshot</label>
@@ -633,7 +664,7 @@ const renderDepositPage = async () => {
 
         const formData = new FormData();
         formData.append('amount', amount);
-        formData.append('receipt', fileInput.files[0]); // MATCHES BACKEND KEY
+        formData.append('receipt', fileInput.files[0]);
 
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
@@ -673,17 +704,17 @@ const renderWithdrawPage = async () => {
                     <form id="withdrawForm">
                         <div class="form-group">
                             <label for="amount">Amount (NGN)</label>
-                            <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required />
+                            <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required class="security-input" />
                             <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
                         </div>
                         <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
                             <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
                             <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
                         </div>
-                        <div class="form-group"><label>Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
-                        <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" required /></div>
-                        <div class="form-group"><label>Account Name</label><input type="text" id="accountName" required /></div>
-                        <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" maxlength="4" placeholder="Enter PIN" required /></div>
+                        <div class="form-group"><label>Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
+                        <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" class="security-input" required /></div>
+                        <div class="form-group"><label>Account Name</label><input type="text" id="accountName" class="security-input" required /></div>
+                        <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" class="security-input" maxlength="4" placeholder="Enter PIN" required /></div>
                         <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
                     </form>
                 </div>
