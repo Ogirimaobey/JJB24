@@ -103,7 +103,7 @@ styleSheet.innerText = `
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
-    /* 4. INPUT VISIBILITY FIX (FOR SECURITY PAGES) */
+    /* 4. INPUT & HISTORY TEXT VISIBILITY FIX */
     .security-input {
         width: 100% !important;
         padding: 12px !important;
@@ -112,6 +112,14 @@ styleSheet.innerText = `
         background-color: #ffffff !important;
         color: #000000 !important;
         font-size: 16px !important;
+    }
+    .history-item-text {
+        color: #111111 !important;
+        font-weight: 700 !important;
+    }
+    .history-sub-text {
+        color: #555555 !important;
+        font-size: 12px !important;
     }
 `;
 document.head.appendChild(styleSheet);
@@ -329,16 +337,16 @@ const renderHomeScreen = async () => {
         const data = await response.json();
         const fullName = data.balance.full_name || 'User'; const balance = data.balance.balance || 0;
         
-        let activityHTML = "<p>No recent activity.</p>";
+        let activityHTML = "<p style='color:#777; text-align:center;'>No recent activity.</p>";
         try {
             const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
             if (histRes && histRes.ok) {
                 const histData = await histRes.json();
                 if (histData.success && histData.transactions.length > 0) {
                     activityHTML = histData.transactions.slice(0, 4).map(txn => 
-                        `<div style="display:flex; justify-content:space-between; padding: 10px; border-bottom: 1px solid #eee;">
-                            <span style="text-transform: capitalize; font-size: 13px; font-weight: bold; color: #555;">${txn.type.replace(/_/g, ' ')}</span>
-                            <span style="color:${txn.amount > 0 ? 'green' : 'red'}; font-weight:bold; font-size: 13px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
+                        `<div style="display:flex; justify-content:space-between; padding: 12px; border-bottom: 1px solid #f0f0f0;">
+                            <span class="history-item-text" style="text-transform: capitalize;">${txn.type.replace(/_/g, ' ')}</span>
+                            <span style="color:${txn.amount > 0 ? '#10b981' : '#ef4444'}; font-weight:800; font-size: 14px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
                         </div>`).join('');
                 }
             }
@@ -372,7 +380,7 @@ const renderHomeScreen = async () => {
                     <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                 </div>
                 <div class="activity-card">
-                    <h3>Recent Activity</h3>
+                    <h3 style="color:#111;">Recent Activity</h3>
                     <div class="activity-list">${activityHTML}</div>
                 </div>
             </div>`;
@@ -386,14 +394,14 @@ const renderProductsPage = async () => {
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
         let productHTML = ''; const items = data.items || [];
-        if (items.length === 0) productHTML = '<p style="text-align:center;">No products.</p>';
+        if (items.length === 0) productHTML = '<p style="text-align:center; color:#111;">No products available.</p>';
         else {
             items.forEach(item => {
-                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>`;
+                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value" style="color:#111;">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value" style="color:#111;">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>`;
             });
         }
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load products.</p>'; }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load products.</p>'; }
 };
 
 const renderVipPage = () => {
@@ -401,9 +409,9 @@ const renderVipPage = () => {
     const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
     let vipHTML = '';
     products.forEach(plan => {
-        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
+        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value" style="color:#111;">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
     });
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
 const renderTeamPage = async () => {
@@ -421,47 +429,48 @@ const renderTeamPage = async () => {
         const teamMembers = data.team_list || [];
         const totalCommission = data.total_commission || 0; 
 
+        // UPDATED: OWNER REQUEST - LIST OF REFERRED PEOPLE
         let teamHTML = teamMembers.length === 0 ? 
             `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
             teamMembers.map(member => `
                 <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <h4 style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
-                        <small style="color: #888;">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
+                        <h4 class="history-item-text" style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
+                        <small class="history-sub-text">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
                     </div>
                     <div style="text-align: right;">
-                        <span style="display: block; font-size: 12px; color: #888;">Wallet</span>
-                        <strong style="color: #10b981;">₦${Number(member.balance || 0).toLocaleString()}</strong>
+                        <span style="display: block; font-size: 11px; color: #888; font-weight:600;">Status</span>
+                        <strong style="color: #10b981; font-size: 13px;">ACTIVE</strong>
                     </div>
                 </div>`).join('');
 
         appContent.innerHTML = `
             <div class="page-container">
-                <div class="page-header"><h2>My Team</h2></div>
+                <div class="page-header"><h2 style="color:#111;">My Team</h2></div>
                 ${getReferralCardHTML(refCode)}
                 <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
                     <small style="color: #e1bee7;">Total Referral Commission</small>
                     <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
                     <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
                 </div>
-                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px;">Team List</h3>${teamHTML}</div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px; color:#111;">Referred Users List</h3>${teamHTML}</div>
             </div>`;
-    } catch (error) { appContent.innerHTML = '<p style="text-align:center;">Error loading team data.</p>'; }
+    } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading team data.</p>'; }
 };
 
 // --- NEW SECURITY ACTION RENDERERS ---
 const renderChangePasswordPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <h2>Change Password</h2>
+            <h2 style="color:#111;">Change Password</h2>
             <div style="background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <form id="changePasswordForm">
                     <div class="form-group">
-                        <label style="color:#111;">Current Password</label>
-                        <input type="password" id="oldP" class="security-input" required placeholder="Enter old password">
+                        <label style="color:#111; font-weight:700;">Current Password</label>
+                        <input type="password" id="oldP" class="security-input" required placeholder="Enter current password">
                     </div>
                     <div class="form-group" style="margin-top:15px;">
-                        <label style="color:#111;">New Password</label>
+                        <label style="color:#111; font-weight:700;">New Password</label>
                         <input type="password" id="newP" class="security-input" required placeholder="Enter new password">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update Password</button>
@@ -479,13 +488,13 @@ const renderChangePasswordPage = async () => {
 const renderResetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <h2>Reset Transaction PIN</h2>
+            <h2 style="color:#111;">Reset Transaction PIN</h2>
             <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN.</p>
                 <form id="resetPinForm">
                     <div class="form-group">
                         <input type="password" id="newPinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
-                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important;">
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important; color:#000 !important;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update PIN</button>
                 </form>
@@ -501,13 +510,13 @@ const renderResetPinPage = async () => {
 const renderSetPinPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
-            <h2>Security PIN</h2>
+            <h2 style="color:#111;">Security PIN</h2>
             <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                 <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN.</p>
                 <form id="pinForm">
                     <div class="form-group">
                         <input type="password" id="pinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
-                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important;">
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important; color:#000 !important;">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
                 </form>
@@ -530,7 +539,7 @@ const renderActiveInvestmentsPage = async () => {
         if (investments.length === 0) {
             appContent.innerHTML = `
                 <div class="page-container">
-                    <div class="page-header"><h2>My Investments</h2></div>
+                    <div class="page-header"><h2 style="color:#111;">My Investments</h2></div>
                     <div class="placeholder-card" style="text-align:center; padding: 40px;">
                         <p style="color: #666;">You have no active investments.</p>
                         <a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a>
@@ -543,22 +552,22 @@ const renderActiveInvestmentsPage = async () => {
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div>
-                        <h4 style="margin:0; font-size:16px;">${inv.itemname || 'Investment Plan'}</h4>
-                        <small style="color:#666;">Daily: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
+                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${inv.itemname || 'Investment Plan'}</h4>
+                        <small class="history-sub-text">Daily: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
                     </div>
                     <div style="text-align:right;">
                         <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
-                    <span>Invested: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
-                    <span>Total Earned: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Invested: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Total Earned: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
                 </div>
             </div>
         `).join('');
 
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2>Active Plans</h2></div>${html}</div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align:center;">Could not load investments.</p>'; }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load investments.</p>'; }
 };
 
 const renderMePage = async () => { 
@@ -581,11 +590,11 @@ const renderMePage = async () => {
             <div class="page-container" style="padding:20px;">
                 <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
-                    <h3 style="margin-bottom:5px;">${fullName}</h3>
+                    <h3 style="margin-bottom:5px; color:#111;">${fullName}</h3>
                     <p style="color:#666; font-size:14px;">${phone}</p>
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
                         <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
-                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #666; border: 1px solid #eee;">${uniqueReferralLink}</div>
+                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #111; border: 1px solid #eee;">${uniqueReferralLink}</div>
                         <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
                             <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
                             <button onclick="window.copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
@@ -593,17 +602,17 @@ const renderMePage = async () => {
                     </div>
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
-                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
-                        <span><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-                    <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
-                        <span><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
-                        <span><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
-                    <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#333;">
-                        <span><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                    <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
                     <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
                         <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
@@ -611,7 +620,7 @@ const renderMePage = async () => {
                 </div>
             </div>`;
     } catch(e) { 
-        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p>Sync Error. Please check connection.</p></div>';
+        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p style="color:#111;">Sync Error. Please check connection.</p></div>';
     }
 };
 
@@ -691,29 +700,29 @@ const renderDepositPage = async () => {
 };
 
 const renderWithdrawPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px; color:#111;">Loading...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: 'GET' });
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
             <div class="page-container">
-                <div class="page-header"><h2>Request Withdrawal</h2></div>
+                <div class="page-header"><h2 style="color:#111;">Request Withdrawal</h2></div>
                 <div class="withdraw-card">
-                    <div class="balance-display"><small>Available Balance</small><p>₦ ${Number(balance).toLocaleString()}</p></div>
+                    <div class="balance-display"><small style="color:#666;">Available Balance</small><p style="color:#111; font-weight:800;">₦ ${Number(balance).toLocaleString()}</p></div>
                     <form id="withdrawForm">
                         <div class="form-group">
-                            <label for="amount">Amount (NGN)</label>
+                            <label for="amount" style="color:#111;">Amount (NGN)</label>
                             <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required class="security-input" />
                             <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
                         </div>
-                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #666; display: none;">
-                            <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f;">- ₦0.00</span></div>
-                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c;">₦0.00</span></div>
+                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #111; display: none;">
+                            <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f; font-weight:700;">- ₦0.00</span></div>
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c; font-weight:800;">₦0.00</span></div>
                         </div>
-                        <div class="form-group"><label>Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
-                        <div class="form-group"><label>Account Number</label><input type="text" id="accountNumber" class="security-input" required /></div>
-                        <div class="form-group"><label>Account Name</label><input type="text" id="accountName" class="security-input" required /></div>
+                        <div class="form-group"><label style="color:#111;">Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
+                        <div class="form-group"><label style="color:#111;">Account Number</label><input type="text" id="accountNumber" class="security-input" required /></div>
+                        <div class="form-group"><label style="color:#111;">Account Name</label><input type="text" id="accountName" class="security-input" required /></div>
                         <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" class="security-input" maxlength="4" placeholder="Enter PIN" required /></div>
                         <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
                     </form>
@@ -728,28 +737,28 @@ const renderWithdrawPage = async () => {
 };
 
 const renderRewardsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Rewards...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px; color:#111;">Loading Rewards...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`, { method: 'GET' });
         const data = await response.json();
         const rewardList = data.rewards || [];
         const summary = data.summary || { total_rewards: 0 };
         let itemsHTML = rewardList.length === 0 ? `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
-            rewardList.map(item => `<div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;"><div><h4 style="margin: 0; font-size: 14px;">${item.source}</h4><small>${new Date(item.date).toLocaleDateString()}</small></div><strong>+₦${Number(item.amount).toLocaleString()}</strong></div>`).join('');
-        appContent.innerHTML = `<div class="page-container"><h2>My Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
+            rewardList.map(item => `<div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;"><div><h4 class="history-item-text" style="margin: 0; font-size: 14px;">${item.source}</h4><small class="history-sub-text">${new Date(item.date).toLocaleDateString()}</small></div><strong style="color:#10b981; font-weight:800;">+₦${Number(item.amount).toLocaleString()}</strong></div>`).join('');
+        appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">My Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
     } catch (e) {}
 };
 
 const renderHistoryPage = async () => {
-    appContent.innerHTML = '<p style="text-align:center; margin-top:50px;">Loading History...</p>';
+    appContent.innerHTML = '<p style="text-align:center; margin-top:50px; color:#111;">Loading History...</p>';
     const res = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method:'GET' });
     const data = await res.json();
-    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong>${t.type.toUpperCase()}</strong><br><small>${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? 'green' : 'red'};">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
-    appContent.innerHTML = `<div class="page-container"><h2>Full History</h2><div style="padding: 15px 0;">${list || '<p>No records found.</p>'}</div></div>`;
+    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong class="history-item-text">${t.type.toUpperCase()}</strong><br><small class="history-sub-text">${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? '#10b981' : '#ef4444'}; font-weight:800;">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
+    appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">Full History</h2><div style="padding: 15px 0;">${list || '<p style="color:#111;">No records found.</p>'}</div></div>`;
 };
 
-const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2>Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p>Contact support at:</p><h3 style="color:#6a0dad;">jjb24wines@gmail.com</h3></div></div>'; };
-const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2>Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
+const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2 style="color:#111;">Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p style="color:#111;">Contact support at:</p><h3 style="color:#6a0dad; font-weight:800;">jjb24wines@gmail.com</h3></div></div>'; };
+const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2 style="color:#111;">Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
 
 const router = () => {
     const token = localStorage.getItem('token');
