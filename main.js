@@ -756,7 +756,27 @@ const renderWithdrawPage = async () => {
                             <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f; font-weight:700;">- ₦0.00</span></div>
                             <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c; font-weight:800;">₦0.00</span></div>
                         </div>
-                        <div class="form-group"><label style="color:#111;">Bank Name</label><select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;"><option value="">Select Bank</option><option value="Paycom">OPay (Paycom)</option><option value="PalmPay">PalmPay</option><option value="Moniepoint">Moniepoint</option></select></div>
+                        <div class="form-group">
+                            <label style="color:#111;">Bank Name</label>
+                            <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;">
+                                <option value="">Select Bank</option>
+                                <option value="OPay">OPay (Paycom)</option>
+                                <option value="PalmPay">PalmPay</option>
+                                <option value="Moniepoint">Moniepoint</option>
+                                <option value="GTBank">GTBank</option>
+                                <option value="Access Bank">Access Bank</option>
+                                <option value="Zenith Bank">Zenith Bank</option>
+                                <option value="First Bank">First Bank</option>
+                                <option value="UBA">United Bank for Africa (UBA)</option>
+                                <option value="Fidelity Bank">Fidelity Bank</option>
+                                <option value="Wema Bank">Wema Bank</option>
+                                <option value="Union Bank">Union Bank</option>
+                                <option value="Stanbic IBTC">Stanbic IBTC Bank</option>
+                                <option value="Ecobank">Ecobank Nigeria</option>
+                                <option value="Kuda Bank">Kuda Microfinance Bank</option>
+                                <option value="Sterling Bank">Sterling Bank</option>
+                            </select>
+                        </div>
                         <div class="form-group"><label style="color:#111;">Account Number</label><input type="text" id="accountNumber" class="security-input" required /></div>
                         <div class="form-group"><label style="color:#111;">Account Name</label><input type="text" id="accountName" class="security-input" required /></div>
                         <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" class="security-input" maxlength="4" placeholder="Enter PIN" required /></div>
