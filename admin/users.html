@@ -189,7 +189,6 @@
 
         async function loadUsers(token) {
             try {
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -212,15 +211,17 @@
                         const row = document.createElement('tr');
                         const date = new Date(user.created_at).toLocaleDateString();
                         
-                        // Format Balance
-                        const formattedBalance = Number(user.balance).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+                        // Format Balance Safely
+                        const balanceNum = parseFloat(user.balance || 0);
+                        const formattedBalance = balanceNum.toLocaleString('en-NG', { minimumFractionDigits: 2 });
                         
-                        // Format Total Deposited
-                        const formattedDeposit = Number(user.total_deposited || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
+                        // Format Total Deposited Safely
+                        const depositNum = parseFloat(user.total_deposited || 0);
+                        const formattedDeposit = depositNum.toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
-                        // NEW: RECEIPT PROOF LOGIC
+                        // NEW: RECEIPT PROOF LOGIC (ROBUST CHECK)
                         let receiptHtml = '<span style="color:#ccc;">No Proof</span>';
-                        if (user.receipt_url) {
+                        if (user.receipt_url && user.receipt_url.trim() !== "") {
                             receiptHtml = `<a href="${user.receipt_url}" target="_blank" class="badge badge-receipt">VIEW</a>`;
                         }
 
@@ -229,7 +230,7 @@
                         if (user.account_status === 'suspended') statusHtml = '<span class="badge badge-suspended">Suspended</span>';
                         if (user.account_status === 'blocked' || user.is_blocked) statusHtml = '<span class="badge badge-blocked">Blocked</span>';
 
-                        // Buttons Logic (FULL LOGIC PRESERVED)
+                        // Buttons Logic
                         let buttons = `
                             <button class="btn-action btn-edit" onclick='openEditModal(${JSON.stringify(user)})'><i class="fas fa-edit"></i></button>
                         `;
@@ -263,7 +264,7 @@
             }
         }
 
-        // --- 2. UPDATE STATUS (URL FIXED) ---
+        // --- 2. UPDATE STATUS ---
         async function updateStatus(userId, newStatus) {
             const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
             const reason = prompt(`Reason for ${action} (Optional):`);
@@ -272,7 +273,6 @@
 
             const token = localStorage.getItem('adminToken');
             try {
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
                     method: 'PATCH',
                     headers: { 
@@ -305,7 +305,7 @@
             }
         }
 
-        // --- 3. EDIT USER MODAL FUNCTIONS (URL FIXED) ---
+        // --- 3. EDIT USER MODAL FUNCTIONS ---
         const modal = document.getElementById('editModal');
         const editForm = document.getElementById('editForm');
 
@@ -314,7 +314,7 @@
             document.getElementById('editName').value = user.full_name;
             document.getElementById('editEmail').value = user.email || '';
             document.getElementById('editPhone').value = user.phone_number;
-            document.getElementById('editBalance').value = user.balance; // PRE-FILL CURRENT BALANCE
+            document.getElementById('editBalance').value = user.balance; 
             modal.style.display = 'flex';
         }
 
@@ -328,7 +328,6 @@
             }
         }
 
-        // Handle Edit Form Submit
         editForm.onsubmit = async function(e) {
             e.preventDefault();
             const userId = document.getElementById('editUserId').value;
@@ -338,11 +337,10 @@
                 full_name: document.getElementById('editName').value,
                 email: document.getElementById('editEmail').value,
                 phone_number: document.getElementById('editPhone').value,
-                balance: document.getElementById('editBalance').value // SEND NEW BALANCE
+                balance: document.getElementById('editBalance').value 
             };
 
             try {
-                // FIXED: Added /users/ before admin
                 const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
                     method: 'PUT',
                     headers: { 
@@ -355,7 +353,7 @@
                 if (response.ok) {
                     alert('User details (including Balance) updated successfully');
                     closeModal();
-                    loadUsers(token); // Refresh table
+                    loadUsers(token); 
                 } else {
                     const err = await response.json();
                     alert('Error: ' + err.message);
