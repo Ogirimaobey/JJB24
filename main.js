@@ -497,7 +497,7 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading team data.</p>'; }
 };
 
-// --- NEW SECURITY ACTION RENDERERS ---
+// --- SECURITY ACTION RENDERERS ---
 const renderChangePasswordPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -506,11 +506,11 @@ const renderChangePasswordPage = async () => {
                 <form id="changePasswordForm">
                     <div class="form-group">
                         <label style="color:#111; font-weight:700;">Current Password</label>
-                        <input type="password" id="oldP" class="security-input" required placeholder="Enter current password">
+                        <input type="password" id="oldPassword" class="security-input" required placeholder="Enter current password">
                     </div>
                     <div class="form-group" style="margin-top:15px;">
                         <label style="color:#111; font-weight:700;">New Password</label>
-                        <input type="password" id="newP" class="security-input" required placeholder="Enter new password">
+                        <input type="password" id="newPassword" class="security-input" required placeholder="Enter new password">
                     </div>
                     <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update Password</button>
                 </form>
@@ -518,7 +518,10 @@ const renderChangePasswordPage = async () => {
         </div>`;
     document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { method: 'POST', body: JSON.stringify({ oldPassword: oldP.value, newPassword: newP.value }) });
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { 
+            method: 'POST', 
+            body: JSON.stringify({ oldPassword: oldPassword.value, newPassword: newPassword.value }) 
+        });
         const result = await res.json();
         if (res.ok) { showSuccessModal("Password Updated!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert(result.message || "Failed"); }
     });
@@ -763,7 +766,7 @@ const renderWithdrawPage = async () => {
                                 <option value="OPay">OPay (Paycom)</option>
                                 <option value="PalmPay">PalmPay</option>
                                 <option value="Moniepoint">Moniepoint</option>
-                                <option value="GTBank">GTBank</option>
+                                <option value="GTBank">GTBank (Guaranty Trust)</option>
                                 <option value="Access Bank">Access Bank</option>
                                 <option value="Zenith Bank">Zenith Bank</option>
                                 <option value="First Bank">First Bank</option>
