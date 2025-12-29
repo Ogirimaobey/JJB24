@@ -1,368 +1,447 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - Admin</title>
-    <link rel="stylesheet" href="../style.css">
-    <link rel="stylesheet" href="admin-dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <style>
-        /* --- TABLE STYLES --- */
-        .table-container {
-            overflow-x: auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        
-        /* --- BADGES (Status Labels) --- */
-        .badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .badge-active { background-color: #d1fae5; color: #065f46; } /* Green */
-        .badge-suspended { background-color: #fef3c7; color: #92400e; } /* Orange */
-        .badge-blocked { background-color: #fee2e2; color: #991b1b; } /* Red */
-        /* NEW Badge for Receipt Proof */
-        .badge-receipt { background-color: #f3e8ff; color: #6a0dad; border: 1px solid #d8b4fe; text-decoration: none; display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 10px; }
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from "crypto";
+import nodemailer from "nodemailer";
+import pool from '../config/database.js';
+import { 
+ findUserByEmail, 
+ findUserByPhone, 
+ updateUserBalance, 
+ findUserById, 
+ findUserByReferralCode, 
+ updateUserVerification, 
+ setUserPin, 
+ getUserPin
+} from '../repositories/userRepository.js';
+import { 
+ createTransaction, 
+ createReferralBonusTransaction 
+} from '../repositories/transactionRepository.js';
+import { getAllInvestmentsByUserId } from '../repositories/investmentRepository.js';
 
-        /* --- ACTION BUTTONS --- */
-        .btn-action {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-right: 4px;
-            color: white;
-            transition: opacity 0.2s;
-        }
-        .btn-action:hover { opacity: 0.8; }
-        
-        .btn-edit { background-color: #3b82f6; } /* Blue */
-        .btn-suspend { background-color: #f59e0b; } /* Orange */
-        .btn-block { background-color: #ef4444; } /* Red */
-        .btn-unblock { background-color: #10b981; } /* Green */
+const JWT_SECRET = process.env.JWT_SECRET;
 
-        /* --- MODAL (Popup for Editing) --- */
-        .modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .modal-header h3 { margin: 0; }
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            color: #111 !important; /* Ensure numbers are black and visible */
-        }
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="admin-wrapper">
-        <header class="admin-header">
-            <h1>Manage Users</h1>
-            <div class="header-actions">
-                <a href="admin-dashboard.html" class="nav-button">← Back to Dashboard</a>
-            </div>
-        </header>
+// --- HELPER: Generate Unique Referral Code ---
+const generateReferralCode = () => {
+ return `REF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+};
 
-        <main class="admin-main">
-            <section class="data-card">
-                <h2>All Registered Users</h2>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Full Name</th>
-                                <th>Balance (₦)</th> 
-                                <th>Total Deposited</th> 
-                                <th>Email</th> 
-                                <th>Phone</th>
-                                <th>Status</th> 
-                                <th>Reg. Date</th>
-                                <th>Receipt Proof</th> <th>Actions</th> 
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <tr><td colspan="10">Loading users...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
+// --- HELPER: Send OTP Email ---
+const sendOtpEmail = async (to, otp) => {
+ const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+ });
 
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Edit User Details</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <form id="editForm">
-                <input type="hidden" id="editUserId">
-                
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="editName" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="editEmail" required>
-                </div>
+ await transporter.sendMail({
+  from: `"JJB24" <${process.env.MAIL_USER}>`,
+  to,
+  subject: "Verify Your Email - JJB24",
+  html: `<p>Your verification code is <b>${otp}</b>. It expires in 10 minutes.</p>`,
+ });
+};
 
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="text" id="editPhone" required>
-                </div>
+// --- REGISTER USER ---
+export const registerUser = async (data) => {
+ const client = await pool.connect();
+ try {
+  await client.query('BEGIN');
 
-                <div class="form-group">
-                    <label style="color: #065f46; font-weight: bold;">Wallet Balance (₦)</label>
-                    <input type="number" id="editBalance" step="0.01" required style="font-weight: bold; border: 2px solid #065f46;">
-                </div>
+  const { fullName, phone, email, password, referralCode } = data;
 
-                <div class="modal-footer">
-                    <button type="button" class="btn-action" style="background:#999;" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn-action btn-unblock">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
+  // 1. Check duplicates
+  const existingEmail = await findUserByEmail(email);
+  if (existingEmail) throw new Error('Email already registered');
+  
+  const existingPhone = await findUserByPhone(phone);
+  if (existingPhone) throw new Error('Phone number already registered');
 
-    <script>
-        const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:3000/api'
-            : 'https://jjb24-backend.onrender.com/api';
+  // 2. Resolve Referral
+  let referrerId = null;
+  if (referralCode && referralCode.trim() !== "") {
+    const referrer = await findUserByReferralCode(referralCode);
+    if (referrer) {
+      referrerId = referrer.id;
+      console.log(`[Register] User linked to referrer: ${referrer.full_name} (ID: ${referrer.id})`);
+      
+      // Increment referrer count
+      await client.query('UPDATE users SET referral_count = COALESCE(referral_count, 0) + 1 WHERE id = $1', [referrerId]);
+    }
+  }
 
-        // --- 1. LOAD USERS (URL FIXED) ---
-        window.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('adminToken');
-            if (!token) {
-                window.location.href = 'admin-login.html';
-                return;
-            }
-            await loadUsers(token);
-        });
+  // 3. Security & Codes
+  const passwordHash = await bcrypt.hash(password, 10);
+  const ownCode = generateReferralCode();
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-        async function loadUsers(token) {
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+  // 4. Send Email
+  try {
+    await sendOtpEmail(email, otp);
+  } catch (emailErr) {
+    console.error("Failed to send email, but proceeding with registration:", emailErr);
+  }
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(errText); 
-                }
+  // 5. Insert User
+  const queryText = `
+    INSERT INTO users (full_name, email, phone_number, password_hash, balance, referrer_id, own_referral_code, referral_count, otp_code, otp_expires_at, is_verified)
+    VALUES ($1, $2, $3, $4, 0, $5, $6, 0, $7, $8, FALSE)
+    RETURNING *;
+  `;
+  const { rows } = await client.query(queryText, [fullName, email, phone, passwordHash, referrerId, ownCode, otp, otpExpires]);
+  const newUser = rows[0];
 
-                const data = await response.json();
-                const users = Array.isArray(data) ? data : (data.users || []);
+  await client.query('COMMIT');
+  
+  return {
+    message: "User registered successfully. Check your email for OTP.",
+    email,
+    userId: newUser.id
+  };
 
-                const tableBody = document.getElementById('usersTableBody');
-                tableBody.innerHTML = ''; 
+ } catch (error) {
+  await client.query('ROLLBACK');
+  throw error;
+ } finally {
+  client.release();
+ }
+};
 
-                if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="10">No users found in database.</td></tr>';
-                } else {
-                    users.forEach(user => {
-                        const row = document.createElement('tr');
-                        const date = new Date(user.created_at).toLocaleDateString();
-                        
-                        // Format Balance Safely
-                        const balanceNum = parseFloat(user.balance || 0);
-                        const formattedBalance = balanceNum.toLocaleString('en-NG', { minimumFractionDigits: 2 });
-                        
-                        // Format Total Deposited Safely
-                        const depositNum = parseFloat(user.total_deposited || 0);
-                        const formattedDeposit = depositNum.toLocaleString('en-NG', { minimumFractionDigits: 2 });
+// --- VERIFY OTP ---
+export const verifyUserOtp = async (email, otp) => {
+ const user = await findUserByEmail(email);
+ if (!user) throw new Error("User not found");
 
-                        // NEW: RECEIPT PROOF LOGIC (ROBUST CHECK)
-                        let receiptHtml = '<span style="color:#ccc;">No Proof</span>';
-                        if (user.receipt_url && user.receipt_url.trim() !== "") {
-                            receiptHtml = `<a href="${user.receipt_url}" target="_blank" class="badge badge-receipt">VIEW</a>`;
-                        }
+ if (user.is_verified) return { success: true, message: "User already verified" };
+ if (!user.otp_code || user.otp_code !== otp) throw new Error("Invalid OTP");
+ if (new Date() > new Date(user.otp_expires_at)) throw new Error("OTP expired");
 
-                        // Status Logic
-                        let statusHtml = '<span class="badge badge-active">Active</span>';
-                        if (user.account_status === 'suspended') statusHtml = '<span class="badge badge-suspended">Suspended</span>';
-                        if (user.account_status === 'blocked' || user.is_blocked) statusHtml = '<span class="badge badge-blocked">Blocked</span>';
+ // 1. Mark Verified
+ await updateUserVerification(email, true);
 
-                        // Buttons Logic
-                        let buttons = `
-                            <button class="btn-action btn-edit" onclick='openEditModal(${JSON.stringify(user)})'><i class="fas fa-edit"></i></button>
-                        `;
+ // 2. Pay Referee (New User Welcome Bonus) - ₦200
+ const welcomeBonus = 200.0;
+ const newBalance = Number(user.balance) + welcomeBonus;
+ await updateUserBalance(user.id, newBalance);
+ 
+ await createTransaction(
+     user.id, 
+     welcomeBonus, 
+     `WEL-${user.id}`, 
+     'welcome_bonus'
+ );
 
-                        if (user.account_status === 'active' || !user.account_status) {
-                            buttons += `
-                                <button class="btn-action btn-suspend" onclick="updateStatus('${user.id}', 'suspended')">Suspend</button>
-                                <button class="btn-action btn-block" onclick="updateStatus('${user.id}', 'blocked')">Block</button>
-                            `;
-                        } else {
-                            buttons += `<button class="btn-action btn-unblock" onclick="updateStatus('${user.id}', 'active')">Unblock</button>`;
-                        }
+ return {
+  success: true,
+  message: `OTP verified! ₦${welcomeBonus} welcome bonus added.`,
+  newBalance,
+ };
+};
 
-                        row.innerHTML = `
-                            <td>${user.id}</td>
-                            <td>${user.full_name}</td>
-                            <td style="font-weight:bold; color: #065f46;">₦${formattedBalance}</td> 
-                            <td style="font-weight:bold; color: #1e40af;">₦${formattedDeposit}</td> 
-                            <td style="font-family: monospace; color: #2563eb;">${user.email || '-'}</td>
-                            <td>${user.phone_number}</td>
-                            <td>${statusHtml}</td>
-                            <td>${date}</td>
-                            <td>${receiptHtml}</td> <td>${buttons}</td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching users:', error);
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="10" style="color:red; font-weight:bold;">Error: ${error.message}</td></tr>`;
-            }
-        }
+// --- LOGIN USER (FIXED STABILITY) ---
+export const loginUser = async ({ email, phone, password }) => {
+ let user;
+ // Logic fix: Ensure we don't try to find a user with an empty string
+ if (email && email.trim() !== "") {
+     user = await findUserByEmail(email);
+ } else if (phone && phone.trim() !== "") {
+     user = await findUserByPhone(phone);
+ }
 
-        // --- 2. UPDATE STATUS ---
-        async function updateStatus(userId, newStatus) {
-            const action = newStatus === 'active' ? 'UNBLOCK' : newStatus.toUpperCase();
-            const reason = prompt(`Reason for ${action} (Optional):`);
-            
-            if (reason === null) return; 
+ if (!user) throw new Error('Invalid credentials');
 
-            const token = localStorage.getItem('adminToken');
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
-                    method: 'PATCH',
-                    headers: { 
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status: newStatus, reason: reason })
-                });
+ // --- CHECK IF BLOCKED ---
+ if (user.is_blocked || user.account_status === 'suspended' || user.account_status === 'blocked') {
+     throw new Error(`Account ${user.account_status || 'blocked'}: ${user.block_reason || 'Contact Support'}`);
+ }
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    alert(`SERVER ERROR (${response.status}):\n${errText}`);
-                    throw new Error(`Server Error ${response.status}: ${errText}`);
-                }
+ const isMatch = await bcrypt.compare(password, user.password_hash);
+ if (!isMatch) throw new Error('Invalid credentials');
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`Success: User is now ${newStatus}`);
-                    loadUsers(token); 
-                } else {
-                    alert('Server reported failure: ' + (result.message || 'Unknown error'));
-                }
+ const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+ 
+ return { token, user: { id: user.id, name: user.full_name, email: user.email, role: user.role } };
+};
 
-            } catch (error) {
-                console.error(error);
-                if (!error.message.includes('SERVER ERROR')) {
-                    alert('Connection Error:\n' + error.message);
-                }
-            }
-        }
+// --- GET BALANCE (ADDED PIN STATUS FOR FRONTEND BUTTONS) ---
+export const getUserBalance = async (userId) => {
+ const user = await findUserById(userId);
+ if (!user) throw new Error('User not found');
+ 
+ // Self-Heal: Generate code if missing
+ if (!user.own_referral_code) {
+  const newCode = generateReferralCode();
+  await pool.query("UPDATE users SET own_referral_code = $1 WHERE id = $2", [newCode, userId]);
+  user.own_referral_code = newCode;
+ }
 
-        // --- 3. EDIT USER MODAL FUNCTIONS ---
-        const modal = document.getElementById('editModal');
-        const editForm = document.getElementById('editForm');
+ // Logic Fix: Return 'has_pin' so main.js knows which button to show
+ return { 
+  balance: Number(user.balance), 
+  full_name: user.full_name,
+  own_referral_code: user.own_referral_code,
+  phone_number: user.phone_number,
+  has_pin: user.withdrawal_pin ? true : false
+ };
+};
 
-        function openEditModal(user) {
-            document.getElementById('editUserId').value = user.id;
-            document.getElementById('editName').value = user.full_name;
-            document.getElementById('editEmail').value = user.email || '';
-            document.getElementById('editPhone').value = user.phone_number;
-            document.getElementById('editBalance').value = user.balance; 
-            modal.style.display = 'flex';
-        }
+// --- SET WITHDRAWAL PIN ---
+export const setWithdrawalPin = async (userId, rawPin) => {
+ if (!/^\d{4}$/.test(rawPin)) throw new Error("PIN must be exactly 4 digits");
+ const hashedPin = await bcrypt.hash(rawPin, 10);
+ await setUserPin(userId, hashedPin);
+ return { success: true, message: "Security PIN set successfully" };
+};
 
-        function closeModal() {
-            modal.style.display = 'none';
-        }
+// --- RESET WITHDRAWAL PIN ---
+export const resetWithdrawalPin = async (userId, newPin) => {
+  if (!/^\d{4}$/.test(newPin)) throw new Error("New PIN must be exactly 4 digits");
+  const hashedPin = await bcrypt.hash(newPin, 10);
+  await pool.query('UPDATE users SET withdrawal_pin = $1 WHERE id = $2', [hashedPin, userId]);
+  return { success: true, message: "Withdrawal PIN has been reset successfully" };
+};
 
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
+// --- CHANGE LOGIN PASSWORD ---
+export const changeUserPassword = async (userId, oldPassword, newPassword) => {
+  const user = await findUserById(userId);
+  if (!user) throw new Error("User not found");
 
-        editForm.onsubmit = async function(e) {
-            e.preventDefault();
-            const userId = document.getElementById('editUserId').value;
-            const token = localStorage.getItem('adminToken');
-            
-            const updateData = {
-                full_name: document.getElementById('editName').value,
-                email: document.getElementById('editEmail').value,
-                phone_number: document.getElementById('editPhone').value,
-                balance: document.getElementById('editBalance').value 
-            };
+  // Verify old password
+  const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+  if (!isMatch) throw new Error("Current password is incorrect");
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
+  // Hash and Update new password
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
 
-                if (response.ok) {
-                    alert('User details (including Balance) updated successfully');
-                    closeModal();
-                    loadUsers(token); 
-                } else {
-                    const err = await response.json();
-                    alert('Error: ' + err.message);
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Connection error');
-            }
-        }
-    </script>
-</body>
-</html>
+  return { success: true, message: "Login password updated successfully" };
+};
+
+// --- VERIFY WITHDRAWAL PIN ---
+export const verifyWithdrawalPin = async (userId, rawPin) => {
+ const storedHash = await getUserPin(userId);
+ if (!storedHash) throw new Error("Please set a withdrawal PIN first.");
+ 
+ const isMatch = await bcrypt.compare(rawPin, storedHash);
+ if (!isMatch) throw new Error("Incorrect Transaction PIN");
+ return true;
+};
+
+// --- MLM COMMISSION LOGIC ---
+export const distributeInvestmentCommissions = async (investorId, amount) => {
+ const client = await pool.connect();
+ try {
+  // Level 1
+  const userRes = await client.query('SELECT referrer_id FROM users WHERE id = $1', [investorId]);
+  const parentId = userRes.rows[0]?.referrer_id;
+
+  if (parentId) {
+    const comm1 = amount * 0.05;
+    await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [comm1, parentId]);
+    await createReferralBonusTransaction(parentId, comm1, investorId, null, client);
+
+    // Level 2
+    const parentRes = await client.query('SELECT referrer_id FROM users WHERE id = $1', [parentId]);
+    const grandParentId = parentRes.rows[0]?.referrer_id;
+
+    if (grandParentId) {
+      const comm2 = amount * 0.03;
+      await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [comm2, grandParentId]);
+      const ref2 = `REF-L2-${grandParentId}-${Date.now()}`;
+      await client.query(
+        `INSERT INTO transactions (user_id, amount, type, reference, status, description) VALUES ($1, $2, 'referral_bonus', $3, 'success', 'Level 2 Commission')`,
+        [grandParentId, comm2, ref2]
+      );
+
+      // Level 3
+      const grandParentRes = await client.query('SELECT referrer_id FROM users WHERE id = $1', [grandParentId]);
+      const greatGrandParentId = grandParentRes.rows[0]?.referrer_id;
+
+      if (greatGrandParentId) {
+        const comm3 = amount * 0.02;
+        await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [comm3, greatGrandParentId]);
+        const ref3 = `REF-L3-${greatGrandParentId}-${Date.now()}`;
+        await client.query(
+          `INSERT INTO transactions (user_id, amount, type, reference, status, description) VALUES ($1, $2, 'referral_bonus', $3, 'success', 'Level 3 Commission')`,
+          [greatGrandParentId, comm3, ref3]
+        );
+      }
+    }
+  }
+ } catch (e) {
+  console.error('[MLM Error]', e);
+ } finally {
+  client.release();
+ }
+};
+
+// --- GET TEAM DATA ---
+export const getUserReferralData = async (userId) => {
+ const client = await pool.connect();
+ try {
+  const user = await findUserById(userId);
+  if(!user) throw new Error("User not found");
+
+  const commQuery = `
+    SELECT SUM(amount) as total 
+    FROM transactions 
+    WHERE user_id = $1 AND type = 'referral_bonus' AND status = 'success'
+  `;
+  const commRes = await client.query(commQuery, [userId]);
+  const totalCommission = parseFloat(commRes.rows[0].total || 0);
+
+  const teamQuery = `
+    SELECT id, full_name as name, created_at as joined_date, balance
+    FROM users 
+    WHERE referrer_id = $1 
+    ORDER BY created_at DESC
+  `;
+  const teamRes = await client.query(teamQuery, [userId]);
+
+  return {
+    total_commission: totalCommission,
+    team_count: teamRes.rows.length,
+    team_list: teamRes.rows
+  };
+ } finally {
+  client.release();
+ }
+};
+
+// --- GET DASHBOARD DATA ---
+export const getUserDashboardData = async (userId) => {
+ const investments = await getAllInvestmentsByUserId(userId);
+ const activeInvestments = investments.map(inv => {
+  const created = new Date(inv.created_at);
+  const now = new Date();
+  const diffTime = Math.abs(now - created);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  
+  const duration = inv.duration || 30;
+  const daysLeft = Math.max(0, duration - diffDays);
+  
+  let status = inv.status || 'active';
+  if (daysLeft === 0 && status === 'active') status = 'completed';
+
+  return {
+    id: inv.id,
+    itemname: inv.itemName,
+    daily_earning: inv.daily_earning,
+    total_earning: inv.total_earning,
+    price: inv.price,
+    days_left: daysLeft,
+    status: status
+  };
+ }).filter(i => i.status === 'active');
+
+ return { active_investments: activeInvestments };
+};
+
+// --- Edit Email ---
+export const editUserEmail = async (userId, newEmail) => {
+ if (!newEmail.includes("@")) throw new Error("Invalid email");
+ await pool.query('UPDATE users SET email = $1 WHERE id = $2', [newEmail, userId]);
+ return { success: true };
+};
+
+// --- Get Profile ---
+export const getUserProfile = async (userId) => {
+ const user = await findUserById(userId);
+ return user;
+};
+
+// --- ADMIN FUNDING FUNCTION ---
+export const adminFundUser = async (email, amount) => {
+   const user = await findUserByEmail(email);
+   if (!user) throw new Error("User email not found");
+
+   const newBalance = Number(user.balance) + Number(amount);
+   await updateUserBalance(user.id, newBalance);
+
+   await createTransaction(
+       user.id,
+       amount,
+       `ADMIN-FUND-${Date.now()}`, 
+       'admin_credit',             
+       'success',                  
+       'Funded by Admin'           
+   );
+
+   return { success: true, newBalance };
+};
+
+// --- GET ALL USERS (ADDED RECEIPT_URL FOR ADMIN PROOF) ---
+export const getAllUsers = async () => {
+   const userQuery = `SELECT * FROM users ORDER BY created_at DESC`;
+   const { rows: users } = await pool.query(userQuery);
+
+   const depositQuery = `
+       SELECT user_id, SUM(amount) as total, MAX(receipt_url) as latest_receipt
+       FROM transactions 
+       WHERE type = 'deposit' AND status = 'success' 
+       GROUP BY user_id
+   `;
+   const { rows: deposits } = await pool.query(depositQuery);
+
+   const depositMap = {};
+   deposits.forEach(d => { 
+       depositMap[d.user_id] = { 
+           total: Number(d.total), 
+           receipt: d.latest_receipt 
+       }; 
+   });
+
+   const usersWithDeposits = users.map(user => ({
+       ...user,
+       total_deposited: depositMap[user.id]?.total || 0,
+       receipt_url: depositMap[user.id]?.receipt || null
+   }));
+
+   return usersWithDeposits;
+};
+
+// --- BLOCK / SUSPEND USER ---
+export const updateUserStatus = async (userId, status, reason) => {
+   let isBlocked = false;
+   if (status === 'suspended' || status === 'blocked') {
+       isBlocked = true;
+   }
+
+   const query = `
+       UPDATE users 
+       SET account_status = $2, is_blocked = $3, block_reason = $4
+       WHERE id = $1
+       RETURNING id, full_name, account_status, is_blocked;
+   `;
+   
+   const { rows } = await pool.query(query, [userId, status, isBlocked, reason]);
+   if (rows.length === 0) throw new Error("User not found");
+   
+   return { success: true, user: rows[0] };
+};
+
+// --- ADMIN EDIT USER ---
+export const adminUpdateUser = async (userId, updateData) => {
+   const { full_name, email, phone_number, balance } = updateData;
+   
+   const query = `
+       UPDATE users 
+       SET 
+           full_name = COALESCE($2, full_name),
+           email = COALESCE($3, email),
+           phone_number = COALESCE($4, phone_number),
+           balance = COALESCE($5, balance)
+       WHERE id = $1
+       RETURNING id, full_name, email, phone_number, balance;
+   `;
+   
+   const { rows } = await pool.query(query, [userId, full_name, email, phone_number, balance]);
+   if (rows.length === 0) throw new Error("User not found");
+   
+   return { success: true, user: rows[0] };
+};
