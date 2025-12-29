@@ -304,13 +304,53 @@ const handleInvestClick = async (event) => {
     }
 };
 
+// NEW: FORGOT PASSWORD HANDLERS
+window.handleForgotPassword = async () => {
+    const email = prompt("Enter your registered email address:");
+    if (!email) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert("A temporary password has been sent to your email. Please login and change it immediately.");
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (e) {
+        alert("Server error. Please try again.");
+    }
+};
+
 // ==========================================
 // 5. RENDER FUNCTIONS
 // ==========================================
 
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Welcome Back</h2><form id="loginForm"><div class="form-group"><label>Email/Phone</label><input type="text" id="loginIdentifier" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><button type="submit" class="btn-auth">Login</button></form><p class="auth-link"><a href="#register">Create Account</a></p></div>`;
+    appContent.innerHTML = `
+        <div class="auth-container">
+            <div class="auth-logo">JJB24</div>
+            <h2>Welcome Back</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email/Phone</label>
+                    <input type="text" id="loginIdentifier" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required />
+                </div>
+                <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()" style="color: #6a0dad; font-size: 12px; text-decoration: none; font-weight: bold;">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn-auth">Login</button>
+            </form>
+            <p class="auth-link"><a href="#register">Create Account</a></p>
+        </div>`;
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
@@ -429,7 +469,6 @@ const renderTeamPage = async () => {
         const teamMembers = data.team_list || [];
         const totalCommission = data.total_commission || 0; 
 
-        // UPDATED: OWNER REQUEST - LIST OF REFERRED PEOPLE
         let teamHTML = teamMembers.length === 0 ? 
             `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
             teamMembers.map(member => `
@@ -624,9 +663,6 @@ const renderMePage = async () => {
     }
 };
 
-// ==========================================
-// ADJUSTED: renderDepositPage (COPY BOX ADDED)
-// ==========================================
 const renderDepositPage = async () => { 
     const accountNumber = "6669586597";
     appContent.innerHTML = `
