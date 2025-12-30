@@ -497,7 +497,7 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading team data.</p>'; }
 };
 
-// --- SECURITY ACTION RENDERERS ---
+// --- NEW SECURITY ACTION RENDERERS ---
 const renderChangePasswordPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -745,24 +745,32 @@ const renderWithdrawPage = async () => {
         const data = await response.json();
         const balance = data.balance?.balance || 0;
         appContent.innerHTML = `
-            <div class="page-container">
+            <div class="page-container" style="padding: 10px;">
                 <div class="page-header"><h2 style="color:#111;">Request Withdrawal</h2></div>
-                <div class="withdraw-card">
-                    <div class="balance-display"><small style="color:#666;">Available Balance</small><p style="color:#111; font-weight:800;">₦ ${Number(balance).toLocaleString()}</p></div>
+                
+                <div class="withdraw-card" style="background: linear-gradient(135deg, #4c1d95, #1e3a8a); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div class="balance-display" style="text-align: center; margin-bottom: 25px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px;">
+                        <small style="color:#e0e7ff; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Available Balance</small>
+                        <p style="color:#ffffff; font-weight:900; font-size: 28px; margin: 5px 0 0 0;">₦ ${Number(balance).toLocaleString()}</p>
+                    </div>
+
                     <form id="withdrawForm">
-                        <div class="form-group">
-                            <label for="amount" style="color:#111;">Amount (NGN)</label>
-                            <input type="number" id="amount" min="800" step="0.01" placeholder="Minimum ₦800" required class="security-input" />
-                            <small style="color: #666; font-size: 11px;">Minimum withdrawal is ₦800</small>
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label for="amount" style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Amount to Withdraw (NGN)</label>
+                            <input type="number" id="amount" min="800" step="0.01" placeholder="Enter amount (Min ₦800)" required 
+                                   style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold; font-size: 16px;" />
+                            <small style="color: #cbd5e1; font-size: 11px;">Note: Minimum withdrawal is ₦800</small>
                         </div>
-                        <div id="feeContainer" style="background: #fff8e1; border: 1px solid #ffecb3; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #111; display: none;">
-                            <div style="display: flex; justify-content: space-between;"><span>Fee (9%):</span><span id="feeDisplay" style="color: #d32f2f; font-weight:700;">- ₦0.00</span></div>
-                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid #eee; padding-top: 5px;"><span>Receive:</span><span id="finalDisplay" style="color: #388e3c; font-weight:800;">₦0.00</span></div>
+
+                        <div id="feeContainer" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; color: #ffffff; display: none;">
+                            <div style="display: flex; justify-content: space-between;"><span>Processing Fee (9%):</span><span id="feeDisplay" style="color: #fca5a5; font-weight:700;">- ₦0.00</span></div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; margin-top: 5px; font-size: 16px;"><span>You Receive:</span><span id="finalDisplay" style="color: #4ade80;">₦0.00</span></div>
                         </div>
-                        <div class="form-group">
-                            <label style="color:#111;">Bank Name</label>
-                            <select id="bankName" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; background:white; color:#000;">
-                                <option value="">Select Bank</option>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Recipient Bank</label>
+                            <select id="bankName" required style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;">
+                                <option value="">-- Choose Your Bank --</option>
                                 <option value="OPay">OPay (Paycom)</option>
                                 <option value="PalmPay">PalmPay</option>
                                 <option value="Moniepoint">Moniepoint</option>
@@ -772,25 +780,68 @@ const renderWithdrawPage = async () => {
                                 <option value="First Bank">First Bank</option>
                                 <option value="UBA">United Bank for Africa (UBA)</option>
                                 <option value="Fidelity Bank">Fidelity Bank</option>
-                                <option value="Wema Bank">Wema Bank</option>
                                 <option value="Union Bank">Union Bank</option>
                                 <option value="Stanbic IBTC">Stanbic IBTC Bank</option>
-                                <option value="Ecobank">Ecobank Nigeria</option>
-                                <option value="Kuda Bank">Kuda Microfinance Bank</option>
+                                <option value="Wema Bank">Wema Bank</option>
                                 <option value="Sterling Bank">Sterling Bank</option>
+                                <option value="Kuda Bank">Kuda Microfinance Bank</option>
+                                <option value="Ecobank">Ecobank Nigeria</option>
                             </select>
                         </div>
-                        <div class="form-group"><label style="color:#111;">Account Number</label><input type="text" id="accountNumber" class="security-input" required /></div>
-                        <div class="form-group"><label style="color:#111;">Account Name</label><input type="text" id="accountName" class="security-input" required /></div>
-                        <div class="form-group" style="margin-top:15px; padding-top:15px; border-top:1px dashed #ccc;"><label style="color:#d32f2f; font-weight:bold;">Withdrawal PIN</label><input type="password" id="withdrawPin" class="security-input" maxlength="4" placeholder="Enter PIN" required /></div>
-                        <button type="submit" class="btn-withdraw" style="width:100%; padding:15px; margin-top:10px; border-radius:8px;">Submit Request</button>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Account Number</label>
+                            <input type="text" id="accountNumber" placeholder="10-digit number" required 
+                                   style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;" />
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Account Name</label>
+                            <input type="text" id="accountName" placeholder="Full name on account" required 
+                                   style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;" />
+                        </div>
+
+                        <div class="form-group" style="margin-top:25px; padding: 15px; background: rgba(251, 191, 36, 0.15); border: 1px dashed #fbbf24; border-radius: 16px;">
+                            <label style="color:#fbbf24; font-weight:900; display: block; margin-bottom: 8px; text-transform: uppercase;">Transaction PIN</label>
+                            <input type="password" id="withdrawPin" maxlength="4" placeholder="Enter 4-digit PIN" required 
+                                   style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold; text-align: center; letter-spacing: 5px; font-size: 20px;" />
+                        </div>
+
+                        <button type="submit" class="btn-withdraw" style="width:100%; padding:18px; margin-top:25px; border-radius:15px; font-size: 16px; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);">CONFIRM WITHDRAWAL</button>
                     </form>
                 </div>
             </div>`;
+
+        // Logic for Dynamic Fee Calculation
+        const amountInput = document.getElementById('amount');
+        const feeContainer = document.getElementById('feeContainer');
+        amountInput.addEventListener('input', () => {
+            const val = parseFloat(amountInput.value);
+            if (val >= 800) {
+                const fee = val * 0.09;
+                const final = val - fee;
+                document.getElementById('feeDisplay').innerText = `- ₦${fee.toLocaleString()}`;
+                document.getElementById('finalDisplay').innerText = `₦${final.toLocaleString()}`;
+                feeContainer.style.display = 'block';
+            } else {
+                feeContainer.style.display = 'none';
+            }
+        });
+
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { method:'POST', body: JSON.stringify({ amount: amount.value, bank_name: bankName.value, account_number: accountNumber.value, account_name: accountName.value, pin: withdrawPin.value })});
-            const r = await res.json(); if(r.ok) showSuccessModal(r.message); else alert(r.message);
+            const res = await fetchWithAuth(`${API_BASE_URL}/payment/withdraw`, { 
+                method:'POST', 
+                body: JSON.stringify({ 
+                    amount: amountInput.value, 
+                    bank_name: document.getElementById('bankName').value, 
+                    account_number: document.getElementById('accountNumber').value, 
+                    account_name: document.getElementById('accountName').value, 
+                    pin: document.getElementById('withdrawPin').value 
+                })
+            });
+            const r = await res.json(); 
+            if(r.ok) showSuccessModal(r.message); else alert(r.message);
         });
     } catch (e) {}
 };
