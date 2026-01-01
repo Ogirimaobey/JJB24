@@ -426,8 +426,9 @@ const renderHomeScreen = async () => {
                         <p style="margin-bottom: 8px;"><strong>Entity:</strong> JJB BRANDED WINES LTD</p>
                         <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria. (Matches CAC Records)</p>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-                            <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Official Contact Line</span>
-                            <span style="font-weight: 700; color: #111;">+2347047591968</span>
+                            <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Official Contact Lines</span>
+                            <span style="font-weight: 700; color: #111; display: block;">091 1412 9537</span>
+                            <span style="font-style: italic; color: #777; display: block; font-size: 12px; margin-top: 2px;">+2347047591968</span>
                         </div>
                     </div>
                 </div>
@@ -896,8 +897,9 @@ const renderSupportPage = () => {
                 </div>
 
                 <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Contact Line</h4>
-                    <p style="color:#111; font-weight: bold; margin:0;">+2347047591968</p>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Contact Lines</h4>
+                    <p style="color:#111; font-weight: bold; margin:0; font-size: 16px;">091 1412 9537</p>
+                    <p style="color:#777; font-style: italic; margin:0; font-size: 13px;">+2347047591968</p>
                 </div>
 
                 <div>
