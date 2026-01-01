@@ -425,15 +425,9 @@ const renderHomeScreen = async () => {
                     <div style="font-size: 13px; color: #444; line-height: 1.6;">
                         <p style="margin-bottom: 8px;"><strong>Entity:</strong> JJB BRANDED WINES LTD</p>
                         <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria. (Matches CAC Records)</p>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-                            <div>
-                                <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Contact Person</span>
-                                <span style="font-weight: 700; color: #111;">Peter</span>
-                            </div>
-                            <div>
-                                <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Support Line</span>
-                                <span style="font-weight: 700; color: #111;">+2347047591968</span>
-                            </div>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                            <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Official Contact Line</span>
+                            <span style="font-weight: 700; color: #111;">+2347047591968</span>
                         </div>
                     </div>
                 </div>
@@ -902,7 +896,7 @@ const renderSupportPage = () => {
                 </div>
 
                 <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Phone Support</h4>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Contact Line</h4>
                     <p style="color:#111; font-weight: bold; margin:0;">+2347047591968</p>
                 </div>
 
@@ -912,12 +906,6 @@ const renderSupportPage = () => {
                         Monaya Rd, Ogoja 550101,<br>
                         Cross River, Nigeria.
                     </p>
-                </div>
-
-                <div style="background: #fdf2f8; padding: 15px; border-radius: 12px; border-left: 4px solid #db2777; margin-top: 10px;">
-                    <small style="color: #be185d; font-weight: bold;">LEGAL REPRESENTATIVE</small>
-                    <p style="color: #111; font-weight: bold; margin: 5px 0 0 0;">Peter</p>
-                    <small style="color: #666;">Managing Director, JJB Branded Wines LTD</small>
                 </div>
             </div>
         </div>
