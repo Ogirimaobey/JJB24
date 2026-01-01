@@ -419,6 +419,25 @@ const renderHomeScreen = async () => {
                     <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
                     <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                 </div>
+
+                <div class="activity-card" style="margin-top: 20px; border-left: 5px solid #6a0dad;">
+                    <h3 style="color:#111; font-size: 16px; margin-bottom: 12px;"><i class="fas fa-building" style="color:#6a0dad;"></i> Corporate Information</h3>
+                    <div style="font-size: 13px; color: #444; line-height: 1.6;">
+                        <p style="margin-bottom: 8px;"><strong>Entity:</strong> JJB BRANDED WINES LTD</p>
+                        <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria. (Matches CAC Records)</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                            <div>
+                                <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Contact Person</span>
+                                <span style="font-weight: 700; color: #111;">Peter</span>
+                            </div>
+                            <div>
+                                <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Support Line</span>
+                                <span style="font-weight: 700; color: #111;">+2347047591968</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="activity-card">
                     <h3 style="color:#111;">Recent Activity</h3>
                     <div class="activity-list">${activityHTML}</div>
@@ -630,7 +649,7 @@ const renderMePage = async () => {
 
         appContent.innerHTML = `
             <div class="page-container" style="padding:20px;">
-                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15 rgba(0,0,0,0.05);">
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
                     <h3 style="margin-bottom:5px; color:#111;">${fullName}</h3>
                     <p style="color:#666; font-size:14px;">${phone}</p>
@@ -812,7 +831,6 @@ const renderWithdrawPage = async () => {
                 </div>
             </div>`;
 
-        // Logic for Dynamic Fee Calculation
         const amountInput = document.getElementById('amount');
         const feeContainer = document.getElementById('feeContainer');
         amountInput.addEventListener('input', () => {
@@ -867,7 +885,45 @@ const renderHistoryPage = async () => {
     appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">Full History</h2><div style="padding: 15px 0;">${list || '<p style="color:#111;">No records found.</p>'}</div></div>`;
 };
 
-const renderSupportPage = () => { appContent.innerHTML = '<div class="page-container"><h2 style="color:#111;">Support</h2><div style="background:white; padding:30px; border-radius:20px; text-align:center;"><p style="color:#111;">Contact support at:</p><h3 style="color:#6a0dad; font-weight:800;">jjb24wines@gmail.com</h3></div></div>'; };
+const renderSupportPage = () => { 
+    appContent.innerHTML = `
+    <div class="page-container">
+        <h2 style="color:#111;">Help & Support</h2>
+        <div style="background:white; padding:25px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <div style="text-align:center; margin-bottom: 20px;">
+                <i class="fas fa-headset" style="font-size: 40px; color: #6a0dad;"></i>
+                <p style="color:#555; margin-top: 10px;">We are here to help you with your investments and account security.</p>
+            </div>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-envelope" style="width: 20px;"></i> Email Support</h4>
+                    <a href="mailto:jjb24wines@gmail.com" style="color:#6a0dad; font-weight: 800; text-decoration: none;">jjb24wines@gmail.com</a>
+                </div>
+
+                <div>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Phone Support</h4>
+                    <p style="color:#111; font-weight: bold; margin:0;">+2347047591968</p>
+                </div>
+
+                <div>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-map-marker-alt" style="width: 20px;"></i> Business Address</h4>
+                    <p style="color:#555; margin:0; line-height: 1.4;">
+                        Monaya Rd, Ogoja 550101,<br>
+                        Cross River, Nigeria.
+                    </p>
+                </div>
+
+                <div style="background: #fdf2f8; padding: 15px; border-radius: 12px; border-left: 4px solid #db2777; margin-top: 10px;">
+                    <small style="color: #be185d; font-weight: bold;">LEGAL REPRESENTATIVE</small>
+                    <p style="color: #111; font-weight: bold; margin: 5px 0 0 0;">Peter</p>
+                    <small style="color: #666;">Managing Director, JJB Branded Wines LTD</small>
+                </div>
+            </div>
+        </div>
+    </div>`; 
+};
+
 const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2 style="color:#111;">Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
 
 const router = () => {
