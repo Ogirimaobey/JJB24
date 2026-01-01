@@ -304,7 +304,6 @@ const handleInvestClick = async (event) => {
     }
 };
 
-// NEW: FORGOT PASSWORD HANDLERS
 window.handleForgotPassword = async () => {
     const email = prompt("Enter your registered email address:");
     if (!email) return;
@@ -427,8 +426,8 @@ const renderHomeScreen = async () => {
                         <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria. (Matches CAC Records)</p>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
                             <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Official Contact Lines</span>
-                            <span style="font-weight: 700; color: #111; display: block;">091 1412 9537</span>
-                            <span style="font-style: italic; color: #777; display: block; font-size: 12px; margin-top: 2px;">+2347047591968</span>
+                            <span style="font-weight: 700; color: #111; display: block;">+2347047591968</span>
+                            <span style="font-style: italic; color: #777; display: block; font-size: 12px; margin-top: 2px;">091 1412 9537</span>
                         </div>
                     </div>
                 </div>
@@ -511,7 +510,6 @@ const renderTeamPage = async () => {
     } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading team data.</p>'; }
 };
 
-// --- NEW SECURITY ACTION RENDERERS ---
 const renderChangePasswordPage = async () => {
     appContent.innerHTML = `
         <div class="page-container">
@@ -898,8 +896,8 @@ const renderSupportPage = () => {
 
                 <div>
                     <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Contact Lines</h4>
-                    <p style="color:#111; font-weight: bold; margin:0; font-size: 16px;">091 1412 9537</p>
-                    <p style="color:#777; font-style: italic; margin:0; font-size: 13px;">+2347047591968</p>
+                    <p style="color:#111; font-weight: 900; margin:0; font-size: 16px;">+2347047591968</p>
+                    <p style="color:#777; font-style: italic; margin:0; font-size: 13px;">091 1412 9537</p>
                 </div>
 
                 <div>
