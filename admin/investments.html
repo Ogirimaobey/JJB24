@@ -3,35 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Investments - Admin</title>
+    <title>Active Community Plans - Admin</title>
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="admin-dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
     <div class="admin-wrapper">
         <header class="admin-header">
-            <h1>Manage Investments</h1>
+            <h1>Active Community Plans</h1>
             <div class="header-actions">
-                <a href="admin-dashboard.html" class="nav-button">← Back to Dashboard</a>
+                <a href="admin-dashboard.html" class="nav-button">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
             </div>
         </header>
 
         <main class="admin-main">
             <section class="data-card">
-                <h2>All Investments</h2>
+                <h2><i class="fas fa-wine-bottle" style="color: var(--admin-accent); margin-right: 10px;"></i> All Active Plans</h2>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Inv. ID</th>
-                                <th>User Name</th>
-                                <th>Plan Name</th>
-                                <th>Amount (NGN)</th>
-                                <th>Start Date</th>
+                                <th>Ref. ID</th>
+                                <th>Member Name</th>
+                                <th>Plan Type</th>
+                                <th>Value (NGN)</th>
+                                <th>Acquisition Date</th>
                             </tr>
                         </thead>
                         <tbody id="investmentsTableBody">
-                            <tr><td colspan="5">Loading investments...</td></tr>
+                            <tr><td colspan="5">Syncing community data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -47,43 +50,68 @@
                 return;
             }
 
-            // Use localhost for local testing, change to production URL when deploying
+            // POINTING TO NEW RENDER BACKEND: jjb24-backend-1
             const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                 ? 'http://localhost:3000/api'
-                : 'https://jjb24-backend.onrender.com/api';
+                : 'https://jjb24-backend-1.onrender.com/api';
 
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/investments`, {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                if (!response.ok) { throw new Error('Failed to fetch investments.'); }
-                const investments = await response.json();
+                if (!response.ok) { 
+                    if (response.status === 401) {
+                        localStorage.removeItem('adminToken');
+                        window.location.href = 'admin-login.html';
+                        return;
+                    }
+                    throw new Error('Failed to fetch plan data.'); 
+                }
 
+                const investments = await response.json();
                 const tableBody = document.getElementById('investmentsTableBody');
                 tableBody.innerHTML = ''; 
 
-                if (investments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="5">No investments found.</td></tr>';
+                if (!investments || investments.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 20px;">No active community plans found.</td></tr>';
                 } else {
                     investments.forEach(inv => {
                         const row = document.createElement('tr');
-                        const startDate = new Date(inv.start_date).toLocaleString();
-                        const amount = Number(inv.investment_amount).toLocaleString();
+                        
+                        // Formatting the date nicely
+                        const dateObj = new Date(inv.start_date);
+                        const startDate = dateObj.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+
+                        // Ensure amount is handled as a number
+                        const rawAmount = inv.investment_amount || inv.amount || 0;
+                        const amount = Number(rawAmount).toLocaleString();
+                        
                         row.innerHTML = `
-                            <td>${inv.id}</td>
-                            <td>${inv.full_name}</td>
-                            <td>${inv.plan_name}</td>
-                            <td>₦${amount}</td>
-                            <td>${startDate}</td>
+                            <td style="font-family: monospace; font-weight: bold;">#${inv.id}</td>
+                            <td><i class="fas fa-user-circle" style="color: #cbd5e1;"></i> ${inv.full_name || 'N/A'}</td>
+                            <td><span class="status-badge status-active">${inv.plan_name || 'Winery Plan'}</span></td>
+                            <td style="font-weight: 700; color: var(--admin-heading);">₦${amount}</td>
+                            <td style="color: #64748b; font-size: 13px;">${startDate}</td>
                         `;
                         tableBody.appendChild(row);
                     });
                 }
             } catch (error) {
-                console.error('Error fetching investments:', error);
+                console.error('Error fetching data:', error);
                 const tableBody = document.getElementById('investmentsTableBody');
-                tableBody.innerHTML = '<tr><td colspan="5">Error loading investments.</td></tr>';
+                tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red; padding: 20px;">
+                    <i class="fas fa-exclamation-triangle"></i> Error connecting to server. Please try again later.
+                </td></tr>`;
             }
         });
     </script>
