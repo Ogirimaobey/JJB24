@@ -166,8 +166,8 @@
     </div>
 
     <script>
-        // POINTING TO YOUR NEW BACKEND
         const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
+        let currentUsersData = []; // Local cache to safely open edit modal
 
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
@@ -180,7 +180,6 @@
 
         async function loadUsers(token) {
             try {
-                // Fetching from the jjb24-backend-1 endpoint
                 const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -188,14 +187,14 @@
                 if (!response.ok) throw new Error('Failed to load community members');
 
                 const data = await response.json();
-                const users = data.users || data || [];
+                currentUsersData = data.users || data || [];
                 const tableBody = document.getElementById('usersTableBody');
                 tableBody.innerHTML = ''; 
 
-                if (users.length === 0) {
+                if (currentUsersData.length === 0) {
                     tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No members found in the winery database.</td></tr>';
                 } else {
-                    users.forEach(user => {
+                    currentUsersData.forEach(user => {
                         const row = document.createElement('tr');
                         const balance = Number(user.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
                         const deposit = Number(user.total_deposited || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
@@ -206,7 +205,7 @@
                         if (user.account_status === 'suspended') statusHtml = '<span class="badge badge-suspended">Suspended</span>';
                         if (user.account_status === 'blocked' || user.is_blocked) statusHtml = '<span class="badge badge-blocked">Blocked</span>';
 
-                        let actionButtons = `<button class="btn-action btn-edit" onclick='openEditModal(${JSON.stringify(user)})'><i class="fas fa-edit"></i></button>`;
+                        let actionButtons = `<button class="btn-action btn-edit" onclick="openEditModal(${user.id})"><i class="fas fa-edit"></i></button>`;
                         
                         if (user.account_status === 'active' || !user.account_status) {
                             actionButtons += `
@@ -233,7 +232,7 @@
                 }
             } catch (error) { 
                 console.error('Fetch error:', error);
-                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="9" style="color:red; text-align:center;">Connection error. The server might be waking up. Please refresh in 30 seconds.</td></tr>';
+                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="9" style="color:red; text-align:center;">Connection error. Server may be waking up.</td></tr>';
             }
         }
 
@@ -262,7 +261,9 @@
             }
         }
 
-        function openEditModal(user) {
+        function openEditModal(userId) {
+            const user = currentUsersData.find(u => u.id == userId);
+            if (!user) return;
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editName').value = user.full_name;
             document.getElementById('editEmail').value = user.email || '';
