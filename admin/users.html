@@ -125,7 +125,7 @@
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <tr><td colspan="9">Loading users...</td></tr>
+                            <tr><td colspan="9">Connecting to winery server...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -166,33 +166,41 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+        // POINTING TO YOUR NEW BACKEND
+        const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
-            if (!token) { window.location.href = 'admin-login.html'; return; }
+            if (!token) { 
+                window.location.href = 'admin-login.html'; 
+                return; 
+            }
             await loadUsers(token);
         });
 
         async function loadUsers(token) {
             try {
+                // Fetching from the jjb24-backend-1 endpoint
                 const response = await fetch(`${API_BASE_URL}/users/admin/users`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+                
+                if (!response.ok) throw new Error('Failed to load community members');
+
                 const data = await response.json();
-                const users = data.users || [];
+                const users = data.users || data || [];
                 const tableBody = document.getElementById('usersTableBody');
                 tableBody.innerHTML = ''; 
 
                 if (users.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="9">No users found.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No members found in the winery database.</td></tr>';
                 } else {
                     users.forEach(user => {
                         const row = document.createElement('tr');
                         const balance = Number(user.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
                         const deposit = Number(user.total_deposited || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 });
 
-                        let receiptHtml = user.receipt_url ? `<a href="${user.receipt_url}" target="_blank" class="badge badge-receipt">VIEW</a>` : '<span style="color:#ccc;">No Proof</span>';
+                        let receiptHtml = user.receipt_url ? `<a href="${user.receipt_url}" target="_blank" class="badge badge-receipt">VIEW</a>` : '<span style="color:#ccc;">None</span>';
                         
                         let statusHtml = '<span class="badge badge-active">Active</span>';
                         if (user.account_status === 'suspended') statusHtml = '<span class="badge badge-suspended">Suspended</span>';
@@ -223,7 +231,10 @@
                         tableBody.appendChild(row);
                     });
                 }
-            } catch (error) { console.error('Error:', error); }
+            } catch (error) { 
+                console.error('Fetch error:', error);
+                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="9" style="color:red; text-align:center;">Connection error. The server might be waking up. Please refresh in 30 seconds.</td></tr>';
+            }
         }
 
         async function updateStatus(userId, newStatus) {
@@ -232,12 +243,23 @@
             if (reason === null) return; 
 
             const token = localStorage.getItem('adminToken');
-            await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
-                method: 'PATCH',
-                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus, reason: reason })
-            });
-            loadUsers(token);
+            try {
+                const res = await fetch(`${API_BASE_URL}/users/admin/users/${userId}/status`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ status: newStatus, reason: reason })
+                });
+                if (res.ok) {
+                    loadUsers(token);
+                } else {
+                    alert("Failed to update status.");
+                }
+            } catch (e) {
+                alert("Server error during update.");
+            }
         }
 
         function openEditModal(user) {
@@ -261,12 +283,25 @@
                 phone_number: document.getElementById('editPhone').value,
                 balance: document.getElementById('editBalance').value
             };
-            const res = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
-                method: 'PUT',
-                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            if (res.ok) { alert("User updated successfully"); closeModal(); loadUsers(token); }
+            try {
+                const res = await fetch(`${API_BASE_URL}/users/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': 'Bearer ' + token, 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) { 
+                    alert("Member updated successfully"); 
+                    closeModal(); 
+                    loadUsers(token); 
+                } else {
+                    alert("Update failed. Please check inputs.");
+                }
+            } catch (err) {
+                alert("Connection error.");
+            }
         };
     </script>
 </body>
