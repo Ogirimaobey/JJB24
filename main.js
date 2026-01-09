@@ -1,5 +1,5 @@
 // ==========================================
-// 1. CONFIGURATION & STYLING INJECTION (PRESERVED)
+// 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
 const styleSheet = document.createElement("style");
@@ -124,7 +124,9 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
+// ==========================================
 // 2. DATA CONFIGURATION
+// ==========================================
 const vipProducts = [
     { id: 101, name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+1' },
     { id: 102, name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+2' },
@@ -135,8 +137,8 @@ const vipProducts = [
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 
-// EMERGENCY REVERT: POINTING BACK TO SAHIL'S BACKEND TO KEEP 300 USERS ACTIVE
-const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
+// UPDATED: NOW POINTING TO YOUR NEW BACKEND ON RENDER
+const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
 // ==========================================
 // 3. HELPER FUNCTIONS
@@ -948,7 +950,7 @@ window.addEventListener('hashchange', router); window.addEventListener('DOMConte
 document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
 
 // ==========================================
-// 6. SOCIAL PROOF POPUPS (FULL ORIGINAL VERSION)
+// 6. SOCIAL PROOF POPUPS
 // ==========================================
 (function startSocialProof() {
     const fomoData = {
