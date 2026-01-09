@@ -704,7 +704,7 @@ const renderMePage = async () => {
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
                     <a href="https://t.me/jjb24brandedwinery" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-external-link-alt" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
                         <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
@@ -916,7 +916,7 @@ const renderRewardsPage = async () => {
         const summary = data.summary || { total_rewards: 0 };
         let itemsHTML = rewardList.length === 0 ? `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
             rewardList.map(item => `<div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;"><div><h4 class="history-item-text" style="margin: 0; font-size: 14px;">${item.source}</h4><small class="history-sub-text">${new Date(item.date).toLocaleDateString()}</small></div><strong style="color:#10b981; font-weight:800;">+₦${Number(item.amount).toLocaleString()}</strong></div>`).join('');
-        appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">My Community Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Yield Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
+        appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">My Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Yield Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
     } catch (e) {}
 };
 
@@ -935,29 +935,12 @@ const renderSupportPage = () => {
         <div style="background:white; padding:25px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
             <div style="text-align:center; margin-bottom: 20px;">
                 <i class="fab fa-telegram" style="font-size: 40px; color: #229ED9;"></i>
-                <p style="color:#555; margin-top: 10px;">Join our official winery community for real-time updates and balance support.</p>
+                <p style="color:#555; margin-top: 10px;">Join our official winery community for updates.</p>
                 <a href="https://t.me/jjb24brandedwinery" target="_blank" class="btn-telegram" style="width: auto; padding: 10px 20px; display:inline-block;">OPEN TELEGRAM</a>
             </div>
-            
             <div style="border-top: 1px solid #eee; padding-top: 20px; display: flex; flex-direction: column; gap: 15px;">
-                <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-envelope" style="width: 20px;"></i> Email Support</h4>
-                    <a href="mailto:jjb24wines@gmail.com" style="color:#6a0dad; font-weight: 800; text-decoration: none;">jjb24wines@gmail.com</a>
-                </div>
-
-                <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Lines</h4>
-                    <p style="color:#111; font-weight: 900; margin:0; font-size: 16px;">+2347047591968</p>
-                    <p style="color:#777; font-style: italic; margin:0; font-size: 13px;">091 1412 9537</p>
-                </div>
-
-                <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-map-marker-alt" style="width: 20px;"></i> Business Address</h4>
-                    <p style="color:#555; margin:0; line-height: 1.4;">
-                        Monaya Rd, Ogoja 550101,<br>
-                        Cross River, Nigeria.
-                    </p>
-                </div>
+                <div><h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-envelope"></i> Email Support</h4><a href="mailto:jjb24wines@gmail.com" style="color:#6a0dad; font-weight: 800; text-decoration: none;">jjb24wines@gmail.com</a></div>
+                <div><h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt"></i> Official Lines</h4><p style="color:#111; font-weight: 900; margin:0;">+2347047591968</p></div>
             </div>
         </div>
     </div>`; 
@@ -965,14 +948,72 @@ const renderSupportPage = () => {
 
 const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2 style="color:#111;">Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
 
+const renderMePage = async () => { 
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        const data = await response.json();
+        const user = data.balance || {};
+        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
+        const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
+        const pinActionText = user.has_pin ? "Reset Transaction PIN" : "Set Transaction PIN";
+        const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
+
+        appContent.innerHTML = `
+            <div class="page-container" style="padding:20px;">
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15 rgba(0,0,0,0.05);">
+                    <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
+                    <h3 style="margin-bottom:5px; color:#111;">${user.full_name}</h3>
+                    <p style="color:#666; font-size:14px;">${user.phone_number}</p>
+                    <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
+                        <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
+                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #111; border: 1px solid #eee;">${uniqueReferralLink}</div>
+                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
+                            <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
+                            <button onclick="window.copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="https://t.me/jjb24brandedwinery" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Password</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-list" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                        <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
+                    </a>
+                </div>
+            </div>`;
+    } catch(e) {}
+};
+
+// ==========================================
+// 7. ROUTER & EVENTS
+// ==========================================
+
 const router = () => {
     const token = localStorage.getItem('token');
     let hash = window.location.hash || '#home';
     if (hash.includes('?')) hash = hash.split('?')[0];
-    if (['#login', '#register'].includes(hash)) { bottomNav.style.display = 'none'; if(hash === '#login') renderLoginScreen(); else renderRegisterScreen(); return; }
+    
+    if (['#login', '#register'].includes(hash)) { 
+        bottomNav.style.display = 'none'; 
+        if(hash === '#login') renderLoginScreen(); else renderRegisterScreen(); 
+        return; 
+    }
+    
     if (!token) { logoutUser(); return; }
     bottomNav.style.display = 'flex';
     document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('href') === hash) link.classList.add('active'); });
+
     switch (hash) {
         case '#home': renderHomeScreen(); break;
         case '#products': renderProductsPage(); break;
@@ -993,11 +1034,13 @@ const router = () => {
     }
 };
 
-window.addEventListener('hashchange', router); window.addEventListener('DOMContentLoaded', router);
-document.getElementById('closeModalBtn').addEventListener('click', closeModal); appContent.addEventListener('click', handleInvestClick);
+window.addEventListener('hashchange', router);
+window.addEventListener('DOMContentLoaded', router);
+document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+appContent.addEventListener('click', handleInvestClick);
 
 // ==========================================
-// 6. SOCIAL PROOF POPUPS
+// 8. SOCIAL PROOF POPUPS (FOMO)
 // ==========================================
 (function startSocialProof() {
     const fomoData = {
@@ -1023,7 +1066,6 @@ document.getElementById('closeModalBtn').addEventListener('click', closeModal); 
         const timeEl = document.getElementById('fomo-time');
         const iconEl = document.getElementById('fomo-icon');
         const popupEl = document.getElementById('fomo-popup');
-        
         if (nameEl && actEl && locEl && timeEl && iconEl && popupEl) {
             nameEl.innerText = name; actEl.innerText = actionObj.text; locEl.innerText = loc; timeEl.innerText = time; iconEl.innerText = actionObj.icon;
             popupEl.style.borderLeftColor = actionObj.color;
