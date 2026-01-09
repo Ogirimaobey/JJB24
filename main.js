@@ -159,6 +159,16 @@ announcementDiv.innerHTML = `
 `;
 document.body.appendChild(announcementDiv);
 
+const successModalDiv = document.createElement("div");
+successModalDiv.id = "successModal";
+successModalDiv.innerHTML = `
+    <div class="modal-content">
+        <div id="modalMessage"></div>
+        <button id="closeModalBtn">OK</button>
+    </div>
+`;
+document.body.appendChild(successModalDiv);
+
 window.closeTelegramModal = () => {
     localStorage.setItem('jjb_community_joined', 'true');
     document.getElementById('telegramModal').style.display = 'none';
@@ -177,7 +187,6 @@ const vipProducts = [
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 
-// POINTING TO YOUR NEW BACKEND ON RENDER
 const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
 // ==========================================
@@ -278,14 +287,29 @@ const handleLogin = async (event) => {
     const id = document.getElementById('loginIdentifier').value.trim();
     const pass = document.getElementById('password').value;
     if (!id || !pass) return alert('Please provide email/phone and password.');
-    const isEmail = id.includes('@');
-    const loginData = { password: pass, email: isEmail ? id : '', phone: isEmail ? '' : id };
+
+    // CLEAN PAYLOAD: Optimized to avoid backend logic conflicts
+    const loginData = { password: pass };
+    if (id.includes('@')) {
+        loginData.email = id;
+    } else {
+        loginData.phone = id;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
-        localStorage.setItem('token', result.token); window.location.hash = '#home'; router();
-    } catch (error) { alert('Could not connect to server.'); }
+        localStorage.setItem('token', result.token); 
+        window.location.hash = '#home'; 
+        router();
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
@@ -675,15 +699,10 @@ const renderMePage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-        if (!response || !response.ok) throw new Error();
-        
         const data = await response.json();
         const user = data.balance || {};
         const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
-        const fullName = user.full_name || 'JJB24 Member';
-        const phone = user.phone_number || '';
         const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
-
         const pinActionText = user.has_pin ? "Reset Transaction PIN" : "Set Transaction PIN";
         const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
 
@@ -691,8 +710,8 @@ const renderMePage = async () => {
             <div class="page-container" style="padding:20px;">
                 <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15 rgba(0,0,0,0.05);">
                     <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
-                    <h3 style="margin-bottom:5px; color:#111;">${fullName}</h3>
-                    <p style="color:#666; font-size:14px;">${phone}</p>
+                    <h3 style="margin-bottom:5px; color:#111;">${user.full_name}</h3>
+                    <p style="color:#666; font-size:14px;">${user.phone_number}</p>
                     <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
                         <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
                         <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #111; border: 1px solid #eee;">${uniqueReferralLink}</div>
@@ -707,25 +726,20 @@ const renderMePage = async () => {
                         <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Password</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
-                    </a>
-                    <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Community</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fas fa-list" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
                         <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
                     </a>
                 </div>
             </div>`;
-    } catch(e) { 
-        appContent.innerHTML = '<div style="text-align:center; padding:50px;"><p style="color:#111;">Sync Error. Please check connection.</p></div>';
-    }
+    } catch(e) {}
 };
 
 const renderDepositPage = async () => { 
@@ -735,31 +749,25 @@ const renderDepositPage = async () => {
             <div class="page-header"><h2 style="color:#1e293b;">Add Funds</h2></div>
             <div style="background: #1e293b; color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
                 <small style="opacity:0.7; text-transform:uppercase; letter-spacing:1px;">Transfer to Account Below</small>
-                
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top:15px;">
                     <h3 style="margin: 0; color: #10b981; font-size: 28px; letter-spacing:1px;">${accountNumber}</h3>
                     <button id="copyAccBtn" onclick="window.copyAccountNumber('${accountNumber}')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer;">COPY</button>
                 </div>
-                
                 <p style="margin:10px 0 0 0; font-weight:bold; font-size:16px;">JJB BRANDED WINES LTD</p>
                 <p style="margin:0; opacity:0.8;">Moniepoint MFB</p>
-                
                 <div style="margin-top:15px; padding:12px; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; font-size:12px; color: #fbbf24; font-weight:bold;">
                     <i class="fas fa-clock"></i> Confirmation takes up to 24hrs.
                 </div>
             </div>
-
             <div style="background:white; padding:25px; border-radius:24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
                 <form id="manualDepositForm">
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Amount Transferred (₦)</label>
-                        <input type="number" id="depositAmountInput" placeholder="Enter amount sent" required 
-                               class="security-input">
+                        <input type="number" id="depositAmountInput" placeholder="Enter amount sent" required class="security-input">
                     </div>
                     <div class="form-group" style="margin-bottom:20px;">
                         <label style="display:block; font-weight:bold; margin-bottom:10px; color:#333; font-size:14px;">Upload Receipt Screenshot</label>
-                        <input type="file" id="receiptFileInput" accept="image/*" required 
-                               style="width:100%; padding:12px; border:2px dashed #6a0dad; border-radius:12px; background:#f5f3ff; color: #6a0dad;">
+                        <input type="file" id="receiptFileInput" accept="image/*" required style="width:100%; padding:12px; border:2px dashed #6a0dad; border-radius:12px; background:#f5f3ff; color: #6a0dad;">
                     </div>
                     <button type="submit" id="submitBtn" class="btn-deposit" style="width:100%; padding:18px; border-radius:15px; font-weight:800; cursor:pointer;">SUBMIT FOR APPROVAL</button>
                 </form>
@@ -809,13 +817,11 @@ const renderWithdrawPage = async () => {
         appContent.innerHTML = `
             <div class="page-container" style="padding: 10px;">
                 <div class="page-header"><h2 style="color:#111;">Request Withdrawal</h2></div>
-                
                 <div class="withdraw-card" style="background: linear-gradient(135deg, #4c1d95, #1e3a8a); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
                     <div class="balance-display" style="text-align: center; margin-bottom: 25px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 16px;">
                         <small style="color:#e0e7ff; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Available Balance</small>
                         <p style="color:#ffffff; font-weight:900; font-size: 28px; margin: 5px 0 0 0;">₦ ${Number(balance).toLocaleString()}</p>
                     </div>
-
                     <form id="withdrawForm">
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label for="amount" style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Amount to Withdraw (NGN)</label>
@@ -823,12 +829,10 @@ const renderWithdrawPage = async () => {
                                    style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold; font-size: 16px;" />
                             <small style="color: #cbd5e1; font-size: 11px;">Note: Minimum withdrawal is ₦800</small>
                         </div>
-
                         <div id="feeContainer" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; color: #ffffff; display: none;">
                             <div style="display: flex; justify-content: space-between;"><span>Processing Fee (9%):</span><span id="feeDisplay" style="color: #fca5a5; font-weight:700;">- ₦0.00</span></div>
                             <div style="display: flex; justify-content: space-between; font-weight: 900; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; margin-top: 5px; font-size: 16px;"><span>You Receive:</span><span id="finalDisplay" style="color: #4ade80;">₦0.00</span></div>
                         </div>
-
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Recipient Bank</label>
                             <select id="bankName" required style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;">
@@ -850,25 +854,21 @@ const renderWithdrawPage = async () => {
                                 <option value="Ecobank">Ecobank Nigeria</option>
                             </select>
                         </div>
-
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Account Number</label>
                             <input type="text" id="accountNumber" placeholder="10-digit number" required 
                                    style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;" />
                         </div>
-
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label style="color:#ffffff; font-weight: bold; display: block; margin-bottom: 8px;">Account Name</label>
                             <input type="text" id="accountName" placeholder="Full name on account" required 
                                    style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold;" />
                         </div>
-
                         <div class="form-group" style="margin-top:25px; padding: 15px; background: rgba(251, 191, 36, 0.15); border: 1px dashed #fbbf24; border-radius: 16px;">
                             <label style="color:#fbbf24; font-weight:900; display: block; margin-bottom: 8px; text-transform: uppercase;">Transaction PIN</label>
                             <input type="password" id="withdrawPin" maxlength="4" placeholder="Enter 4-digit PIN" required 
                                    style="width: 100%; padding: 14px; border-radius: 12px; border: none; background: white; color: black; font-weight: bold; text-align: center; letter-spacing: 5px; font-size: 20px;" />
                         </div>
-
                         <button type="submit" class="btn-withdraw" style="width:100%; padding:18px; margin-top:25px; border-radius:15px; font-size: 16px; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);">CONFIRM WITHDRAWAL</button>
                     </form>
                 </div>
@@ -947,53 +947,6 @@ const renderSupportPage = () => {
 };
 
 const renderCertificatePage = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2 style="color:#111;">Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
-
-const renderMePage = async () => { 
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Profile...</p>';
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-        const data = await response.json();
-        const user = data.balance || {};
-        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
-        const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
-        const pinActionText = user.has_pin ? "Reset Transaction PIN" : "Set Transaction PIN";
-        const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
-
-        appContent.innerHTML = `
-            <div class="page-container" style="padding:20px;">
-                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15 rgba(0,0,0,0.05);">
-                    <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
-                    <h3 style="margin-bottom:5px; color:#111;">${user.full_name}</h3>
-                    <p style="color:#666; font-size:14px;">${user.phone_number}</p>
-                    <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
-                        <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
-                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #111; border: 1px solid #eee;">${uniqueReferralLink}</div>
-                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
-                            <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
-                            <button onclick="window.copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
-                    <a href="https://t.me/jjb24brandedwinery" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Password</span><i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-list" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right"></i>
-                    </a>
-                    <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
-                        <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
-                    </a>
-                </div>
-            </div>`;
-    } catch(e) {}
-};
 
 // ==========================================
 // 7. ROUTER & EVENTS
