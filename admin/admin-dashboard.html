@@ -66,11 +66,11 @@
 <body>
     <div class="admin-wrapper">
         <header class="admin-header">
-            <h1>Dashboard</h1>
+            <h1>Platform Overview</h1>
             <div class="header-actions">
-                <a href="products.html" class="nav-button">Manage Products</a>
+                <a href="products.html" class="nav-button">Manage Plans</a>
                 <a href="users.html" class="nav-button">Manage Users</a>
-                <a href="investments.html" class="nav-button">Manage Investments</a>
+                <a href="investments.html" class="nav-button">Community Stats</a>
                 <button id="adminLogoutButton">Logout</button>
             </div>
         </header>
@@ -80,21 +80,21 @@
                 <div class="stat-card">
                     <div class="stat-header">
                         <i class="fas fa-users"></i>
-                        <h2>Total Users</h2>
+                        <h2>Total Members</h2>
                     </div>
                     <p id="totalUsersStat">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
-                        <i class="fas fa-chart-line"></i>
-                        <h2>Total Investments</h2>
+                        <i class="fas fa-wine-glass-alt"></i>
+                        <h2>Active Plans</h2>
                     </div>
                     <p id="totalInvestmentsStat">0</p>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <i class="fas fa-wallet"></i>
-                        <h2>Total Amount Invested</h2>
+                        <h2>Total Volume Acquired</h2>
                     </div>
                     <p>₦<span id="totalAmountStat">0</span></p>
                 </div>
@@ -116,32 +116,32 @@
                             <input type="number" id="fundAmount" placeholder="e.g. 50000" required>
                         </div>
                         <button type="submit" class="btn-fund">
-                            <i class="fas fa-paper-plane"></i> Send Money
+                            <i class="fas fa-paper-plane"></i> Send Credits
                         </button>
                     </form>
                 </div>
                 <p style="padding: 10px 20px; color: #666; font-size: 13px;">
-                    <i class="fas fa-info-circle"></i> <b>Warning:</b> This adds real money to the user's wallet immediately.
+                    <i class="fas fa-info-circle"></i> <b>Warning:</b> This adds balance to the user's wallet immediately for community participation.
                 </p>
             </section>
 
             <section class="data-card" style="border-top: 4px solid #6366f1;">
                 <div class="stat-header">
                     <i class="fas fa-camera" style="color: #6366f1;"></i>
-                    <h2>New Payment Receipts (Manual)</h2>
+                    <h2>Pending Verification (Manual)</h2>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>User Email</th>
-                                <th>Claimed Amount</th>
+                                <th>Reported Amount</th>
                                 <th>Screenshot</th>
-                                <th>Date Sent</th>
+                                <th>Date Submitted</th>
                             </tr>
                         </thead>
                         <tbody id="manualReceiptsTable">
-                            <tr><td colspan="4">Checking for new receipts...</td></tr>
+                            <tr><td colspan="4">Syncing with server...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -150,7 +150,7 @@
             <section class="data-card">
                 <div class="stat-header">
                     <i class="fas fa-user-clock"></i>
-                    <h2>Recent Users</h2>
+                    <h2>New Joiners</h2>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
@@ -158,7 +158,7 @@
                             <tr>
                                 <th>Full Name</th>
                                 <th>Phone Number</th>
-                                <th>Registration Date</th>
+                                <th>Join Date</th>
                             </tr>
                         </thead>
                         <tbody id="recentUsersTable">
@@ -171,7 +171,7 @@
             <section class="data-card">
                 <div class="stat-header">
                     <i class="fas fa-hourglass-half"></i>
-                    <h2>Pending Withdrawals</h2>
+                    <h2>Withdrawal Requests</h2>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
@@ -187,7 +187,7 @@
                             </tr>
                         </thead>
                         <tbody id="pendingWithdrawalsTable">
-                            <tr><td colspan="7">Loading pending withdrawals...</td></tr>
+                            <tr><td colspan="7">Loading requests...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -196,11 +196,11 @@
     </div>
 
     <script>
-        // Define API URL Globally
+        // Updated to jjb24-backend-1 (Your New Backend)
         const getApiUrl = () => {
             return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
                 ? 'http://localhost:3000/api'
-                : 'https://jjb24-backend.onrender.com/api';
+                : 'https://jjb24-backend-1.onrender.com/api';
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -226,12 +226,12 @@
                 const amount = document.getElementById('fundAmount').value;
                 const submitBtn = e.target.querySelector('button');
 
-                if(!confirm(`⚠️ ARE YOU SURE?\n\nYou are about to send ₦${Number(amount).toLocaleString()} to ${email}.`)) {
+                if(!confirm(`⚠️ AUTHORIZE CREDITS?\n\nYou are about to send ₦${Number(amount).toLocaleString()} to ${email}.`)) {
                     return;
                 }
 
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Sending...';
+                submitBtn.innerHTML = 'Processing...';
 
                 try {
                     const response = await fetch(`${API_BASE_URL}/users/admin/fund`, {
@@ -246,22 +246,22 @@
                     const result = await response.json();
 
                     if (response.ok) {
-                        alert(`✅ SUCCESS!\n\nFunds sent successfully.`);
+                        alert(`✅ SUCCESS!\n\nCredits sent successfully.`);
                         document.getElementById('fundEmail').value = '';
                         document.getElementById('fundAmount').value = '';
-                        location.reload(); // Refresh to see updated stats
+                        location.reload();
                     } else {
                         alert(`❌ FAILED: ${result.message}`);
                     }
                 } catch (error) {
-                    alert("Error connecting to server.");
+                    alert("Error connecting to winery server.");
                 } finally {
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Money';
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Credits';
                 }
             });
 
-            // --- 2. LOAD STATS & DATA ---
+            // --- 2. LOAD STATS ---
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/stats`, {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -283,21 +283,19 @@
                             usersTableBody.appendChild(row);
                         });
                     } else {
-                        usersTableBody.innerHTML = '<tr><td colspan="3">No recent users.</td></tr>';
+                        usersTableBody.innerHTML = '<tr><td colspan="3">No new joiners found.</td></tr>';
                     }
                 }
             } catch (error) { console.error('Error stats:', error); }
 
-            // Load Other Tables
+            // Load Tables
             await loadPendingWithdrawals();
-            await loadManualReceipts(token, API_BASE_URL); // Load the receipts
+            await loadManualReceipts(token, API_BASE_URL);
         });
 
-        // --- NEW: LOAD MANUAL DEPOSIT RECEIPTS ---
         async function loadManualReceipts(token, API_BASE_URL) {
             const tableBody = document.getElementById('manualReceiptsTable');
             try {
-                // Backend endpoint that returns transactions where receipt_url is not null and status is pending
                 const response = await fetch(`${API_BASE_URL}/payment/deposits/pending`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -310,17 +308,17 @@
                             <td style="font-weight:bold; color:green;">₦${Number(d.amount).toLocaleString()}</td>
                             <td>
                                 <a href="${d.receipt_url}" target="_blank" class="btn-receipt">
-                                   <i class="fas fa-eye"></i> CHECK RECEIPT
+                                   <i class="fas fa-eye"></i> VIEW
                                 </a>
                             </td>
                             <td>${new Date(d.created_at).toLocaleString()}</td>
                         </tr>
                     `).join('');
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="4">No new manual receipts to check.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="4">No pending verifications.</td></tr>';
                 }
             } catch (e) {
-                tableBody.innerHTML = '<tr><td colspan="4">No new receipts.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="4">Server Error.</td></tr>';
             }
         }
 
@@ -337,7 +335,7 @@
                     tableBody.innerHTML = '';
                     data.withdrawals.forEach(withdrawal => {
                         const row = document.createElement('tr');
-                        const bankDetails = `${withdrawal.bank_name || 'N/A'}<br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
+                        const bankDetails = `<b>${withdrawal.bank_name || 'N/A'}</b><br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
                         row.innerHTML = `
                             <td>${withdrawal.full_name || 'N/A'}</td>
                             <td>${withdrawal.phone_number || 'N/A'}</td>
@@ -353,7 +351,7 @@
                         tableBody.appendChild(row);
                     });
                 } else {
-                    tableBody.innerHTML = '<tr><td colspan="7">No pending withdrawals.</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="7">No pending requests.</td></tr>';
                 }
             } catch (error) { console.error('Error withdrawals:', error); }
         }
@@ -361,14 +359,14 @@
         async function handleWithdrawalAction(reference, approve) {
             const token = localStorage.getItem('adminToken');
             const API_BASE_URL = getApiUrl();
-            if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this withdrawal?`)) return;
+            if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this request?`)) return;
             try {
                 const response = await fetch(`${API_BASE_URL}/payment/approve/${reference}`, {
                     method: 'PATCH',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ approve })
                 });
-                if (response.ok) { alert("Done"); await loadPendingWithdrawals(); }
+                if (response.ok) { alert("Action successful"); await loadPendingWithdrawals(); }
             } catch (error) { alert('Error: ' + error.message); }
         }
     </script>
