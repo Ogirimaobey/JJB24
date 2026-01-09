@@ -4,6 +4,27 @@
 
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
+    /* COMMUNITY ANNOUNCEMENT MODAL */
+    #telegramModal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.6);
+        z-index: 20000;
+    }
+    #telegramModal .modal-content {
+        background: #fff; padding: 30px; border-radius: 24px;
+        text-align: center; max-width: 320px; width: 85%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: popIn 0.4s ease-out;
+    }
+    .btn-telegram {
+        background: #229ED9; color: white !important;
+        font-weight: 800; padding: 14px 25px; border-radius: 12px;
+        text-decoration: none; display: inline-block; margin-top: 15px;
+        width: 100%; box-shadow: 0 4px 15px rgba(34, 158, 217, 0.3);
+    }
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
     /* 1. BOLD GLOBAL BUTTONS */
     .btn-deposit {
         background: linear-gradient(135deg, #10b981, #059669) !important;
@@ -124,20 +145,39 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
+// Inject Telegram Modal Structure
+const announcementDiv = document.createElement("div");
+announcementDiv.id = "telegramModal";
+announcementDiv.innerHTML = `
+    <div class="modal-content">
+        <i class="fab fa-telegram" style="font-size: 50px; color: #229ED9;"></i>
+        <h3 style="margin: 15px 0 10px; color: #111;">Community Group</h3>
+        <p style="color: #666; font-size: 14px; line-height: 1.4;">Join our official winery community for real-time updates and support.</p>
+        <a href="https://t.me/jjb24brandedwinery" target="_blank" onclick="closeTelegramModal()" class="btn-telegram">JOIN COMMUNITY</a>
+        <button onclick="closeTelegramModal()" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-size:12px;">I'm already a member / Close</button>
+    </div>
+`;
+document.body.appendChild(announcementDiv);
+
+window.closeTelegramModal = () => {
+    localStorage.setItem('jjb_community_joined', 'true');
+    document.getElementById('telegramModal').style.display = 'none';
+};
+
 // ==========================================
 // 2. DATA CONFIGURATION
 // ==========================================
 const vipProducts = [
-    { id: 101, name: 'CASPERVIP1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+1' },
-    { id: 102, name: 'CASPERVIP2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+VIP+2' },
-    { id: 103, name: 'CASPER3', price: 2000000, total_return: 2400000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+3' },
-    { id: 104, name: 'CASPER4', price: 3000000, total_return: 3600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=CASPER+4' }
+    { id: 101, name: 'WINERY VIP 1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+1' },
+    { id: 102, name: 'WINERY VIP 2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+2' },
+    { id: 103, name: 'WINERY VIP 3', price: 2000000, total_return: 2400000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+3' },
+    { id: 104, name: 'WINERY VIP 4', price: 3000000, total_return: 3600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+4' }
 ];
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 
-// UPDATED: NOW POINTING TO YOUR NEW BACKEND ON RENDER
+// POINTING TO YOUR NEW BACKEND ON RENDER
 const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
 // ==========================================
@@ -293,7 +333,7 @@ const handleInvestClick = async (event) => {
         let itemId = Number(rawItemId);
         if (isNaN(itemId) || itemId <= 0) return alert('Error: Invalid product ID.');
         const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
-        if (!confirm(`Are you sure you want to invest?`)) return;
+        if (!confirm(`Are you sure you want to activate this plan?`)) return;
         
         let endpoint = investType === 'vip' ? `${API_BASE_URL}/investments/createVipInvestment/${itemId}` : `${API_BASE_URL}/investments/createInvestment/${itemId}`;
 
@@ -301,10 +341,10 @@ const handleInvestClick = async (event) => {
             const response = await fetchWithAuth(endpoint, { method: 'POST' });
             const result = await response.json();
             if (response && response.ok && result.success) {
-                showSuccessModal('Investment Successful!');
+                showSuccessModal('Plan Activated Successfully!');
                 setTimeout(() => { window.location.hash = '#home'; router(); }, 2000);
             } else { alert('Error: ' + ((result && result.message) || 'Failed.')); }
-        } catch (error) { alert('Investment error.'); }
+        } catch (error) { alert('Action error.'); }
     }
 };
 
@@ -372,6 +412,9 @@ const renderOTPVerificationScreen = (email) => {
 };
 
 const renderHomeScreen = async () => {
+    if (!localStorage.getItem('jjb_community_joined')) {
+        setTimeout(() => { document.getElementById('telegramModal').style.display = 'flex'; }, 2000);
+    }
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
     try {
@@ -399,26 +442,26 @@ const renderHomeScreen = async () => {
             <div class="top-header">
                 <div class="user-greeting">
                     <h4>Hello, ${fullName.split(' ')[0]}</h4>
-                    <p>Welcome back!</p>
+                    <p>Winery Member</p>
                 </div>
                 <div class="profile-icon"><i class="fas fa-user"></i></div>
             </div>
             
             <div class="balance-card">
-                <small>Total Assets (NGN)</small>
+                <small>Available Assets (NGN)</small>
                 <h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2>
                 <div class="header-buttons" style="gap: 15px;">
-                    <a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Deposit</a>
+                    <a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Add Funds</a>
                     <a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a>
                 </div>
             </div>
             
             <div class="home-content">
                 <div class="quick-actions">
-                    <a href="#my-investments" class="action-button"><i class="fas fa-chart-pie"></i><span>My Plans</span></a>
+                    <a href="#my-plans" class="action-button"><i class="fas fa-wine-bottle"></i><span>My Plans</span></a>
                     <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
-                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Team</span></a>
-                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>History</span></a>
+                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Community</span></a>
+                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>Records</span></a>
                     <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
                     <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
                 </div>
@@ -445,20 +488,20 @@ const renderHomeScreen = async () => {
 };
 
 const renderProductsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Products...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Winery Plans...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
         let productHTML = ''; const items = data.items || [];
-        if (items.length === 0) productHTML = '<p style="text-align:center; color:#111;">No products available.</p>';
+        if (items.length === 0) productHTML = '<p style="text-align:center; color:#111;">No plans available.</p>';
         else {
             items.forEach(item => {
-                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value" style="color:#111;">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value" style="color:#111;">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Invest Now</button></div></div>`;
+                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Acquisition Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily Yield</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value" style="color:#111;">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value" style="color:#111;">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Activate Plan</button></div></div>`;
             });
         }
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Investment Products</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load products.</p>'; }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Community Plans</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; }
 };
 
 const renderVipPage = () => {
@@ -466,13 +509,13 @@ const renderVipPage = () => {
     const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
     let vipHTML = '';
     products.forEach(plan => {
-        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total ROI</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value" style="color:#111;">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
+        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Acquisition Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total Yield</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value" style="color:#111;">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
     });
-    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">VIP Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">VIP Community Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
 const renderTeamPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Team Data...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Community Data...</p>';
     let refCode = 'N/A';
     try {
         const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
@@ -487,7 +530,7 @@ const renderTeamPage = async () => {
         const totalCommission = data.total_commission || 0; 
 
         let teamHTML = teamMembers.length === 0 ? 
-            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No team members found yet.</p></div>` :
+            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No community members found yet.</p></div>` :
             teamMembers.map(member => `
                 <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -502,16 +545,16 @@ const renderTeamPage = async () => {
 
         appContent.innerHTML = `
             <div class="page-container">
-                <div class="page-header"><h2 style="color:#111;">My Team</h2></div>
+                <div class="page-header"><h2 style="color:#111;">My Community</h2></div>
                 ${getReferralCardHTML(refCode)}
                 <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
-                    <small style="color: #e1bee7;">Total Referral Commission</small>
+                    <small style="color: #e1bee7;">Total Community Rewards</small>
                     <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
                     <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
                 </div>
-                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px; color:#111;">Referred Users List</h3>${teamHTML}</div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px; color:#111;">Community List</h3>${teamHTML}</div>
             </div>`;
-    } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading team data.</p>'; }
+    } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading data.</p>'; }
 };
 
 const renderChangePasswordPage = async () => {
@@ -588,7 +631,7 @@ const renderSetPinPage = async () => {
 };
 
 const renderActiveInvestmentsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Investments...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
         const data = await response.json();
@@ -597,10 +640,10 @@ const renderActiveInvestmentsPage = async () => {
         if (investments.length === 0) {
             appContent.innerHTML = `
                 <div class="page-container">
-                    <div class="page-header"><h2 style="color:#111;">My Investments</h2></div>
+                    <div class="page-header"><h2 style="color:#111;">My Community Plans</h2></div>
                     <div class="placeholder-card" style="text-align:center; padding: 40px;">
-                        <p style="color: #666;">You have no active investments.</p>
-                        <a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Start Investing</a>
+                        <p style="color: #666;">You have no active plans.</p>
+                        <a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Activate a Plan</a>
                     </div>
                 </div>`;
             return;
@@ -610,22 +653,22 @@ const renderActiveInvestmentsPage = async () => {
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div>
-                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${inv.itemname || 'Investment Plan'}</h4>
-                        <small class="history-sub-text">Daily: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
+                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${inv.itemname || 'Winery Plan'}</h4>
+                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
                     </div>
                     <div style="text-align:right;">
                         <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
-                    <span class="history-item-text">Invested: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
-                    <span class="history-item-text">Total Earned: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Acquired: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Accumulated: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
                 </div>
             </div>
         `).join('');
 
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
-    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load investments.</p>'; }
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; }
 };
 
 const renderMePage = async () => { 
@@ -637,7 +680,7 @@ const renderMePage = async () => {
         const data = await response.json();
         const user = data.balance || {};
         const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
-        const fullName = user.full_name || 'JJB24 User';
+        const fullName = user.full_name || 'JJB24 Member';
         const phone = user.phone_number || '';
         const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
 
@@ -660,6 +703,9 @@ const renderMePage = async () => {
                     </div>
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="https://t.me/jjb24brandedwinery" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-external-link-alt" style="color:#ccc;"></i>
+                    </a>
                     <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
                         <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Login Password</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
@@ -667,10 +713,10 @@ const renderMePage = async () => {
                         <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
                     <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> History</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fas fa-history" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
                     <a href="#team" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Team</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
+                        <span style="font-weight:700;"><i class="fas fa-users" style="width:25px; color:#6a0dad;"></i> My Community</span><i class="fas fa-chevron-right" style="color:#ccc;"></i>
                     </a>
                     <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
                         <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
@@ -686,7 +732,7 @@ const renderDepositPage = async () => {
     const accountNumber = "6669586597";
     appContent.innerHTML = `
         <div class="page-container" style="padding:20px; background:#f8fafc; min-height:100vh;">
-            <div class="page-header"><h2 style="color:#1e293b;">Deposit Funds</h2></div>
+            <div class="page-header"><h2 style="color:#1e293b;">Add Funds</h2></div>
             <div style="background: #1e293b; color: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.15);">
                 <small style="opacity:0.7; text-transform:uppercase; letter-spacing:1px;">Transfer to Account Below</small>
                 
@@ -870,16 +916,16 @@ const renderRewardsPage = async () => {
         const summary = data.summary || { total_rewards: 0 };
         let itemsHTML = rewardList.length === 0 ? `<div class="placeholder-card" style="text-align:center; padding: 40px;"><p style="color: #666;">No earnings yet.</p></div>` :
             rewardList.map(item => `<div style="background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 5px solid #10b981; display:flex; justify-content:space-between; align-items:center;"><div><h4 class="history-item-text" style="margin: 0; font-size: 14px;">${item.source}</h4><small class="history-sub-text">${new Date(item.date).toLocaleDateString()}</small></div><strong style="color:#10b981; font-weight:800;">+₦${Number(item.amount).toLocaleString()}</strong></div>`).join('');
-        appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">My Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
+        appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">My Community Rewards</h2><div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;"><small>Total Yield Earnings</small><h1>₦ ${Number(summary.total_rewards).toLocaleString()}</h1></div>${itemsHTML}</div>`;
     } catch (e) {}
 };
 
 const renderHistoryPage = async () => {
-    appContent.innerHTML = '<p style="text-align:center; margin-top:50px; color:#111;">Loading History...</p>';
+    appContent.innerHTML = '<p style="text-align:center; margin-top:50px; color:#111;">Loading Records...</p>';
     const res = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method:'GET' });
     const data = await res.json();
-    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong class="history-item-text">${t.type.toUpperCase()}</strong><br><small class="history-sub-text">${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? '#10b981' : '#ef4444'}; font-weight:800;">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
-    appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">Full History</h2><div style="padding: 15px 0;">${list || '<p style="color:#111;">No records found.</p>'}</div></div>`;
+    const list = (data.transactions || []).map(t => `<div style="background:#fff; padding:15px; border-radius:10px; margin-bottom:10px; border:1px solid #eee; display:flex; justify-content:space-between;"><div><strong class="history-item-text">${t.type.toUpperCase().replace(/_/g, ' ')}</strong><br><small class="history-sub-text">${new Date(t.created_at).toLocaleDateString()}</small></div><strong style="color:${t.amount > 0 ? '#10b981' : '#ef4444'}; font-weight:800;">₦${Number(Math.abs(t.amount)).toLocaleString()}</strong></div>`).join('');
+    appContent.innerHTML = `<div class="page-container"><h2 style="color:#111;">Activity Records</h2><div style="padding: 15px 0;">${list || '<p style="color:#111;">No records found.</p>'}</div></div>`;
 };
 
 const renderSupportPage = () => { 
@@ -888,8 +934,9 @@ const renderSupportPage = () => {
         <h2 style="color:#111;">Help & Support</h2>
         <div style="background:white; padding:25px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
             <div style="text-align:center; margin-bottom: 20px;">
-                <i class="fas fa-headset" style="font-size: 40px; color: #6a0dad;"></i>
-                <p style="color:#555; margin-top: 10px;">We are here to help you with your investments and account security.</p>
+                <i class="fab fa-telegram" style="font-size: 40px; color: #229ED9;"></i>
+                <p style="color:#555; margin-top: 10px;">Join our official winery community for real-time updates and balance support.</p>
+                <a href="https://t.me/jjb24brandedwinery" target="_blank" class="btn-telegram" style="width: auto; padding: 10px 20px; display:inline-block;">OPEN TELEGRAM</a>
             </div>
             
             <div style="border-top: 1px solid #eee; padding-top: 20px; display: flex; flex-direction: column; gap: 15px;">
@@ -899,7 +946,7 @@ const renderSupportPage = () => {
                 </div>
 
                 <div>
-                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Contact Lines</h4>
+                    <h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-phone-alt" style="width: 20px;"></i> Official Lines</h4>
                     <p style="color:#111; font-weight: 900; margin:0; font-size: 16px;">+2347047591968</p>
                     <p style="color:#777; font-style: italic; margin:0; font-size: 13px;">091 1412 9537</p>
                 </div>
@@ -941,7 +988,7 @@ const router = () => {
         case '#set-pin': renderSetPinPage(); break; 
         case '#reset-pin': renderResetPinPage(); break; 
         case '#change-password': renderChangePasswordPage(); break; 
-        case '#my-investments': renderActiveInvestmentsPage(); break;
+        case '#my-plans': renderActiveInvestmentsPage(); break;
         default: renderHomeScreen(); 
     }
 };
@@ -956,7 +1003,7 @@ document.getElementById('closeModalBtn').addEventListener('click', closeModal); 
     const fomoData = {
         names: ["Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako"],
         locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan"],
-        actions: [ { text: "just registered", icon: "👤", color: "#3b82f6" }, { text: "invested ₦50,000", icon: "💰", color: "#10b981" }, { text: "invested ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP Gold", icon: "🍷", color: "#eab308" }, { text: "withdrew ₦15,000", icon: "🏦", color: "#f43f5e" } ],
+        actions: [ { text: "just joined community", icon: "👤", color: "#3b82f6" }, { text: "acquired plan ₦50,000", icon: "💰", color: "#10b981" }, { text: "acquired plan ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP community", icon: "🍷", color: "#eab308" }, { text: "received yield ₦15,000", icon: "🏦", color: "#f43f5e" } ],
         times: ["Just now", "2 secs ago", "5 secs ago"]
     };
     const style = document.createElement('style');
