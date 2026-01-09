@@ -128,10 +128,10 @@
             const password = document.getElementById('password').value;
             const loginData = { email, password };
 
-            // Use localhost for local testing, change to production URL when deploying
+            // UPDATED: Now pointing to jjb24-backend-1 (Your new Render)
             const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
                 ? 'http://localhost:3000/api/admin/login'
-                : 'https://jjb24-backend.onrender.com/api/admin/login';
+                : 'https://jjb24-backend-1.onrender.com/api/admin/login';
 
             // Show loading state
             const submitBtn = form.querySelector('.btn-auth');
@@ -161,7 +161,8 @@
                 let errorMessage = 'An error occurred. ';
                 
                 if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    errorMessage += 'Cannot connect to server. Make sure the backend is running on port 3000.';
+                    // FIXED: Removed the port 3000 reference to stop the confusion
+                    errorMessage += 'Cannot connect to winery server. Please ensure the new backend is live.';
                 } else {
                     errorMessage += error.message;
                 }
