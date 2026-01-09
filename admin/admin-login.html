@@ -128,10 +128,8 @@
             const password = document.getElementById('password').value;
             const loginData = { email, password };
 
-            // UPDATED: Now pointing to jjb24-backend-1 (Your new Render)
-            const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-                ? 'http://localhost:3000/api/admin/login'
-                : 'https://jjb24-backend-1.onrender.com/api/admin/login';
+            // POINTING DIRECTLY TO YOUR LIVE RENDER BACKEND
+            const API_URL = 'https://jjb24-backend-1.onrender.com/api/users/login';
 
             // Show loading state
             const submitBtn = form.querySelector('.btn-auth');
@@ -149,25 +147,24 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
+                    // Check if User ID 1 (Admin)
+                    if (result.user.id !== 1) {
+                        alert("Access Denied: You are not an administrator.");
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                        return;
+                    }
+
                     localStorage.setItem('adminToken', result.token);
                     window.location.href = 'admin-dashboard.html';
                 } else {
-                    alert('Error: ' + (result.message || 'Login failed. Please check your credentials.'));
+                    alert('Error: ' + (result.message || 'Login failed. Check your admin credentials.'));
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalText;
                 }
             } catch (error) {
                 console.error('Admin login error:', error);
-                let errorMessage = 'An error occurred. ';
-                
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    // FIXED: Removed the port 3000 reference to stop the confusion
-                    errorMessage += 'Cannot connect to winery server. Please ensure the new backend is live.';
-                } else {
-                    errorMessage += error.message;
-                }
-                
-                alert(errorMessage);
+                alert('Cannot connect to winery server. Please try again in a few moments.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             }
