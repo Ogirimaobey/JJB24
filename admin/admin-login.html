@@ -107,8 +107,8 @@
             <p>Please log in to manage the platform.</p>
             <form class="auth-form" id="adminLoginForm">
                 <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" required autocomplete="username" placeholder="Enter your email">
+                    <label for="identifier">Email or Phone</label>
+                    <input type="text" id="identifier" required placeholder="Enter admin email or phone">
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -124,9 +124,16 @@
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const email = document.getElementById('email').value;
+            const idValue = document.getElementById('identifier').value.trim();
             const password = document.getElementById('password').value;
-            const loginData = { email, password };
+            
+            // CLEAN PAYLOAD: Same logic as main.js to handle Email OR Phone
+            const loginData = { password: password };
+            if (idValue.includes('@')) {
+                loginData.email = idValue;
+            } else {
+                loginData.phone = idValue;
+            }
 
             // POINTING DIRECTLY TO YOUR LIVE RENDER BACKEND
             const API_URL = 'https://jjb24-backend-1.onrender.com/api/users/login';
@@ -147,7 +154,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // Check if User ID 1 (Admin)
+                    // SECURE ROLE CHECK: Ensure only User ID 1 (Admin) can enter
                     if (result.user.id !== 1) {
                         alert("Access Denied: You are not an administrator.");
                         submitBtn.disabled = false;
@@ -155,6 +162,7 @@
                         return;
                     }
 
+                    // Store the token and redirect
                     localStorage.setItem('adminToken', result.token);
                     window.location.href = 'admin-dashboard.html';
                 } else {
@@ -164,7 +172,7 @@
                 }
             } catch (error) {
                 console.error('Admin login error:', error);
-                alert('Cannot connect to winery server. Please try again in a few moments.');
+                alert('Cannot connect to winery server. Please check your connection and try again.');
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
             }
