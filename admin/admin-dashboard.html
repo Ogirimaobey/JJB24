@@ -46,7 +46,6 @@
             background-color: #6d28d9;
         }
 
-        /* STYLE FOR THE NEW RECEIPT BUTTON */
         .btn-receipt {
             background-color: #6366f1;
             color: white;
@@ -57,7 +56,9 @@
             font-weight: bold;
         }
 
-        /* Make it stack on mobile */
+        .btn-approve { background-color: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px; font-weight: bold; }
+        .btn-reject { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
         @media (max-width: 768px) {
             .fund-form { grid-template-columns: 1fr; }
         }
@@ -128,7 +129,7 @@
             <section class="data-card" style="border-top: 4px solid #6366f1;">
                 <div class="stat-header">
                     <i class="fas fa-camera" style="color: #6366f1;"></i>
-                    <h2>Pending Verification (Manual)</h2>
+                    <h2>Pending Verification (Manual Deposits)</h2>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
@@ -196,39 +197,29 @@
     </div>
 
     <script>
-        // Updated to jjb24-backend-1 (Your New Backend)
-        const getApiUrl = () => {
-            return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                ? 'http://localhost:3000/api'
-                : 'https://jjb24-backend-1.onrender.com/api';
-        };
+        const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
         window.addEventListener('DOMContentLoaded', async () => {
             const token = localStorage.getItem('adminToken');
-            const API_BASE_URL = getApiUrl();
-            
             if (!token) {
                 window.location.href = 'admin-login.html';
                 return;
             }
 
-            // Logout Handler
+            // Logout
             document.getElementById('adminLogoutButton').addEventListener('click', () => {
                 localStorage.removeItem('adminToken');
                 window.location.href = 'admin-login.html';
             });
 
-            // --- 1. HANDLE FUNDING FORM ---
+            // 1. HANDLE FUNDING FORM (Corrected Route)
             document.getElementById('fundUserForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
                 const email = document.getElementById('fundEmail').value.trim();
                 const amount = document.getElementById('fundAmount').value;
                 const submitBtn = e.target.querySelector('button');
 
-                if(!confirm(`⚠️ AUTHORIZE CREDITS?\n\nYou are about to send ₦${Number(amount).toLocaleString()} to ${email}.`)) {
-                    return;
-                }
+                if(!confirm(`⚠️ AUTHORIZE CREDITS?\n\nSending ₦${Number(amount).toLocaleString()} to ${email}.`)) return;
 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = 'Processing...';
@@ -242,89 +233,68 @@
                         },
                         body: JSON.stringify({ email, amount })
                     });
-
                     const result = await response.json();
-
                     if (response.ok) {
-                        alert(`✅ SUCCESS!\n\nCredits sent successfully.`);
-                        document.getElementById('fundEmail').value = '';
-                        document.getElementById('fundAmount').value = '';
+                        alert(`✅ Credits sent successfully.`);
                         location.reload();
                     } else {
                         alert(`❌ FAILED: ${result.message}`);
                     }
                 } catch (error) {
-                    alert("Error connecting to winery server.");
+                    alert("Error connecting to server.");
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Credits';
                 }
             });
 
-            // --- 2. LOAD STATS ---
+            // 2. LOAD GLOBAL STATS
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/stats`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const data = await response.json();
                     document.getElementById('totalUsersStat').textContent = data.totalUsers || 0;
                     document.getElementById('totalInvestmentsStat').textContent = data.totalInvestments || 0;
-                    const totalAmount = Number(data.totalAmountInvested || 0);
-                    document.getElementById('totalAmountStat').textContent = totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                    document.getElementById('totalAmountStat').textContent = Number(data.totalAmountInvested || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
                     
                     const usersTableBody = document.getElementById('recentUsersTable');
-                    usersTableBody.innerHTML = '';
-                    if (data.recentUsers && data.recentUsers.length > 0) {
-                        data.recentUsers.forEach(user => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `<td>${user.full_name}</td><td>${user.phone_number}</td><td>${new Date(user.created_at).toLocaleString()}</td>`;
-                            usersTableBody.appendChild(row);
-                        });
-                    } else {
-                        usersTableBody.innerHTML = '<tr><td colspan="3">No new joiners found.</td></tr>';
-                    }
+                    usersTableBody.innerHTML = (data.recentUsers || []).map(user => 
+                        `<tr><td>${user.full_name}</td><td>${user.phone_number}</td><td>${new Date(user.created_at).toLocaleDateString()}</td></tr>`
+                    ).join('') || '<tr><td colspan="3">No new joiners.</td></tr>';
                 }
-            } catch (error) { console.error('Error stats:', error); }
+            } catch (error) { console.error('Stats Error:', error); }
 
-            // Load Tables
-            await loadPendingWithdrawals();
-            await loadManualReceipts(token, API_BASE_URL);
+            // 3. LOAD PENDING WITHDRAWALS
+            await loadPendingWithdrawals(token);
+            
+            // 4. LOAD MANUAL DEPOSIT RECEIPTS
+            await loadManualReceipts(token);
         });
 
-        async function loadManualReceipts(token, API_BASE_URL) {
+        async function loadManualReceipts(token) {
             const tableBody = document.getElementById('manualReceiptsTable');
             try {
                 const response = await fetch(`${API_BASE_URL}/payment/deposits/pending`, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await response.json();
-                
                 if (data.deposits && data.deposits.length > 0) {
                     tableBody.innerHTML = data.deposits.map(d => `
                         <tr>
                             <td>${d.email || 'N/A'}</td>
                             <td style="font-weight:bold; color:green;">₦${Number(d.amount).toLocaleString()}</td>
-                            <td>
-                                <a href="${d.receipt_url}" target="_blank" class="btn-receipt">
-                                   <i class="fas fa-eye"></i> VIEW
-                                </a>
-                            </td>
-                            <td>${new Date(d.created_at).toLocaleString()}</td>
-                        </tr>
-                    `).join('');
+                            <td><a href="${d.receipt_url}" target="_blank" class="btn-receipt"><i class="fas fa-eye"></i> VIEW</a></td>
+                            <td>${new Date(d.created_at).toLocaleDateString()}</td>
+                        </tr>`).join('');
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="4">No pending verifications.</td></tr>';
                 }
-            } catch (e) {
-                tableBody.innerHTML = '<tr><td colspan="4">Server Error.</td></tr>';
-            }
+            } catch (e) { tableBody.innerHTML = '<tr><td colspan="4">Server Error.</td></tr>'; }
         }
 
-        async function loadPendingWithdrawals() {
-            const token = localStorage.getItem('adminToken');
-            const API_BASE_URL = getApiUrl();
+        async function loadPendingWithdrawals(token) {
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/withdrawals/pending`, {
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -332,33 +302,27 @@
                 const data = await response.json();
                 const tableBody = document.getElementById('pendingWithdrawalsTable');
                 if (data.withdrawals && data.withdrawals.length > 0) {
-                    tableBody.innerHTML = '';
-                    data.withdrawals.forEach(withdrawal => {
-                        const row = document.createElement('tr');
-                        const bankDetails = `<b>${withdrawal.bank_name || 'N/A'}</b><br>${withdrawal.account_number || 'N/A'}<br>${withdrawal.account_name || 'N/A'}`;
-                        row.innerHTML = `
-                            <td>${withdrawal.full_name || 'N/A'}</td>
-                            <td>${withdrawal.phone_number || 'N/A'}</td>
-                            <td>₦${Number(withdrawal.amount).toLocaleString()}</td>
-                            <td>${bankDetails}</td>
-                            <td>${withdrawal.reference}</td>
-                            <td>${new Date(withdrawal.created_at).toLocaleString()}</td>
+                    tableBody.innerHTML = data.withdrawals.map(w => `
+                        <tr>
+                            <td>${w.full_name || 'N/A'}</td>
+                            <td>${w.phone_number || 'N/A'}</td>
+                            <td>₦${Number(w.amount).toLocaleString()}</td>
+                            <td><b>${w.bank_name}</b><br>${w.account_number}<br>${w.account_name}</td>
+                            <td>${w.reference}</td>
+                            <td>${new Date(w.created_at).toLocaleDateString()}</td>
                             <td>
-                                <button class="btn-approve" onclick="handleWithdrawalAction('${withdrawal.reference}', true)">Approve</button>
-                                <button class="btn-reject" onclick="handleWithdrawalAction('${withdrawal.reference}', false)">Reject</button>
+                                <button class="btn-approve" onclick="handleWithdrawalAction('${w.reference}', true)">Approve</button>
+                                <button class="btn-reject" onclick="handleWithdrawalAction('${w.reference}', false)">Reject</button>
                             </td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
+                        </tr>`).join('');
                 } else {
                     tableBody.innerHTML = '<tr><td colspan="7">No pending requests.</td></tr>';
                 }
-            } catch (error) { console.error('Error withdrawals:', error); }
+            } catch (error) { console.error('Withdrawals Error:', error); }
         }
 
         async function handleWithdrawalAction(reference, approve) {
             const token = localStorage.getItem('adminToken');
-            const API_BASE_URL = getApiUrl();
             if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this request?`)) return;
             try {
                 const response = await fetch(`${API_BASE_URL}/payment/approve/${reference}`, {
@@ -366,7 +330,7 @@
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ approve })
                 });
-                if (response.ok) { alert("Action successful"); await loadPendingWithdrawals(); }
+                if (response.ok) { alert("Action successful"); location.reload(); }
             } catch (error) { alert('Error: ' + error.message); }
         }
     </script>
