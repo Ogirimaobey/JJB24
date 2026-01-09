@@ -135,8 +135,8 @@ const vipProducts = [
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 
-// UPDATED BACKEND URL TO YOUR ACCOUNT
-const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
+// EMERGENCY REVERT: POINTING BACK TO SAHIL'S BACKEND TO KEEP 300 USERS ACTIVE
+const API_BASE_URL = 'https://jjb24-backend.onrender.com/api';
 
 // ==========================================
 // 3. HELPER FUNCTIONS
