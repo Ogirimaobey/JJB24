@@ -658,8 +658,10 @@ const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
-        const data = await response.json();
-        const investments = data.active_investments || [];
+        const result = await response.json();
+        
+        // Use a fallback to find the list regardless of the exact key name
+        const investments = result.active_investments || result.investments || [];
 
         if (investments.length === 0) {
             appContent.innerHTML = `
@@ -673,23 +675,29 @@ const renderActiveInvestmentsPage = async () => {
             return;
         }
 
-        let html = investments.map(inv => `
+        let html = investments.map(inv => {
+            // FIX: Prioritize investmentAmount (500k) from backend vs old default price column
+            const acquiredAmount = inv.investmentAmount || inv.amount || inv.price || 0;
+            const daysLeft = (inv.days_left !== undefined && inv.days_left !== null) ? inv.days_left : 0;
+            const dailyYield = inv.dailyIncome || inv.daily_earning || 0;
+
+            return `
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div>
-                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${inv.itemname || 'Winery Plan'}</h4>
-                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
+                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${inv.itemName || inv.itemname || 'Winery Plan'}</h4>
+                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(dailyYield).toLocaleString()}</span></small>
                     </div>
                     <div style="text-align:right;">
-                        <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
+                        <span class="days-left-badge" style="background:${daysLeft > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${daysLeft} Days Left</span>
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
-                    <span class="history-item-text">Acquired: <strong>₦${Number(inv.amount || inv.price).toLocaleString()}</strong></span>
-                    <span class="history-item-text">Accumulated: <strong>₦${Number(inv.total_earning).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Acquired: <strong>₦${Number(acquiredAmount).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Accumulated: <strong>₦${Number(inv.totalEarning || inv.total_earning).toLocaleString()}</strong></span>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
     } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; }
