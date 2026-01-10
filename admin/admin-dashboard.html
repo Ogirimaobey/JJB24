@@ -212,7 +212,7 @@
                 window.location.href = 'admin-login.html';
             });
 
-            // 1. HANDLE FUNDING FORM (Corrected Route)
+            // 1. HANDLE FUNDING FORM (Direct Admin Route)
             document.getElementById('fundUserForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = document.getElementById('fundEmail').value.trim();
@@ -321,17 +321,37 @@
             } catch (error) { console.error('Withdrawals Error:', error); }
         }
 
-        async function handleWithdrawalAction(reference, approve) {
+        /**
+         * HANDSHAKE FIX: Calls the correct Admin routes for Peter.
+         * Ensures reference is sent as ID and method is POST.
+         */
+        window.handleWithdrawalAction = async function(reference, approve) {
             const token = localStorage.getItem('adminToken');
-            if (!confirm(`Are you sure you want to ${approve ? 'approve' : 'reject'} this request?`)) return;
+            const action = approve ? 'approve' : 'reject';
+            
+            if (!confirm(`Are you sure you want to ${action.toUpperCase()} withdrawal ${reference}?`)) return;
+            
             try {
-                const response = await fetch(`${API_BASE_URL}/payment/approve/${reference}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ approve })
+                const endpoint = `${API_BASE_URL}/admin/withdrawals/${action}/${reference}`;
+                const response = await fetch(endpoint, {
+                    method: 'POST', // MIRROR FIX: Matches adminRoutes.js
+                    headers: { 
+                        'Authorization': 'Bearer ' + token, 
+                        'Content-Type': 'application/json' 
+                    }
                 });
-                if (response.ok) { alert("Action successful"); location.reload(); }
-            } catch (error) { alert('Error: ' + error.message); }
+                
+                const result = await response.json();
+                
+                if (response.ok) { 
+                    alert(`✅ ${result.message || 'Action completed successfully.'}`); 
+                    location.reload(); 
+                } else {
+                    alert(`❌ Error: ${result.message || 'Failed to process request.'}`);
+                }
+            } catch (error) { 
+                alert('Critical connection error. Please try again.'); 
+            }
         }
     </script>
 </body>
