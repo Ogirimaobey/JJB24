@@ -654,17 +654,14 @@ const renderSetPinPage = async () => {
 };
 
 /**
- * FIXED RENDER PAGE
- * MIRRORED SYNC: Matches the redundant keys from Backend Service (itemName/itemName, price/amount, etc.)
- * PRIORITY FIX: Uses 'inv.itemName' before falling back to others to avoid 'Chamdor 1' error.
+ * FIXED RENDER PAGE (UNIVERSAL MIRROR)
+ * SYNCED: Consumes redundant keys from Backend Service (itemName, investmentAmount, etc.)
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
         const data = await response.json();
-        
-        // Matches the redundant logic in Backend Service
         const investments = data.active_investments || [];
 
         if (investments.length === 0) {
@@ -680,11 +677,10 @@ const renderActiveInvestmentsPage = async () => {
         }
 
         let html = investments.map(inv => {
-            // Using redundant keys to ensure we catch the correct name, price, and days_left
-            // NOTE: We check itemName (Capital N) first because our new service sends it as the priority.
+            // MIRROR LOGIC: Prioritize Capitalized keys from Backend redundant sync
             const name = inv.itemName || inv.itemname || 'Winery Plan';
             const price = inv.investmentAmount || inv.amount || inv.price || 0;
-            const daily = inv.dailyYield || inv.dailyIncome || inv.daily_earning || 0;
+            const daily = inv.dailyYield || inv.daily_earning || 0;
             const daysLeft = (inv.daysLeft !== undefined && inv.daysLeft !== null) ? inv.daysLeft : (inv.days_left || 0);
 
             return `
@@ -893,10 +889,10 @@ const renderWithdrawPage = async () => {
         amountInput.addEventListener('input', () => {
             const val = parseFloat(amountInput.value);
             if (val >= 800) {
-                const fee = val * 0.09;
-                const final = val - fee;
-                document.getElementById('feeDisplay').innerText = `- ₦${fee.toLocaleString()}`;
-                document.getElementById('finalDisplay').innerText = `₦${final.toLocaleString()}`;
+                const fee = (val * 0.09).toFixed(2);
+                const final = (val - fee).toFixed(2);
+                document.getElementById('feeDisplay').innerText = `- ₦${Number(fee).toLocaleString()}`;
+                document.getElementById('finalDisplay').innerText = `₦${Number(final).toLocaleString()}`;
                 feeContainer.style.display = 'block';
             } else {
                 feeContainer.style.display = 'none';
@@ -916,7 +912,7 @@ const renderWithdrawPage = async () => {
                 })
             });
             const r = await res.json(); 
-            if(r.ok) showSuccessModal(r.message); else alert(r.message);
+            if(res.ok) showSuccessModal(r.message); else alert(r.message);
         });
     } catch (e) {}
 };
