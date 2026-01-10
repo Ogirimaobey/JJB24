@@ -656,6 +656,7 @@ const renderSetPinPage = async () => {
 /**
  * FIXED RENDER PAGE
  * MIRRORED SYNC: Matches the redundant keys from Backend Service (itemName/itemName, price/amount, etc.)
+ * PRIORITY FIX: Uses 'inv.itemName' before falling back to others to avoid 'Chamdor 1' error.
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
@@ -680,6 +681,7 @@ const renderActiveInvestmentsPage = async () => {
 
         let html = investments.map(inv => {
             // Using redundant keys to ensure we catch the correct name, price, and days_left
+            // NOTE: We check itemName (Capital N) first because our new service sends it as the priority.
             const name = inv.itemName || inv.itemname || 'Winery Plan';
             const price = inv.investmentAmount || inv.amount || inv.price || 0;
             const daily = inv.dailyYield || inv.dailyIncome || inv.daily_earning || 0;
