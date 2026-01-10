@@ -127,7 +127,6 @@
             const idValue = document.getElementById('identifier').value.trim();
             const password = document.getElementById('password').value;
             
-            // CLEAN PAYLOAD: Same logic as main.js to handle Email OR Phone
             const loginData = { password: password };
             if (idValue.includes('@')) {
                 loginData.email = idValue;
@@ -135,10 +134,8 @@
                 loginData.phone = idValue;
             }
 
-            // POINTING DIRECTLY TO YOUR LIVE RENDER BACKEND
             const API_URL = 'https://jjb24-backend-1.onrender.com/api/users/login';
 
-            // Show loading state
             const submitBtn = form.querySelector('.btn-auth');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
@@ -154,8 +151,8 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // SECURE ROLE CHECK: Ensure only User ID 1 (Admin) can enter
-                    if (result.user.id !== 1) {
+                    // UPDATED ROLE CHECK: Check if the user is an admin, regardless of their ID number
+                    if (!result.user.is_admin) {
                         alert("Access Denied: You are not an administrator.");
                         submitBtn.disabled = false;
                         submitBtn.textContent = originalText;
