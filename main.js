@@ -655,7 +655,6 @@ const renderSetPinPage = async () => {
 /**
  * FIXED RENDER PAGE (UNIVERSAL MIRROR)
  * SYNCED: Consumes redundant keys from Backend Service (itemName, investmentAmount, etc.)
- * This kills the 'Chamdor 1' and '8k' price loop.
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
@@ -677,11 +676,11 @@ const renderActiveInvestmentsPage = async () => {
         }
 
         let html = investments.map(inv => {
-            // MIRROR LOGIC: Prioritize Capitalized keys from Backend redundant sync
+            // MIRROR LOGIC: Prioritize keys from the fixed Backend Handshake
             const name = inv.itemName || inv.itemname || 'Winery Plan';
             const price = inv.investmentAmount || inv.amount || inv.price || 0;
             const daily = inv.dailyYield || inv.daily_earning || 0;
-            const daysLeft = (inv.daysLeft !== undefined && inv.daysLeft !== null) ? inv.daysLeft : (inv.days_left || 0);
+            const daysLeft = inv.daysLeft !== undefined ? inv.daysLeft : (inv.days_left || 0);
 
             return `
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
