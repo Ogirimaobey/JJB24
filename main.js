@@ -654,7 +654,7 @@ const renderSetPinPage = async () => {
 
 /**
  * FIXED RENDER PAGE (THE CHAMDOR KILLER - FINAL HANDSHAKE)
- * Prioritizes the fixed redundant keys from the Backend Service.
+ * SYNCED: Consumes redundant keys from Backend Service (itemName, investmentAmount, etc.)
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing active plans...</p>';
@@ -663,7 +663,7 @@ const renderActiveInvestmentsPage = async () => {
         const data = await response.json();
         const investments = data.active_investments || [];
 
-        // Debug Log: Check Inspect -> Console to verify 150k is arriving
+        // Debug Log: Use browser Console to verify data truth
         console.log("Dashboard Data Handshake:", investments);
 
         if (investments.length === 0) {
@@ -679,25 +679,25 @@ const renderActiveInvestmentsPage = async () => {
         }
 
         let html = investments.map(inv => {
-            // MIRROR LOGIC: Force the use of prioritized keys from fixed userService.js
-            const displayName = inv.itemName || inv.itemname || 'Winery Plan';
-            const displayPrice = inv.investmentAmount || inv.amount || 0;
-            const displayDaily = inv.dailyYield || inv.daily_earning || 0;
-            const displayDays  = inv.daysLeft !== undefined ? inv.daysLeft : 0;
+            // MIRROR LOGIC: Strictly use the prioritized keys from our fixed Backend
+            const name = inv.itemName || inv.itemname || 'Winery Plan';
+            const price = inv.investmentAmount || inv.amount || 0;
+            const daily = inv.dailyYield || inv.daily_earning || 0;
+            const daysLeft = inv.daysLeft !== undefined ? inv.daysLeft : 0;
 
             return `
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
                 <div style="display:flex; justify-content:space-between; align-items:start;">
                     <div>
-                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${displayName}</h4>
-                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(displayDaily).toLocaleString()}</span></small>
+                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${name}</h4>
+                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(daily).toLocaleString()}</span></small>
                     </div>
                     <div style="text-align:right;">
-                        <span class="days-left-badge" style="background:${Number(displayDays) > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${displayDays} Days Left</span>
+                        <span class="days-left-badge" style="background:${Number(daysLeft) > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${daysLeft} Days Left</span>
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
-                    <span class="history-item-text">Acquired: <strong>₦${Number(displayPrice).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Acquired: <strong>₦${Number(price).toLocaleString()}</strong></span>
                     <span class="history-item-text">Accumulated: <strong>₦${Number(inv.totalAccumulated || inv.total_earning || 0).toLocaleString()}</strong></span>
                 </div>
             </div>`;
@@ -705,7 +705,7 @@ const renderActiveInvestmentsPage = async () => {
 
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
     } catch (e) { 
-        console.error("Render Failure:", e);
+        console.error("Render failure:", e);
         appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; 
     }
 };
