@@ -128,8 +128,10 @@
             const password = document.getElementById('password').value;
             
             const loginData = { password: password };
+            
+            // Handle Email or Phone + Normalize Email to lowercase to match DB
             if (idValue.includes('@')) {
-                loginData.email = idValue;
+                loginData.email = idValue.toLowerCase();
             } else {
                 loginData.phone = idValue;
             }
@@ -151,7 +153,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    // UPDATED ROLE CHECK: Check if the user is an admin, regardless of their ID number
+                    // SECURE ROLE CHECK: Check the database flag, not the ID number
                     if (!result.user.is_admin) {
                         alert("Access Denied: You are not an administrator.");
                         submitBtn.disabled = false;
