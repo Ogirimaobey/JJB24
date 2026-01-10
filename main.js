@@ -493,11 +493,10 @@ const renderHomeScreen = async () => {
                     <h3 style="color:#111; font-size: 16px; margin-bottom: 12px;"><i class="fas fa-building" style="color:#6a0dad;"></i> Corporate Information</h3>
                     <div style="font-size: 13px; color: #444; line-height: 1.6;">
                         <p style="margin-bottom: 8px;"><strong>Entity:</strong> JJB BRANDED WINES LTD</p>
-                        <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria. (Matches CAC Records)</p>
+                        <p style="margin-bottom: 8px;"><strong>Registered Address:</strong> Monaya Rd, Ogoja 550101, Cross River, Nigeria.</p>
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
                             <span style="display:block; font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase;">Official Contact Lines</span>
                             <span style="font-weight: 700; color: #111; display: block;">+2347047591968</span>
-                            <span style="font-style: italic; color: #777; display: block; font-size: 12px; margin-top: 2px;">091 1412 9537</span>
                         </div>
                     </div>
                 </div>
@@ -656,6 +655,7 @@ const renderSetPinPage = async () => {
 /**
  * FIXED RENDER PAGE (UNIVERSAL MIRROR)
  * SYNCED: Consumes redundant keys from Backend Service (itemName, investmentAmount, etc.)
+ * This kills the 'Chamdor 1' and '8k' price loop.
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
@@ -850,18 +850,12 @@ const renderWithdrawPage = async () => {
                                 <option value="OPay">OPay (Paycom)</option>
                                 <option value="PalmPay">PalmPay</option>
                                 <option value="Moniepoint">Moniepoint</option>
-                                <option value="GTBank">GTBank (Guaranty Trust)</option>
+                                <option value="GTBank">GTBank</option>
                                 <option value="Access Bank">Access Bank</option>
                                 <option value="Zenith Bank">Zenith Bank</option>
                                 <option value="First Bank">First Bank</option>
-                                <option value="UBA">United Bank for Africa (UBA)</option>
-                                <option value="Fidelity Bank">Fidelity Bank</option>
-                                <option value="Union Bank">Union Bank</option>
-                                <option value="Stanbic IBTC">Stanbic IBTC Bank</option>
-                                <option value="Wema Bank">Wema Bank</option>
-                                <option value="Sterling Bank">Sterling Bank</option>
-                                <option value="Kuda Bank">Kuda Microfinance Bank</option>
-                                <option value="Ecobank">Ecobank Nigeria</option>
+                                <option value="UBA">UBA</option>
+                                <option value="Kuda Bank">Kuda Bank</option>
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 20px;">
