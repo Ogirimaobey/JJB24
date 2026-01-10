@@ -653,13 +653,17 @@ const renderSetPinPage = async () => {
     });
 };
 
+/**
+ * FIXED RENDER PAGE
+ * Now matches the exact mirrored keys from Backend Service
+ */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading plans...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
         const data = await response.json();
         
-        // Exact replication of the keys provided by the new Backend Service
+        // Match the key from Backend exactly
         const investments = data.active_investments || [];
 
         if (investments.length === 0) {
@@ -682,7 +686,7 @@ const renderActiveInvestmentsPage = async () => {
                         <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(inv.daily_earning).toLocaleString()}</span></small>
                     </div>
                     <div style="text-align:right;">
-                        <span class="days-left-badge" style="background:${inv.days_left > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
+                        <span class="days-left-badge" style="background:${Number(inv.days_left) > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${inv.days_left} Days Left</span>
                     </div>
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
