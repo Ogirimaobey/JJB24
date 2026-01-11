@@ -678,7 +678,7 @@ const renderActiveInvestmentsPage = async () => {
         let html = '<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>';
         
         investments.forEach(inv => {
-            // FIX: Checking for both camelCase and snake_case keys to ensure data syncs regardless of API format.
+            // THE CRITICAL FIX: Checking for both camelCase and snake_case keys from the Database.
             const name = inv.itemname || inv.itemName || "Winery Asset";
             const cost = Number(inv.price || inv.investmentAmount) || 0;
             const yieldAmt = Number(inv.daily_earning || inv.dailyYield) || 0;
