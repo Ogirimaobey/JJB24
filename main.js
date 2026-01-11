@@ -678,12 +678,12 @@ const renderActiveInvestmentsPage = async () => {
         let html = '<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>';
         
         investments.forEach(inv => {
-            // Rebuild logic: We only use the clean keys provided by our new userService.js
-            const name = inv.itemName || "Winery Asset";
-            const cost = Number(inv.investmentAmount) || 0;
-            const yieldAmt = Number(inv.dailyYield) || 0;
-            const collected = Number(inv.totalAccumulated) || 0;
-            const daysLeft = inv.daysLeft !== undefined ? inv.daysLeft : 0;
+            // FIX: Checking for both camelCase and snake_case keys to ensure data syncs regardless of API format.
+            const name = inv.itemname || inv.itemName || "Winery Asset";
+            const cost = Number(inv.price || inv.investmentAmount) || 0;
+            const yieldAmt = Number(inv.daily_earning || inv.dailyYield) || 0;
+            const collected = Number(inv.total_earning || inv.totalAccumulated) || 0;
+            const daysLeft = inv.days_left !== undefined ? inv.days_left : (inv.daysLeft || 0);
 
             html += `
             <div class="product-card-wc" style="padding:20px; margin-bottom:20px; border-left: 6px solid #10b981; background:white; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
