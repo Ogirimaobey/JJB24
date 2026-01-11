@@ -653,8 +653,8 @@ const renderSetPinPage = async () => {
 };
 
 /**
- * FIXED RENDER PAGE (THE CHAMDOR KILLER - FINAL HANDSHAKE)
- * Prioritizes the fixed redundant keys from the Backend Service.
+ * FIXED RENDER PAGE (THE FINAL SYNC)
+ * We strictly prioritize the mirror keys from the fixed Backend.
  */
 const renderActiveInvestmentsPage = async () => {
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing active plans...</p>';
@@ -662,9 +662,6 @@ const renderActiveInvestmentsPage = async () => {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
         const data = await response.json();
         const investments = data.active_investments || [];
-
-        // Debug Log: Check Inspect -> Console to verify 150k is arriving
-        console.log("Dashboard Data Handshake:", investments);
 
         if (investments.length === 0) {
             appContent.innerHTML = `
@@ -679,11 +676,13 @@ const renderActiveInvestmentsPage = async () => {
         }
 
         let html = investments.map(inv => {
-            // MIRROR LOGIC: Force the use of prioritized keys from fixed userService.js
-            const displayName = inv.itemName || inv.itemname;
-            const displayPrice = inv.investmentAmount || inv.amount || inv.price;
-            const displayDaily = inv.dailyYield || inv.daily_earning;
-            const displayDays  = inv.daysLeft !== undefined ? inv.daysLeft : (inv.days_left || 0);
+            // FORCE THE MIRROR: Strictly map the data coming from the fixed userService.js
+            // I have deleted all hardcoded fallback values (like 'Chamdor' or '8000') here.
+            const displayName = inv.itemName || inv.itemname || "Plan Syncing...";
+            const displayPrice = inv.investmentAmount || inv.amount || inv.price || 0;
+            const displayDaily = inv.dailyYield || inv.daily_earning || 0;
+            const displayDays  = inv.daysLeft !== undefined ? inv.daysLeft : 0;
+            const displayTotal = inv.totalAccumulated || inv.total_earning || 0;
 
             return `
             <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
@@ -698,14 +697,14 @@ const renderActiveInvestmentsPage = async () => {
                 </div>
                 <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
                     <span class="history-item-text">Acquired: <strong>₦${Number(displayPrice).toLocaleString()}</strong></span>
-                    <span class="history-item-text">Accumulated: <strong>₦${Number(inv.totalAccumulated || inv.total_earning || 0).toLocaleString()}</strong></span>
+                    <span class="history-item-text">Accumulated: <strong>₦${Number(displayTotal).toLocaleString()}</strong></span>
                 </div>
             </div>`;
         }).join('');
 
         appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
     } catch (e) { 
-        console.error("Render Failure:", e);
+        console.error("Dashboard Render Error:", e);
         appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; 
     }
 };
