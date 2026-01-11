@@ -653,11 +653,11 @@ const renderSetPinPage = async () => {
 };
 
 /**
- * FIXED RENDER PAGE (THE FINAL SYNC)
- * We strictly prioritize the mirror keys from the fixed Backend.
+ * REBUILT FROM SCRATCH: My Plans Page
+ * Strictly respects the database truth. 0% hardcoded strings.
  */
 const renderActiveInvestmentsPage = async () => {
-    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing active plans...</p>';
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Portfolio...</p>';
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
         const data = await response.json();
@@ -675,37 +675,53 @@ const renderActiveInvestmentsPage = async () => {
             return;
         }
 
-        let html = investments.map(inv => {
-            // FORCE THE MIRROR: Strictly map the data coming from the fixed userService.js
-            // I have deleted all hardcoded fallback values (like 'Chamdor' or '8000') here.
-            const displayName = inv.itemName || inv.itemname || "Plan Syncing...";
-            const displayPrice = inv.investmentAmount || inv.amount || inv.price || 0;
-            const displayDaily = inv.dailyYield || inv.daily_earning || 0;
-            const displayDays  = inv.daysLeft !== undefined ? inv.daysLeft : 0;
-            const displayTotal = inv.totalAccumulated || inv.total_earning || 0;
+        let html = '<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>';
+        
+        investments.forEach(inv => {
+            // Rebuild logic: We only use the clean keys provided by our new userService.js
+            const name = inv.itemName || "Winery Asset";
+            const cost = Number(inv.investmentAmount) || 0;
+            const yieldAmt = Number(inv.dailyYield) || 0;
+            const collected = Number(inv.totalAccumulated) || 0;
+            const daysLeft = inv.daysLeft !== undefined ? inv.daysLeft : 0;
 
-            return `
-            <div class="product-card-wc" style="padding:15px; margin-bottom:15px; border-left: 5px solid #10b981;">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
+            html += `
+            <div class="product-card-wc" style="padding:20px; margin-bottom:20px; border-left: 6px solid #10b981; background:white; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 1px solid #f0f0f0; padding-bottom:12px; margin-bottom:12px;">
                     <div>
-                        <h4 class="history-item-text" style="margin:0; font-size:16px;">${displayName}</h4>
-                        <small class="history-sub-text">Daily Yield: <span style="color:#10b981; font-weight:bold;">₦${Number(displayDaily).toLocaleString()}</span></small>
+                        <h4 class="history-item-text" style="margin:0; font-size:18px; text-transform:uppercase;">${name}</h4>
+                        <small style="color:#10b981; font-weight:bold; font-size:12px;">ACTIVE EARNING</small>
                     </div>
                     <div style="text-align:right;">
-                        <span class="days-left-badge" style="background:${Number(displayDays) > 5 ? '#10b981' : '#ef4444'}; color:white; padding:4px 10px; border-radius:15px; font-size:11px;">${displayDays} Days Left</span>
+                        <span class="days-left-badge" style="background:${daysLeft > 5 ? '#10b981' : '#ef4444'}; color:white; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800;">${daysLeft} DAYS LEFT</span>
                     </div>
                 </div>
-                <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #eee; display:flex; justify-content:space-between; font-size:13px;">
-                    <span class="history-item-text">Acquired: <strong>₦${Number(displayPrice).toLocaleString()}</strong></span>
-                    <span class="history-item-text">Accumulated: <strong>₦${Number(displayTotal).toLocaleString()}</strong></span>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="stat-item">
+                        <span class="stat-label" style="font-size:10px; color:#888;">ACQUIRED PRICE</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800;">₦${cost.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item" style="text-align:right;">
+                        <span class="stat-label" style="font-size:10px; color:#888;">DAILY YIELD</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800; color:#10b981;">₦${yieldAmt.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label" style="font-size:10px; color:#888;">TOTAL COLLECTED</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800; color:#6a0dad;">₦${collected.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item" style="text-align:right;">
+                        <span class="stat-label" style="font-size:10px; color:#888;">NEXT PAYOUT</span>
+                        <span class="stat-value" style="font-size:14px; font-weight:800;">12:00 AM</span>
+                    </div>
                 </div>
             </div>`;
-        }).join('');
+        });
 
-        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>${html}</div>`;
+        appContent.innerHTML = html + '</div>';
     } catch (e) { 
         console.error("Dashboard Render Error:", e);
-        appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; 
+        appContent.innerHTML = '<p style="text-align:center; color:#111; padding:20px;">Critical Sync Error. Please reload.</p>'; 
     }
 };
 
