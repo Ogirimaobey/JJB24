@@ -300,6 +300,7 @@ const handleLogin = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token); 
+        localStorage.setItem('user_email', result.user?.email || id); // Added for compliance check
         window.location.hash = '#home'; 
         router();
     } catch (error) { 
@@ -440,8 +441,58 @@ const renderHomeScreen = async () => {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        const fullName = data.balance.full_name || 'User'; const balance = data.balance.balance || 0;
+        const user = data.balance || {};
+        const fullName = user.full_name || 'User'; 
+        const balance = user.balance || 0;
+        const userEmail = user.email || localStorage.getItem('user_email');
         
+        // ==========================================
+        // COMPLIANCE CARD (DYNAMIC INJECTION)
+        // ==========================================
+        let complianceCardHTML = '';
+        if (userEmail === 'audit@flutterwave.com') {
+            complianceCardHTML = `
+                <div id="compliance-card" style="
+                    background: #ffffff; 
+                    border-left: 6px solid #f4c430; 
+                    border-radius: 16px; 
+                    padding: 25px; 
+                    margin: 10px 0 25px 0; 
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+                    animation: popIn 0.5s ease-out;
+                ">
+                    <div style="display: flex; align-items: center; margin-bottom: 18px;">
+                        <div style="background: #fef9c3; color: #a16207; padding: 10px; border-radius: 50%; margin-right: 15px;">
+                            <i class="fas fa-building" style="font-size: 20px;"></i>
+                        </div>
+                        <h3 style="margin: 0; color: #111; font-size: 1.1rem; font-weight: 800;">Official Corporate Records</h3>
+                    </div>
+                    
+                    <div style="color: #444; font-size: 14px; line-height: 1.6;">
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Registered Address (CAC)</strong><br>
+                            <span style="color: #111; font-weight: 600;">Monaya Rd, Ogoja 550101, Cross River, Nigeria.</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Official Line 1</strong><br>
+                                <span style="color: #111; font-weight: 600;">+234 704 759 1968</span>
+                            </div>
+                            <div>
+                                <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Official Line 2</strong><br>
+                                <span style="color: #111; font-weight: 600;">+234 911 412 9537</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed #ddd; font-size: 12px; color: #a16207; font-weight: 500;">
+                            <i class="fas fa-info-circle"></i> Verification details strictly for administrative and regulatory review.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         let activityHTML = "<p style='color:#777; text-align:center;'>No recent activity.</p>";
         try {
             const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
@@ -465,6 +516,8 @@ const renderHomeScreen = async () => {
                 </div>
                 <div class="profile-icon"><i class="fas fa-user"></i></div>
             </div>
+
+            ${complianceCardHTML}
             
             <div class="balance-card">
                 <small>Available Assets (NGN)</small>
