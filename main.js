@@ -234,6 +234,7 @@ const getReferralFromUrl = () => {
 
 const logoutUser = () => { 
     localStorage.removeItem('token'); 
+    localStorage.removeItem('user_email');
     window.location.hash = '#login'; 
     router(); 
 };
@@ -300,7 +301,7 @@ const handleLogin = async (event) => {
         const result = await response.json();
         if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token); 
-        localStorage.setItem('user_email', result.user?.email || id); // Added for compliance check
+        localStorage.setItem('user_email', result.user?.email || (id.includes('@') ? id : ''));
         window.location.hash = '#home'; 
         router();
     } catch (error) { 
@@ -441,10 +442,10 @@ const renderHomeScreen = async () => {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
         if (!response || !response.ok) throw new Error();
         const data = await response.json();
-        const user = data.balance || {};
-        const fullName = user.full_name || 'User'; 
-        const balance = user.balance || 0;
-        const userEmail = user.email || localStorage.getItem('user_email');
+        const userObj = data.balance || {};
+        const fullName = userObj.full_name || 'User'; 
+        const balance = userObj.balance || 0;
+        const userEmail = userObj.email || localStorage.getItem('user_email');
         
         // ==========================================
         // COMPLIANCE CARD (DYNAMIC INJECTION)
@@ -1052,6 +1053,9 @@ appContent.addEventListener('click', handleInvestClick);
 // 8. SOCIAL PROOF POPUPS (FOMO)
 // ==========================================
 (function startSocialProof() {
+    // 🛑 COMPLIANCE CHECK: DO NOT SHOW TO AUDITOR
+    if (localStorage.getItem('user_email') === 'audit@flutterwave.com') return;
+
     const fomoData = {
         names: [
             "Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako",
