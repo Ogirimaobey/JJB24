@@ -5,23 +5,23 @@
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
     /* COMMUNITY ANNOUNCEMENT MODAL */
-    #telegramModal {
+    #whatsappModal {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         justify-content: center; align-items: center;
         backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.6);
         z-index: 20000;
     }
-    #telegramModal .modal-content {
+    #whatsappModal .modal-content {
         background: #fff; padding: 30px; border-radius: 24px;
         text-align: center; max-width: 320px; width: 85%;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         animation: popIn 0.4s ease-out;
     }
-    .btn-telegram {
-        background: #229ED9; color: white !important;
+    .btn-whatsapp {
+        background: #25D366; color: white !important;
         font-weight: 800; padding: 14px 25px; border-radius: 12px;
         text-decoration: none; display: inline-block; margin-top: 15px;
-        width: 100%; box-shadow: 0 4px 15px rgba(34, 158, 217, 0.3);
+        width: 100%; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
     }
     @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -141,16 +141,16 @@ styleSheet.innerText = `
 `;
 document.head.appendChild(styleSheet);
 
-// Inject Telegram Modal Structure
+// Inject WhatsApp Modal Structure
 const announcementDiv = document.createElement("div");
-announcementDiv.id = "telegramModal";
+announcementDiv.id = "whatsappModal";
 announcementDiv.innerHTML = `
     <div class="modal-content">
-        <i class="fab fa-telegram" style="font-size: 50px; color: #229ED9;"></i>
+        <i class="fab fa-whatsapp" style="font-size: 50px; color: #25D366;"></i>
         <h3 style="margin: 15px 0 10px; color: #111;">Community Group</h3>
         <p style="color: #666; font-size: 14px; line-height: 1.4;">Join our official winery community for real-time updates and support.</p>
-        <a href="https://t.me/jjb24brandedwinery" target="_blank" onclick="closeTelegramModal()" class="btn-telegram">JOIN COMMUNITY</a>
-        <button onclick="closeTelegramModal()" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-size:12px;">I'm already a member / Close</button>
+        <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" onclick="closeWhatsappModal()" class="btn-whatsapp">JOIN COMMUNITY</a>
+        <button onclick="closeWhatsappModal()" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-size:12px;">I'm already a member / Close</button>
     </div>
 `;
 document.body.appendChild(announcementDiv);
@@ -165,9 +165,9 @@ successModalDiv.innerHTML = `
 `;
 document.body.appendChild(successModalDiv);
 
-window.closeTelegramModal = () => {
+window.closeWhatsappModal = () => {
     localStorage.setItem('jjb_community_joined', 'true');
-    document.getElementById('telegramModal').style.display = 'none';
+    document.getElementById('whatsappModal').style.display = 'none';
 };
 
 // ==========================================
@@ -434,7 +434,7 @@ const renderOTPVerificationScreen = (email) => {
 
 const renderHomeScreen = async () => {
     if (!localStorage.getItem('jjb_community_joined')) {
-        setTimeout(() => { document.getElementById('telegramModal').style.display = 'flex'; }, 2000);
+        setTimeout(() => { document.getElementById('whatsappModal').style.display = 'flex'; }, 2000);
     }
     appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
     const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
@@ -785,8 +785,8 @@ const renderMePage = async () => {
                     </div>
                 </div>
                 <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
-                    <a href="https://t.me/jjb24brandedwinery" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
-                        <span style="font-weight:700;"><i class="fab fa-telegram" style="width:25px; color:#229ED9;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
+                    <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fab fa-whatsapp" style="width:25px; color:#25D366;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
                     </a>
                     <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
                         <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Password</span><i class="fas fa-chevron-right"></i>
@@ -991,9 +991,9 @@ const renderSupportPage = () => {
         <h2 style="color:#111;">Help & Support</h2>
         <div style="background:white; padding:25px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
             <div style="text-align:center; margin-bottom: 20px;">
-                <i class="fab fa-telegram" style="font-size: 40px; color: #229ED9;"></i>
+                <i class="fab fa-whatsapp" style="font-size: 40px; color: #25D366;"></i>
                 <p style="color:#555; margin-top: 10px;">Join our official winery community for updates.</p>
-                <a href="https://t.me/jjb24brandedwinery" target="_blank" class="btn-telegram" style="width: auto; padding: 10px 20px; display:inline-block;">OPEN TELEGRAM</a>
+                <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" class="btn-whatsapp" style="width: auto; padding: 10px 20px; display:inline-block;">OPEN WHATSAPP</a>
             </div>
             <div style="border-top: 1px solid #eee; padding-top: 20px; display: flex; flex-direction: column; gap: 15px;">
                 <div><h4 style="color:#111; margin-bottom: 5px;"><i class="fas fa-envelope"></i> Email Support</h4><a href="mailto:jjb24wines@gmail.com" style="color:#6a0dad; font-weight: 800; text-decoration: none;">jjb24wines@gmail.com</a></div>
