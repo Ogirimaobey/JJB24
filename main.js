@@ -1,150 +1,156 @@
 // ==========================================
-// 1. CONFIGURATION & STYLING INJECTION (WORLD-CLASS FINTECH UI)
+// 1. CONFIGURATION & STYLING INJECTION
 // ==========================================
 
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-    :root {
-        --accent-primary: #8B5CF6; 
-        --accent-success: #10B981; 
-        --accent-danger: #EF4444;  
-        --bg-main: #F8FAFC;        
-        --text-dark: #0F172A;      /* Bold Slate for readable headings */
-        --text-muted: #475569;     /* Clear Slate for sub-labels */
-        --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-        --nav-height: 75px;
+    /* COMMUNITY ANNOUNCEMENT MODAL */
+    #whatsappModal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.6);
+        z-index: 20000;
     }
+    #whatsappModal .modal-content {
+        background: #fff; padding: 30px; border-radius: 24px;
+        text-align: center; max-width: 320px; width: 85%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: popIn 0.4s ease-out;
+    }
+    .btn-whatsapp {
+        background: #25D366; color: white !important;
+        font-weight: 800; padding: 14px 25px; border-radius: 12px;
+        text-decoration: none; display: inline-block; margin-top: 15px;
+        width: 100%; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+    }
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    /* DESKTOP RESPONSIVENESS: PERFECTLY CENTERED FRAME */
-    body { 
-        font-family: 'Plus Jakarta Sans', sans-serif !important; 
-        background: #E2E8F0; 
-        margin: 0; 
+    /* BOLD GLOBAL BUTTONS */
+    .btn-deposit {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: transform 0.2s ease;
+    }
+    .btn-deposit:active { transform: scale(0.98); }
+
+    .btn-withdraw {
+        background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+        color: white !important;
+        font-weight: 800 !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: transform 0.2s ease;
+    }
+    .btn-withdraw:active { transform: scale(0.98); }
+
+    /* PREMIUM PRODUCT CARDS */
+    .product-grid-wc {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+    .product-card-wc {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        border: 1px solid #f0f0f0;
+        transition: transform 0.2s ease;
         display: flex;
-        justify-content: center;
-        min-height: 100vh;
+        flex-direction: column;
     }
-
-    #app-content {
-        background: var(--bg-main);
-        width: 100%;
-        max-width: 500px; 
-        min-height: 100vh;
-        position: relative;
-        box-shadow: 0 0 100px rgba(0,0,0,0.1);
-        padding-bottom: 110px;
-        overflow-x: hidden;
+    .product-card-wc:hover { transform: translateY(-5px); }
+    .product-image-wc { height: 180px; width: 100%; position: relative; }
+    .product-image-wc img { width: 100%; height: 100%; object-fit: cover; }
+    .card-badge {
+        position: absolute; top: 10px; right: 10px;
+        background: rgba(0,0,0,0.7); color: #fff;
+        padding: 4px 10px; border-radius: 20px;
+        font-size: 10px; font-weight: bold; backdrop-filter: blur(4px);
     }
-
-    /* MODAL FIX: CENTERED WITHIN THE 500PX FRAME */
-    #whatsappModal, #successModal {
-        display: none; 
-        position: fixed; 
-        top: 0; 
-        left: 50%; 
-        transform: translateX(-50%);
-        width: 100%; 
-        max-width: 500px; 
-        height: 100%;
-        justify-content: center; 
-        align-items: center;
-        backdrop-filter: blur(8px); 
-        background: rgba(15, 23, 42, 0.6);
-        z-index: 999999;
-    }
-
-    .modal-content {
-        background: white; 
-        padding: 40px 30px; 
-        border-radius: 32px;
-        text-align: center; 
-        max-width: 340px; 
-        width: 85%;
-        box-shadow: 0 30px 60px -12px rgba(0,0,0,0.25);
-        animation: springIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    }
-
-    @keyframes springIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-    /* VISIBILITY FIXES FOR FONTS */
-    .user-greeting h4 { margin: 0; font-size: 22px; font-weight: 800; color: var(--text-dark) !important; }
-    .user-greeting p { margin: 0; font-size: 13px; color: var(--text-muted) !important; font-weight: 600; }
+    .product-info-wc { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+    .product-title { font-size: 1.2rem; font-weight: 800; color: #1f2937; margin: 0; line-height: 1.2; }
     
-    .top-header { display: flex; justify-content: space-between; align-items: center; padding: 25px 20px 10px; }
-
-    /* PREMIUM BUTTONS */
-    .btn-deposit, .btn-withdraw, .btn-invest-premium, .btn-auth {
-        border: none !important; border-radius: 18px !important;
-        font-weight: 700 !important; letter-spacing: -0.2px;
-        transition: all 0.3s ease;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
+    .product-stats {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        background: #f9fafb; padding: 10px; border-radius: 12px;
     }
-    .btn-deposit { background: var(--accent-success) !important; color: white !important; }
-    .btn-withdraw { background: rgba(255,255,255,0.15) !important; color: white !important; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1) !important; }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 10px; color: #6b7280; text-transform: uppercase; font-weight: 600; }
+    .stat-value { font-size: 14px; font-weight: 700; color: #111; }
+    .stat-value.price { color: #10b981; font-size: 15px; }
+    .stat-value.roi { color: #8b5cf6; }
 
-    /* CARD COMPONENTS */
-    .balance-card {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        margin: 0 20px 25px; padding: 35px 25px; border-radius: 32px;
-        color: white; position: relative; overflow: hidden;
-        box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.3);
+    .btn-invest-premium {
+        background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+        color: white; font-weight: 700; border: none;
+        padding: 14px; border-radius: 12px; width: 100%;
+        cursor: pointer; font-size: 14px;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        transition: all 0.2s;
     }
-    .balance-card h2 { font-size: 36px; font-weight: 800; margin: 10px 0 25px; letter-spacing: -1px; color: white; }
-    .balance-card small { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: 700; }
+    .btn-invest-premium:active { transform: scale(0.98); }
 
-    /* QUICK ACTIONS */
-    .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 20px 25px; }
-    .action-button {
-        background: white; border-radius: 24px; padding: 20px 10px;
-        display: flex; flex-direction: column; align-items: center; gap: 10px;
-        text-decoration: none; box-shadow: var(--card-shadow);
+    /* DESIGNER ALERT NOTIFICATION */
+    #successModal {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        justify-content: center; align-items: center;
+        backdrop-filter: blur(8px); background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
     }
-    .action-button i { font-size: 22px; color: var(--accent-primary); }
-    .action-button span { font-size: 12px; font-weight: 700; color: var(--text-dark); }
-
-    /* BOTTOM NAVIGATION FIX */
-    .bottom-nav {
-        position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-        width: 100%; max-width: 500px; height: var(--nav-height);
-        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px);
-        display: flex; justify-content: space-around; align-items: center;
-        border-top: 1px solid #E2E8F0; z-index: 10000; padding-bottom: env(safe-area-inset-bottom);
+    #successModal .modal-content {
+        background: #fff; padding: 30px; border-radius: 24px;
+        text-align: center; max-width: 320px; width: 85%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255,255,255,0.8);
     }
-    .nav-link { text-decoration: none; color: #94A3B8; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; transition: 0.3s; }
-    .nav-link.active { color: var(--accent-primary); }
-    .nav-link i { font-size: 20px; }
-    .nav-link span { font-size: 10px; font-weight: 700; }
+    #closeModalBtn {
+        margin-top: 20px; padding: 12px 30px;
+        background: #10b981; color: white; border: none;
+        border-radius: 12px; font-weight: bold; cursor: pointer;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
 
-    /* LISTS */
-    .activity-card { margin: 0 20px; background: white; border-radius: 32px; padding: 24px; box-shadow: var(--card-shadow); }
-    .activity-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #F1F5F9; }
-    
-    /* AUTH FORMS */
-    .auth-container { padding: 60px 25px; text-align: center; }
-    .auth-logo { font-size: 42px; font-weight: 900; color: var(--accent-primary); margin-bottom: 10px; letter-spacing: -2px; }
-    .form-group { text-align: left; margin-bottom: 20px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
-    .form-group input, select { width: 100%; padding: 18px; border-radius: 20px; border: 1.5px solid #E2E8F0; background: #F8FAFC; box-sizing: border-box; font-weight: 600; }
+    /* INPUT & HISTORY TEXT VISIBILITY FIX */
+    .security-input {
+        width: 100% !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #ddd !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 16px !important;
+    }
+    .history-item-text {
+        color: #111111 !important;
+        font-weight: 700 !important;
+    }
+    .history-sub-text {
+        color: #555555 !important;
+        font-size: 12px !important;
+    }
 `;
 document.head.appendChild(styleSheet);
 
-// ==========================================
-// 2. MODAL & COMMUNITY INJECTION
-// ==========================================
-
+// Inject WhatsApp Modal Structure
 const announcementDiv = document.createElement("div");
 announcementDiv.id = "whatsappModal";
 announcementDiv.innerHTML = `
     <div class="modal-content">
-        <div style="width: 70px; height: 70px; background: #DCFCE7; border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-            <i class="fab fa-whatsapp" style="font-size: 35px; color: #25D366;"></i>
-        </div>
-        <h3 style="margin: 0 0 10px; color: #0F172A; font-weight: 800;">Official Community</h3>
-        <p style="color: #64748B; font-size: 14px; line-height: 1.5; margin-bottom: 25px;">Join 5,000+ members receiving real-time updates and priority support.</p>
-        <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" onclick="closeWhatsappModal()" class="btn-whatsapp" style="background: #25D366; color: white !important; font-weight: 700; padding: 18px; border-radius: 18px; text-decoration: none; display: block;">JOIN NOW</a>
-        <button onclick="closeWhatsappModal()" style="background:none; border:none; color:#94A3B8; margin-top:20px; cursor:pointer; font-size:12px; font-weight:600;">Close</button>
+        <i class="fab fa-whatsapp" style="font-size: 50px; color: #25D366;"></i>
+        <h3 style="margin: 15px 0 10px; color: #111;">Community Group</h3>
+        <p style="color: #666; font-size: 14px; line-height: 1.4;">Join our official winery community for real-time updates and support.</p>
+        <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" onclick="closeWhatsappModal()" class="btn-whatsapp">JOIN COMMUNITY</a>
+        <button onclick="closeWhatsappModal()" style="background:none; border:none; color:#aaa; margin-top:15px; cursor:pointer; font-size:12px;">I'm already a member / Close</button>
     </div>
 `;
 document.body.appendChild(announcementDiv);
@@ -154,55 +160,118 @@ successModalDiv.id = "successModal";
 successModalDiv.innerHTML = `
     <div class="modal-content">
         <div id="modalMessage"></div>
-        <button id="closeModalBtn" style="width:100%; margin-top:25px; padding:16px; background: var(--text-dark); color:white; border:none; border-radius:18px; font-weight:800;">CONTINUE</button>
+        <button id="closeModalBtn">OK</button>
     </div>
 `;
 document.body.appendChild(successModalDiv);
 
 // ==========================================
-// 3. CORE LOGIC (HANDSHAKES & API)
+// 2. DATA CONFIGURATION
 // ==========================================
-
 const vipProducts = [
-    { id: 101, name: 'CELLAR PRESTIGE VIP 1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=PRESTIGE+1' },
-    { id: 102, name: 'CELLAR PRESTIGE VIP 2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=PRESTIGE+2' },
-    { id: 103, name: 'CELLAR PRESTIGE VIP 3', price: 2000000, total_return: 2400000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=PRESTIGE+3' },
-    { id: 104, name: 'CELLAR PRESTIGE VIP 4', price: 3000000, total_return: 3600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=PRESTIGE+4' }
+    { id: 101, name: 'WINERY VIP 1', price: 500000, total_return: 600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+1' },
+    { id: 102, name: 'WINERY VIP 2', price: 1000000, total_return: 1200000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+2' },
+    { id: 103, name: 'WINERY VIP 3', price: 2000000, total_return: 2400000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+3' },
+    { id: 104, name: 'WINERY VIP 4', price: 3000000, total_return: 3600000, duration: 30, itemimage: 'https://placehold.co/300x200/1a1a1a/ffffff?text=VIP+4' }
 ];
 
 const appContent = document.getElementById('app-content');
 const bottomNav = document.querySelector('.bottom-nav');
 const API_BASE_URL = 'https://jjb24-backend-1.onrender.com/api';
 
-const showSuccessModal = (message) => {
-    const modalMessage = document.getElementById('modalMessage');
-    if (modalMessage) modalMessage.innerHTML = `<div style="width:60px;height:60px;background:#DCFCE7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><i class="fas fa-check" style="color:#10B981;font-size:24px;"></i></div><span style="font-size:18px;font-weight:800;color:#0F172A;">Success</span><p style="color:#64748B;font-size:14px;margin-top:10px;">${message}</p>`;
-    document.getElementById('successModal').style.display = 'flex';
-};
-
-const closeModal = () => {
-    document.getElementById('successModal').style.display = 'none';
-    if (window.location.hash !== '#home') { window.location.hash = '#home'; } else { router(); }
-};
+// ==========================================
+// 3. HELPER FUNCTIONS
+// ==========================================
 
 window.closeWhatsappModal = () => {
     localStorage.setItem('jjb_community_joined', 'true');
     document.getElementById('whatsappModal').style.display = 'none';
 };
 
-const logoutUser = () => { localStorage.clear(); window.location.hash = '#login'; router(); };
+const showSuccessModal = (message) => {
+    const successModal = document.getElementById('successModal');
+    const modalMessage = document.getElementById('modalMessage');
+    if (modalMessage) modalMessage.innerHTML = `<i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 15px; display:block;"></i><span style="font-size: 18px; font-weight: 700; color: #333; line-height: 1.4;">${message}</span>`;
+    if (successModal) successModal.style.display = 'flex';
+};
+
+const closeModal = () => {
+    const successModal = document.getElementById('successModal');
+    if (successModal) successModal.style.display = 'none';
+    if (window.location.hash !== '#home') { window.location.hash = '#home'; } else { router(); }
+};
+
+window.copyReferralLink = async (referralCode) => {
+    if (!referralCode || referralCode === 'N/A') { alert('No referral code available.'); return; }
+    const fullLink = `${window.location.origin}/#register?ref=${referralCode}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { await navigator.clipboard.writeText(fullLink); showSuccessModal('Referral link copied!'); return; } catch (err) { }
+    }
+    prompt("Copy your referral link:", fullLink);
+};
+
+window.copyAccountNumber = (accNumber) => {
+    navigator.clipboard.writeText(accNumber).then(() => {
+        const copyBtn = document.getElementById('copyAccBtn');
+        const originalText = copyBtn.innerText;
+        copyBtn.innerText = "COPIED!";
+        copyBtn.style.background = "#059669";
+        setTimeout(() => {
+            copyBtn.innerText = originalText;
+            copyBtn.style.background = "rgba(16, 185, 129, 0.2)";
+        }, 2000);
+    }).catch(err => {
+        alert("Failed to copy. Account number is: " + accNumber);
+    });
+};
+
+const getReferralFromUrl = () => {
+    const fullHash = window.location.hash;
+    if (fullHash.includes('?ref=')) { const parts = fullHash.split('?ref='); if (parts.length > 1) return parts[1].split('&')[0]; }
+    return '';
+};
+
+const logoutUser = () => { 
+    localStorage.removeItem('token'); 
+    localStorage.removeItem('user_email');
+    window.location.hash = '#login'; 
+    router(); 
+};
 window.logoutUser = logoutUser;
 
 const fetchWithAuth = async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
     if (token) headers.append('Authorization', `Bearer ${token}`);
-    if (!(options.body instanceof FormData) && !headers.has('Content-Type') && options.body) {
+    
+    const isFormData = options.body instanceof FormData;
+    if (!isFormData && !headers.has('Content-Type') && options.body) {
         headers.append('Content-Type', 'application/json');
     }
-    const response = await fetch(url, { ...options, headers });
-    if (response.status === 401) { logoutUser(); return null; }
-    return response;
+
+    try {
+        const response = await fetch(url, { ...options, headers });
+        if (response.status === 401) { logoutUser(); return null; }
+        return response;
+    } catch (e) { 
+        console.error("Network Error Details:", e); 
+        throw e; 
+    }
+};
+
+const getReferralCardHTML = (code) => {
+    const link = `${window.location.origin}/#register?ref=${code}`;
+    return `
+    <div class="referral-box" style="background: #fdf2f8; border: 1px dashed #db2777; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <small style="color: #be185d; font-weight: bold;">INVITE & EARN</small>
+        <div style="margin: 10px 0; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #555; border: 1px solid #fbcfe8;">
+            ${link}
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items:center;">
+            <strong style="color:#be185d; font-size: 16px;">${code}</strong>
+            <button onclick="window.copyReferralLink('${code}')" class="btn-deposit" style="background: #db2777 !important; padding: 8px 20px; font-size: 12px; border-radius: 8px !important; cursor:pointer; width: auto; box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3) !important;">COPY</button>
+        </div>
+    </div>`;
 };
 
 // ==========================================
@@ -213,275 +282,529 @@ const handleLogin = async (event) => {
     event.preventDefault();
     const id = document.getElementById('loginIdentifier').value.trim();
     const pass = document.getElementById('password').value;
-    const loginData = id.includes('@') ? { email: id, password: pass } : { phone: id, password: pass };
+    if (!id || !pass) return alert('Please provide email/phone and password.');
+
+    const loginData = { password: pass };
+    if (id.includes('@')) {
+        loginData.email = id;
+    } else {
+        loginData.phone = id;
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/users/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(loginData) });
+        const response = await fetch(`${API_BASE_URL}/users/login`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(loginData) 
+        });
         const result = await response.json();
-        if (!response.ok) return alert(result.message);
+        if (!response.ok) return alert(`Error: ${result.message}`);
         localStorage.setItem('token', result.token); 
         localStorage.setItem('user_email', result.user?.email || (id.includes('@') ? id : ''));
-        window.location.hash = '#home'; router();
-    } catch (error) { alert('Server error.'); }
+        window.location.hash = '#home'; 
+        router();
+    } catch (error) { 
+        alert('Could not connect to server.'); 
+    }
 };
 
 const handleRegister = async (event) => {
     event.preventDefault();
-    const payload = { 
-        fullName: document.getElementById('fullName').value, 
-        phone: document.getElementById('phone').value, 
-        email: document.getElementById('email').value, 
-        password: document.getElementById('password').value, 
-        referralCode: document.getElementById('referral').value || undefined 
-    };
-    if (payload.password !== document.getElementById('cpassword').value) return alert('Passwords mismatch');
+    const fullName = (document.getElementById('fullName') || {}).value?.trim() || '';
+    const email = (document.getElementById('email') || {}).value?.trim() || '';
+    const phone = (document.getElementById('phone') || {}).value?.trim() || '';
+    const password = (document.getElementById('password') || {}).value || '';
+    const cpassword = (document.getElementById('cpassword') || {}).value || '';
+    const referral = (document.getElementById('referral') || {}).value?.trim() || '';
+    const agreedToTerms = document.getElementById('termsCheckbox').checked;
+    if (!agreedToTerms) return alert('You must agree to the Terms & Conditions.');
+    if (!fullName || !email || !phone || !password) return alert('Please fill in all required fields.');
+    if (password !== cpassword) return alert('Passwords do not match.');
     try {
+        const payload = { fullName, phone, email, password, referralCode: referral || undefined };
         const response = await fetch(`${API_BASE_URL}/users/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const result = await response.json();
-        if (!response.ok) return alert(result.message);
-        alert(`OTP sent to ${payload.email}`); renderOTPVerificationScreen(payload.email);
-    } catch (error) { alert('Server error.'); }
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        alert(`OTP sent to ${email}. Check your inbox.`); renderOTPVerificationScreen(email);
+    } catch (error) { alert('Could not connect to server.'); }
 };
 
-const handleOTPVerification = async (e, email) => {
-    e.preventDefault();
-    const otp = document.getElementById('otpCode').value;
-    const res = await fetch(`${API_BASE_URL}/users/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp }) });
-    if (res.ok) { showSuccessModal('Phone verified!'); renderLoginScreen(); } else { alert('Failed'); }
+const handleOTPVerification = async (event, email) => {
+    event.preventDefault(); const otpCode = document.getElementById('otpCode').value;
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp: otpCode }) });
+        const result = await response.json();
+        if (!response.ok) return alert(`Error: ${result.message}`);
+        showSuccessModal('Phone verified!'); renderLoginScreen();
+    } catch (error) { alert('Verification failed.'); }
+};
+
+const handleResendOTP = async (email) => { 
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/resend-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+        const result = await response.json(); if (!response.ok) return alert(`Error: ${result.message}`); alert('New OTP sent!');
+    } catch (error) { alert('Failed to resend OTP.'); }
 };
 
 const handleInvestClick = async (event) => {
     if (event.target.classList.contains('btn-invest-premium') || event.target.classList.contains('btn-invest')) {
-        const itemId = event.target.dataset.planId;
-        const type = event.target.dataset.type;
-        if (!confirm(`Activate plan?`)) return;
-        const endpoint = type === 'vip' ? `${API_BASE_URL}/investments/createVipInvestment/${itemId}` : `${API_BASE_URL}/investments/createInvestment/${itemId}`;
-        const res = await fetchWithAuth(endpoint, { method: 'POST' });
-        const result = await res.json();
-        if (res.ok && result.success) { showSuccessModal('Plan Activated!'); window.location.hash = '#home'; router(); } else { alert(result.message); }
+        const rawItemId = event.target.dataset.planId;
+        const investType = event.target.dataset.type;
+        let itemId = Number(rawItemId);
+        if (isNaN(itemId) || itemId <= 0) return alert('Error: Invalid product ID.');
+        const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
+        if (!confirm(`Are you sure you want to activate this plan?`)) return;
+        
+        let endpoint = investType === 'vip' ? `${API_BASE_URL}/investments/createVipInvestment/${itemId}` : `${API_BASE_URL}/investments/createInvestment/${itemId}`;
+
+        try {
+            const response = await fetchWithAuth(endpoint, { method: 'POST' });
+            const result = await response.json();
+            if (response && response.ok && result.success) {
+                showSuccessModal('Plan Activated Successfully!');
+                setTimeout(() => { window.location.hash = '#home'; router(); }, 2000);
+            } else { alert('Error: ' + ((result && result.message) || 'Failed.')); }
+        } catch (error) { alert('Action error.'); }
     }
 };
 
 window.handleForgotPassword = async () => {
-    const email = prompt("Enter registered email:");
+    const email = prompt("Enter your registered email address:");
     if (!email) return;
     try {
-        const res = await fetch(`${API_BASE_URL}/users/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-        const result = await res.json(); alert(result.message);
-    } catch (e) { alert("Error."); }
-};
-
-// ==========================================
-// 5. RENDER FUNCTIONS (UI REFINED)
-// ==========================================
-
-const renderHomeScreen = async () => {
-    if (!localStorage.getItem('jjb_community_joined')) setTimeout(() => { document.getElementById('whatsappModal').style.display = 'flex'; }, 2000);
-    appContent.innerHTML = '<div style="display:flex; height:50vh; align-items:center; justify-content:center;"><i class="fas fa-circle-notch fa-spin"></i></div>';
-    const res = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-    const data = await res.json();
-    const user = data.balance || {};
-    const userEmail = user.email || localStorage.getItem('user_email');
-
-    let activityHTML = "<p style='text-align:center; font-size:12px; color:#94A3B8; padding:20px;'>Clean Logs</p>";
-    try {
-        const hRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`);
-        const hData = await hRes.json();
-        if (hData.transactions.length > 0) {
-            activityHTML = hData.transactions.slice(0, 4).map(t => `
-                <div class="activity-item">
-                    <div><div style="font-weight:700; font-size:14px; color:var(--text-dark);">${t.type.replace(/_/g, ' ')}</div><small style="color:#94A3B8; font-weight:600;">${new Date(t.created_at).toLocaleDateString()}</small></div>
-                    <div style="font-weight:800; color:${t.amount > 0 ? '#10B981' : '#0F172A'};">₦${Number(Math.abs(t.amount)).toLocaleString()}</div>
-                </div>`).join('');
+        const response = await fetch(`${API_BASE_URL}/users/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert("A temporary password has been sent to your email. Please login and change it immediately.");
+        } else {
+            alert("Error: " + result.message);
         }
-    } catch(e) {}
-
-    appContent.innerHTML = `
-        <div class="top-header">
-            <div class="user-greeting"><h4>Hi, ${user.full_name}</h4><p>Exclusive Member</p></div>
-            <div style="width:44px; height:44px; background:white; border-radius:14px; display:flex; align-items:center; justify-content:center; box-shadow:var(--card-shadow);"><i class="fas fa-bell" style="color:#64748B;"></i></div>
-        </div>
-        <div class="balance-card">
-            <small>Total Net Assets</small>
-            <h2>₦ ${Number(user.balance).toLocaleString()}</h2>
-            <div style="display:flex; gap:12px;"><a href="#deposit" class="btn-deposit" style="flex:1; padding:18px; text-decoration:none;">FUND WALLET</a><a href="#withdraw" class="btn-withdraw" style="flex:1; padding:18px; text-decoration:none;">WITHDRAW</a></div>
-        </div>
-        <div class="quick-actions">
-            <a href="#my-plans" class="action-button"><i class="fas fa-vault"></i><span>Assets</span></a>
-            <a href="#team" class="action-button"><i class="fas fa-users-crown"></i><span>Team</span></a>
-            <a href="#history" class="action-button"><i class="fas fa-receipt"></i><span>Logs</span></a>
-            <a href="#rewards" class="action-button"><i class="fas fa-sparkles"></i><span>Rewards</span></a>
-            <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Help</span></a>
-            <a href="#certificate" class="action-button"><i class="fas fa-stamp"></i><span>Legal</span></a>
-        </div>
-        <div class="activity-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><h3 style="margin:0; font-size:16px; font-weight:800; color:var(--text-dark);">Recent Stream</h3><a href="#history" style="font-size:12px; font-weight:700; color:var(--accent-primary); text-decoration:none;">VIEW ALL</a></div>
-            <div class="activity-list">${activityHTML}</div>
-        </div>`;
+    } catch (e) {
+        alert("Server error. Please try again.");
+    }
 };
+
+// ==========================================
+// 5. RENDER FUNCTIONS
+// ==========================================
 
 const renderLoginScreen = () => {
     bottomNav.style.display = 'none';
     appContent.innerHTML = `
         <div class="auth-container">
             <div class="auth-logo">JJB24</div>
-            <h2 style="font-weight: 800; color:var(--text-dark);">Login</h2>
-            <p style="color:var(--text-muted); margin-bottom:40px; font-weight:600;">Securely manage your winery assets</p>
+            <h2>Welcome Back</h2>
             <form id="loginForm">
-                <div class="form-group"><label>Account ID</label><input type="text" id="loginIdentifier" placeholder="Email or Phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="••••••••" required /></div>
-                <a href="javascript:void(0)" onclick="handleForgotPassword()" style="color:var(--accent-primary); font-size:13px; font-weight:700; text-decoration:none; display:block; text-align:right;">Reset key?</a>
-                <button type="submit" class="btn-auth" style="width:100%; padding:20px; background: var(--accent-primary); color:white; font-size:16px; margin-top:30px;">SECURE LOGIN</button>
+                <div class="form-group">
+                    <label>Email/Phone</label>
+                    <input type="text" id="loginIdentifier" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required />
+                </div>
+                <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()" style="color: #6a0dad; font-size: 12px; text-decoration: none; font-weight: bold;">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn-auth">Login</button>
             </form>
-            <p style="margin-top: 40px; font-size: 14px; color: var(--text-muted); font-weight:600;">New member? <a href="#register" style="color: var(--accent-primary); text-decoration: none; font-weight: 800;">Open Account</a></p>
+            <p class="auth-link"><a href="#register">Create Account</a></p>
         </div>`;
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 };
 
 const renderRegisterScreen = () => {
     bottomNav.style.display = 'none';
-    const ref = (window.location.hash.includes('?ref=')) ? window.location.hash.split('?ref=')[1].split('&')[0] : '';
-    appContent.innerHTML = `
-        <div class="auth-container">
-            <div class="auth-logo">JJB24</div>
-            <h2 style="font-weight: 800; color:var(--text-dark);">Open Account</h2>
-            <p style="color:var(--text-muted); margin-bottom:40px; font-weight:600;">Join the premium wine network</p>
-            <form id="registerForm">
-                <div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div>
-                <div class="form-group"><label>Email Address</label><input type="email" id="email" required /></div>
-                <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" required /></div>
-                <div class="form-group"><label>Password</label><input type="password" id="password" required /></div>
-                <div class="form-group"><label>Confirm Password</label><input type="password" id="cpassword" required /></div>
-                <div class="form-group"><label>Ref Code</label><input type="text" id="referral" value="${ref}" ${ref ? 'readonly' : ''} /></div>
-                <button type="submit" class="btn-auth" style="width:100%; padding:20px; background: var(--accent-primary); color:white; font-size:16px;">CREATE ACCOUNT</button>
-            </form>
-            <p style="margin-top: 40px; font-size: 14px; color: var(--text-muted); font-weight:600;">Already a member? <a href="#login" style="color: var(--accent-primary); text-decoration: none; font-weight: 800;">Login</a></p>
-        </div>`;
+    const autoRefCode = getReferralFromUrl();
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Create Account</h2><form id="registerForm"><div class="form-group"><label>Full Name</label><input type="text" id="fullName" required /></div><div class="form-group"><label>Email</label><input type="email" id="email" required /></div><div class="form-group"><label>Phone</label><input type="tel" id="phone" required /></div><div class="form-group"><label>Password</label><input type="password" id="password" required /></div><div class="form-group"><label>Confirm</label><input type="password" id="cpassword" required /></div><div class="form-group"><label>Referral Code</label><input type="text" id="referral" value="${autoRefCode}" ${autoRefCode ? 'readonly' : ''} /></div><div class="form-group-checkbox" style="flex-direction: row; gap: 10px; margin-top: 15px;"><input type="checkbox" id="termsCheckbox" required style="width: auto;" /><label for="termsCheckbox" style="font-size: 12px; color: #666;">I agree to Terms & Privacy.</label></div><button type="submit" class="btn-auth">Register</button></form><p class="auth-link"><a href="#login">Login here</a></p></div>`;
     document.getElementById('registerForm').addEventListener('submit', handleRegister);
 };
 
 const renderOTPVerificationScreen = (email) => {
-    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify ID</h2><p>Sent to ${email}</p><form id="otpForm"><div class="form-group"><input type="text" id="otpCode" maxlength="6" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:800;" required /></div><button type="submit" class="btn-auth" style="width:100%; padding:18px; background:var(--text-dark); color:white;">VERIFY</button></form></div>`;
+    bottomNav.style.display = 'none';
+    appContent.innerHTML = `<div class="auth-container"><div class="auth-logo">JJB24</div><h2>Verify Phone</h2><p>Code sent to ${email}</p><form id="otpForm"><div class="form-group"><label>OTP</label><input type="text" id="otpCode" maxlength="6" required /></div><button type="submit" class="btn-auth">Verify</button></form><p class="auth-link"><a id="resendOTP" style="cursor: pointer;">Resend OTP</a></p><p class="auth-link"><a href="#login">Back to Login</a></p></div>`;
     document.getElementById('otpForm').addEventListener('submit', (e) => handleOTPVerification(e, email));
+    document.getElementById('resendOTP').addEventListener('click', () => handleResendOTP(email)); 
+};
+
+const renderHomeScreen = async () => {
+    if (!localStorage.getItem('jjb_community_joined')) {
+        setTimeout(() => { document.getElementById('whatsappModal').style.display = 'flex'; }, 2000);
+    }
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Dashboard...</p>';
+    const token = localStorage.getItem('token'); if (!token) { logoutUser(); return; }
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`, { method: "GET" });
+        if (!response || !response.ok) throw new Error();
+        const data = await response.json();
+        const userObj = data.balance || {};
+        const fullName = userObj.full_name || 'User'; 
+        const balance = userObj.balance || 0;
+        const userEmail = userObj.email || localStorage.getItem('user_email');
+        
+        let complianceCardHTML = '';
+        if (userEmail === 'audit@flutterwave.com') {
+            complianceCardHTML = `
+                <div id="compliance-card" style="
+                    background: #ffffff; 
+                    border-left: 6px solid #f4c430; 
+                    border-radius: 16px; 
+                    padding: 25px; 
+                    margin: 10px 0 25px 0; 
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+                    animation: popIn 0.5s ease-out;
+                ">
+                    <div style="display: flex; align-items: center; margin-bottom: 18px;">
+                        <div style="background: #fef9c3; color: #a16207; padding: 10px; border-radius: 50%; margin-right: 15px;">
+                            <i class="fas fa-building" style="font-size: 20px;"></i>
+                        </div>
+                        <h3 style="margin: 0; color: #111; font-size: 1.1rem; font-weight: 800;">Official Corporate Records</h3>
+                    </div>
+                    
+                    <div style="color: #444; font-size: 14px; line-height: 1.6;">
+                        <div style="margin-bottom: 15px;">
+                            <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Registered Address (CAC)</strong><br>
+                            <span style="color: #111; font-weight: 600;">Monaya Rd, Ogoja 550101, Cross River, Nigeria.</span>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Official Line 1</strong><br>
+                                <span style="color: #111; font-weight: 600;">+234 704 759 1968</span>
+                            </div>
+                            <div>
+                                <strong style="color: #888; font-size: 11px; text-transform: uppercase;">Official Line 2</strong><br>
+                                <span style="color: #111; font-weight: 600;">+234 911 412 9537</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 12px; border-top: 1px dashed #ddd; font-size: 12px; color: #a16207; font-weight: 500;">
+                            <i class="fas fa-info-circle"></i> Verification details strictly for administrative and regulatory review.
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        let activityHTML = "<p style='color:#777; text-align:center;'>No recent activity.</p>";
+        try {
+            const histRes = await fetchWithAuth(`${API_BASE_URL}/payment/history`, { method: 'GET' });
+            if (histRes && histRes.ok) {
+                const histData = await histRes.json();
+                if (histData.success && histData.transactions.length > 0) {
+                    activityHTML = histData.transactions.slice(0, 4).map(txn => 
+                        `<div style="display:flex; justify-content:space-between; padding: 12px; border-bottom: 1px solid #f0f0f0;">
+                            <span class="history-item-text" style="text-transform: capitalize;">${txn.type.replace(/_/g, ' ')}</span>
+                            <span style="color:${txn.amount > 0 ? '#10b981' : '#ef4444'}; font-weight:800; font-size: 14px;">₦${Number(Math.abs(txn.amount)).toLocaleString()}</span>
+                        </div>`).join('');
+                }
+            }
+        } catch(e) {}
+
+        appContent.innerHTML = `
+            <div class="top-header">
+                <div class="user-greeting">
+                    <h4>Hello, ${fullName.split(' ')[0]}</h4>
+                    <p>Winery Member</p>
+                </div>
+                <div class="profile-icon"><i class="fas fa-user"></i></div>
+            </div>
+
+            ${complianceCardHTML}
+            
+            <div class="balance-card">
+                <small>Available Assets (NGN)</small>
+                <h2>₦ ${Number(balance).toLocaleString() || '0.00'}</h2>
+                <div class="header-buttons" style="gap: 15px;">
+                    <a href="#deposit" class="btn-deposit" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Add Funds</a>
+                    <a href="#withdraw" class="btn-withdraw" style="flex:1; text-align:center; padding: 12px; border-radius: 12px; text-decoration:none;">Withdraw</a>
+                </div>
+            </div>
+            
+            <div class="home-content">
+                <div class="quick-actions">
+                    <a href="#my-plans" class="action-button"><i class="fas fa-wine-bottle"></i><span>My Plans</span></a>
+                    <a href="#certificate" class="action-button"><i class="fas fa-file-certificate"></i><span>Certificate</span></a>
+                    <a href="#team" class="action-button"><i class="fas fa-users"></i><span>Community</span></a>
+                    <a href="#history" class="action-button"><i class="fas fa-history"></i><span>Records</span></a>
+                    <a href="#rewards" class="action-button"><i class="fas fa-gift"></i><span>Rewards</span></a>
+                    <a href="#support" class="action-button"><i class="fas fa-headset"></i><span>Support</span></a>
+                </div>
+
+                <div class="activity-card">
+                    <h3 style="color:#111;">Recent Activity</h3>
+                    <div class="activity-list">${activityHTML}</div>
+                </div>
+            </div>`;
+    } catch (error) { logoutUser(); }
 };
 
 const renderProductsPage = async () => {
-    appContent.innerHTML = '<div style="display:flex; height:50vh; justify-content:center; align-items:center;"><i class="fas fa-circle-notch fa-spin"></i></div>';
-    const res = await fetchWithAuth(`${API_BASE_URL}/users/allItems`);
-    const data = await res.json();
-    let html = (data.items || []).map(item => `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" onerror="this.src='https://placehold.co/400x300/1e293b/ffffff?text=Wine'"></div><div class="product-info-wc" style="padding:24px;"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label">Entry</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Yield</span><span class="stat-value" style="color:var(--accent-primary);">₦${Number(item.dailyincome).toLocaleString()}</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular" style="width:100%; padding:18px; background:var(--text-dark); color:white;">ACQUIRE ASSET</button></div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; margin-bottom:20px; font-size:24px;">Asset Collections</h2><div class="product-grid-wc" style="padding:0;">${html || '<p>Loading...</p>'}</div></div>`;
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Winery Plans...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/allItems`, { method: 'GET' });
+        if (!response || !response.ok) throw new Error();
+        const data = await response.json();
+        let productHTML = ''; const items = data.items || [];
+        if (items.length === 0) productHTML = '<p style="text-align:center; color:#111;">No plans available.</p>';
+        else {
+            items.forEach(item => {
+                productHTML += `<div class="product-card-wc"><div class="product-image-wc"><span class="card-badge">HOT</span><img src="${item.itemimage}" alt="${item.itemname}" onerror="this.src='https://placehold.co/300x200/6a0dad/ffffff?text=Product'"></div><div class="product-info-wc"><h4 class="product-title">${item.itemname}</h4><div class="product-stats"><div class="stat-item"><span class="stat-label"><i class="fas fa-coins"></i> Acquisition Price</span><span class="stat-value price">₦${Number(item.price).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-chart-line"></i> Daily Yield</span><span class="stat-value roi">₦${Number(item.dailyincome).toLocaleString()}</span></div><div class="stat-item"><span class="stat-label"><i class="fas fa-clock"></i> Duration</span><span class="stat-value" style="color:#111;">${item.duration} Days</span></div><div class="stat-item"><span class="stat-label">Withdrawal</span><span class="stat-value" style="color:#111;">Daily</span></div></div><button class="btn-invest-premium" data-plan-id="${item.id}" data-type="regular">Activate Plan</button></div></div>`;
+            });
+        }
+        appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">Community Plans</h2></div><div class="product-grid-wc">${productHTML}</div></div>`;
+    } catch (e) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Could not load data.</p>'; }
 };
 
 const renderVipPage = () => {
-    let html = vipProducts.map(p => `<div class="product-card-wc" style="border:2px solid #EAB308;"><div class="product-image-wc"><span class="card-badge" style="background:#EAB308; color:#000;">PREMIUM VIP</span><img src="${p.itemimage}"></div><div class="product-info-wc" style="padding:24px;"><h4 class="product-title" style="color:#854D0E;">${p.name}</h4><div class="product-stats" style="background:#FEFCE8;"><div class="stat-item" style="background:transparent;"><span class="stat-label">Commitment</span><span class="stat-value" style="color:#854D0E;">₦${p.price.toLocaleString()}</span></div><div class="stat-item" style="background:transparent;"><span class="stat-label">Forecast</span><span class="stat-value" style="color:#854D0E;">₦${p.total_return.toLocaleString()}</span></div></div><button class="btn-invest-premium" data-plan-id="${p.id}" data-type="vip" style="width:100%; padding:18px; background:#EAB308; color:black;">CLAIM VIP SLOT</button></div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; margin-bottom:20px; font-size:24px;">VIP Private Cellar</h2><div class="product-grid-wc" style="padding:0;">${html}</div></div>`;
-};
-
-const renderMePage = async () => {
-    appContent.innerHTML = '<div style="display:flex; height:50vh; justify-content:center; align-items:center;"><i class="fas fa-circle-notch fa-spin"></i></div>';
-    const res = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
-    const data = await res.json();
-    const user = data.balance || {};
-    const ref = user.own_referral_code || 'N/A';
-    const pinActionText = user.has_pin ? "Update PIN" : "Setup PIN";
-    const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
-    appContent.innerHTML = `
-        <div style="padding: 20px 20px 100px;">
-            <div style="background: white; padding: 35px 20px; border-radius: 32px; text-align: center; box-shadow: var(--card-shadow); margin-bottom: 25px;">
-                <div style="width: 80px; height: 80px; background: #F1F5F9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px;"><i class="fas fa-user-tie"></i></div>
-                <h3 style="margin: 0; font-weight: 800;">${user.full_name}</h3>
-                <p style="color: #94A3B8; font-size: 14px;">${user.phone_number}</p>
-                <div style="margin-top:25px;">${getReferralCardHTML(ref)}</div>
-            </div>
-            <div style="background: white; border-radius: 32px; overflow: hidden; box-shadow: var(--card-shadow);">
-                <a href="#change-password" style="display:flex; justify-content:space-between; padding:22px; border-bottom:1px solid #F1F5F9; text-decoration:none; color:var(--text-dark); font-weight:700;"><span>Update Password</span><i class="fas fa-chevron-right"></i></a>
-                <a href="${pinActionHash}" style="display:flex; justify-content:space-between; padding:22px; border-bottom:1px solid #F1F5F9; text-decoration:none; color:var(--text-dark); font-weight:700;"><span>${pinActionText}</span><i class="fas fa-chevron-right"></i></a>
-                <a href="#history" style="display:flex; justify-content:space-between; padding:22px; border-bottom:1px solid #F1F5F9; text-decoration:none; color:var(--text-dark); font-weight:700;"><span>Asset Logs</span><i class="fas fa-chevron-right"></i></a>
-                <a href="javascript:void(0)" onclick="window.logoutUser()" style="display:block; padding:22px; color:#EF4444; font-weight:800; text-decoration:none;">Sign Out Portfolio</a>
-            </div>
-        </div>`;
-};
-
-const renderDepositPage = async () => {
-    const acc = "6669586597";
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; margin-bottom:25px;">Top-up Asset</h2><div style="background:#0F172A; color:white; padding:30px; border-radius:32px; margin-bottom:25px;"><small style="opacity:0.6; font-weight:700;">BANK TRANSFER TARGET</small><div style="display:flex; justify-content:space-between; align-items:center; margin-top:15px;"><h3 style="margin:0; font-size:26px; font-weight:800; color:var(--accent-success);">${acc}</h3><button id="copyAccBtn" onclick="window.copyAccountNumber('${acc}')" style="background:rgba(16,185,129,0.1); border:1px solid var(--accent-success); color:var(--accent-success); padding:8px 15px; border-radius:12px; font-weight:800; font-size:10px;">COPY</button></div><div style="margin-top:20px; font-weight:800;">JJB BRANDED WINES LTD</div><div style="opacity:0.7;">Moniepoint MFB</div></div><div style="background:white; padding:30px; border-radius:32px; box-shadow:var(--card-shadow);"><form id="manualDepositForm"><div class="form-group"><label>Amount (₦)</label><input type="number" id="depositAmountInput" required></div><div class="form-group"><label>Screenshot</label><input type="file" id="receiptFileInput" accept="image/*" required></div><button type="submit" id="submitBtn" class="btn-deposit" style="width:100%; padding:18px;">SUBMIT CONFIRMATION</button></form></div></div>`;
-    document.getElementById('manualDepositForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const f = new FormData(); f.append('amount', depositAmountInput.value); f.append('receipt', receiptFileInput.files[0]);
-        submitBtn.disabled = true; submitBtn.innerText = "VERIFYING...";
-        const res = await fetchWithAuth(`${API_BASE_URL}/payment/deposit/manual`, { method: 'POST', body: f });
-        if (res && res.ok) { showSuccessModal('Audit process initiated. Confirmation within 24hrs.'); setTimeout(() => { window.location.hash = '#home'; router(); }, 2500); } else { submitBtn.disabled = false; alert('Failed'); }
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading VIP...</p>';
+    const products = (typeof vipProducts !== 'undefined') ? vipProducts : [];
+    let vipHTML = '';
+    products.forEach(plan => {
+        vipHTML += `<div class="product-card-wc" style="border: 1px solid #ffd700;"> <div class="product-image-wc"><span class="card-badge" style="background:#eab308; color:#000;">VIP</span><img src="${plan.itemimage}" alt="${plan.name}" onerror="this.src='https://placehold.co/300x200/1a1a1a/ffffff?text=VIP'"></div><div class="product-info-wc"><h4 class="product-title" style="color:#b45309;">${plan.name}</h4><div class="product-stats" style="background:#fffbeb;"><div class="stat-item"><span class="stat-label">Acquisition Price</span><span class="stat-value price" style="color:#b45309;">₦${plan.price.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Total Yield</span><span class="stat-value roi" style="color:#b45309;">₦${plan.total_return.toLocaleString()}</span></div><div class="stat-item"><span class="stat-label">Duration</span><span class="stat-value" style="color:#111;">${plan.duration} Days</span></div></div><button class="btn-invest-premium" data-plan-id="${plan.id}" data-type="vip" style="background: linear-gradient(135deg, #eab308, #ca8a04);">Join VIP</button></div></div>`;
     });
-};
-
-const renderActiveInvestmentsPage = async () => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`);
-    const data = await res.json();
-    const invs = data.active_investments || [];
-    let html = invs.map(inv => `<div style="background:white; border-radius:28px; padding:24px; margin-bottom:20px; box-shadow:var(--card-shadow);"><div style="display:flex; justify-content:space-between; margin-bottom:15px;"><h4 style="margin:0; font-weight:800; color:var(--text-dark);">${inv.itemname || "Asset"}</h4><span style="background:#F1F5F9; color:#64748B; padding:6px 12px; border-radius:10px; font-size:10px; font-weight:800;">${inv.days_left || 0}D LEFT</span></div><div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"><div style="background:#F8FAFC; padding:10px; border-radius:12px;"><small style="display:block; font-size:10px; opacity:0.6;">ENTRY</small><span style="font-weight:800;">₦${Number(inv.price).toLocaleString()}</span></div><div style="background:#F8FAFC; padding:10px; border-radius:12px;"><small style="display:block; font-size:10px; opacity:0.6;">DAILY</small><span style="font-weight:800; color:#10B981;">₦${Number(inv.daily_earning).toLocaleString()}</span></div></div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; margin-bottom:25px; color:var(--text-dark);">Active Assets</h2>${html || '<p style="text-align:center;">No active plans.</p>'}</div>`;
+    appContent.innerHTML = `<div class="page-container"><div class="page-header"><h2 style="color:#111;">VIP Community Promotions</h2></div><div class="product-grid-wc">${vipHTML}</div></div>`;
 };
 
 const renderTeamPage = async () => {
-    appContent.innerHTML = '<div style="display:flex; height:50vh; justify-content:center; align-items:center;"><i class="fas fa-circle-notch fa-spin"></i></div>';
-    const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`);
-    const data = await response.json();
-    const teamHTML = (data.team_list || []).map(m => `<div style="background:white; padding:18px; border-radius:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--card-shadow);"><div><div style="font-weight:700; color:var(--text-dark);">${m.name}</div><small style="color:#94A3B8;">Joined ${new Date(m.joined_date).toLocaleDateString()}</small></div><div style="color:#10B981; font-size:10px; font-weight:800; background:#DCFCE7; padding:4px 8px; border-radius:8px;">ACTIVE</div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; margin-bottom:25px; color:var(--text-dark);">Network</h2><div style="background:var(--text-dark); color:white; padding:25px; border-radius:28px; margin-bottom:25px; text-align:center;"><small style="opacity:0.7; font-weight:700;">COMMISSIONS</small><h2 style="color:white;">₦ ${Number(data.total_commission || 0).toLocaleString()}</h2></div>${teamHTML || '<p style="text-align:center;">Invite friends to earn.</p>'}</div>`;
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading Community Data...</p>';
+    let refCode = 'N/A';
+    try {
+        const userRes = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        const userData = await userRes.json();
+        refCode = userData.balance?.own_referral_code || 'N/A';
+    } catch(e) {}
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/referrals`, { method: 'GET' });
+        const data = await response.json();
+        const teamMembers = data.team_list || [];
+        const totalCommission = data.total_commission || 0; 
+
+        let teamHTML = teamMembers.length === 0 ? 
+            `<div class="placeholder-card" style="text-align: center; padding: 30px;"><p style="color: #666;">No community members found yet.</p></div>` :
+            teamMembers.map(member => `
+                <div style="background: #fff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 class="history-item-text" style="margin: 0; font-size: 14px;">${member.name || 'User'}</h4>
+                        <small class="history-sub-text">Joined: ${new Date(member.joined_date).toLocaleDateString()}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="display: block; font-size: 11px; color: #888; font-weight:600;">Status</span>
+                        <strong style="color: #10b981; font-size: 13px;">ACTIVE</strong>
+                    </div>
+                </div>`).join('');
+
+        appContent.innerHTML = `
+            <div class="page-container">
+                <div class="page-header"><h2 style="color:#111;">My Community</h2></div>
+                ${getReferralCardHTML(refCode)}
+                <div class="balance-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #6a0dad, #8e24aa);">
+                    <small style="color: #e1bee7;">Total Community Rewards</small>
+                    <h2 style="color: white; margin-top: 5px;">₦ ${Number(totalCommission).toLocaleString()}</h2>
+                    <p style="color: #e1bee7; font-size: 12px;">Total Members: ${data.team_count || 0}</p>
+                </div>
+                <div style="margin-bottom: 15px;"><h3 style="font-size: 16px; margin-bottom: 10px; color:#111;">Community List</h3>${teamHTML}</div>
+            </div>`;
+    } catch (error) { appContent.innerHTML = '<p style="text-align:center; color:#111;">Error loading data.</p>'; }
 };
 
-const renderRewardsPage = async () => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/users/reward-history`);
-    const data = await res.json();
-    const list = (data.rewards || []).map(r => `<div style="background:white; border-radius:20px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--card-shadow);"><div><div style="font-weight:700; color:var(--text-dark);">${r.source}</div><small style="color:#94A3B8;">${new Date(r.date).toLocaleDateString()}</small></div><div style="color:#10B981; font-weight:800; font-size:16px;">+₦${Number(r.amount).toLocaleString()}</div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; color:var(--text-dark);">Rewards History</h2>${list || '<p style="text-align:center;">No rewards yet.</p>'}</div>`;
-};
+const renderMePage = async () => { 
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Profile...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/balance`);
+        const data = await response.json();
+        const user = data.balance || {};
+        const refCode = user.own_referral_code || user.referral_code || data.referral_code || 'N/A';
+        const uniqueReferralLink = `${window.location.origin}/#register?ref=${refCode}`;
+        const pinActionText = user.has_pin ? "Reset Transaction PIN" : "Set Transaction PIN";
+        const pinActionHash = user.has_pin ? "#reset-pin" : "#set-pin";
 
-const renderHistoryPage = async () => {
-    const res = await fetchWithAuth(`${API_BASE_URL}/payment/history`);
-    const data = await res.json();
-    const list = (data.transactions || []).map(t => `<div style="background:white; border-radius:20px; padding:20px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:var(--card-shadow);"><div><div style="font-weight:700; text-transform:uppercase; color:var(--text-dark);">${t.type.replace(/_/g, ' ')}</div><small style="color:#94A3B8;">${new Date(t.created_at).toLocaleDateString()}</small></div><div style="color:${t.amount > 0 ? '#10B981' : '#0F172A'}; font-weight:800;">₦${Number(Math.abs(t.amount)).toLocaleString()}</div></div>`).join('');
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; margin-bottom:25px; color:var(--text-dark);">Transaction Logs</h2>${list || '<p style="text-align:center;">No history found.</p>'}</div>`;
-};
-
-const renderSupportPage = () => { 
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; color:var(--text-dark);">Support</h2><div style="background:white; padding:35px; border-radius:32px; text-align:center; box-shadow:var(--card-shadow);"><div style="width:70px;height:70px;background:#DCFCE7;border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;"><i class="fab fa-whatsapp" style="font-size:35px;color:#25D366;"></i></div><h3 style="font-weight:800; color:var(--text-dark);">WhatsApp Support</h3><p style="color:#64748B;font-size:14px;margin-bottom:25px;">Fastest response for yield queries and assistance.</p><a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" class="btn-deposit" style="background:#25D366!important;padding:18px;text-decoration:none;">OPEN CHAT</a></div></div>`; 
-};
-
-const renderCertificatePage = () => { 
-    appContent.innerHTML = `<div style="padding:20px 20px 100px;"><h2 style="font-weight:800; font-size:24px; color:var(--text-dark);">Legal Documents</h2><div style="background:white; padding:15px; border-radius:28px; box-shadow:var(--card-shadow);"><img src="image.png" style="width:100%; border-radius:20px;" onerror="this.parentElement.innerHTML='<p style=\'padding:40px;color:#94A3B8;text-align:center;\'>Verification processing...</p>'"></div></div>`; 
+        appContent.innerHTML = `
+            <div class="page-container" style="padding:20px;">
+                <div class="profile-header-card" style="background:white; padding:20px; border-radius:20px; text-align:center; box-shadow: 0 4px 15 rgba(0,0,0,0.05);">
+                    <div class="profile-icon" style="width:70px; height:70px; background:#f3e8ff; color:#6a0dad; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:24px;"><i class="fas fa-user"></i></div>
+                    <h3 style="margin-bottom:5px; color:#111;">${user.full_name}</h3>
+                    <p style="color:#666; font-size:14px;">${user.phone_number}</p>
+                    <div class="referral-box" style="background: #f4f4f4; border-radius: 12px; padding: 15px; margin-top: 15px; text-align: center; border: 1px dashed #6a0dad;">
+                        <small style="font-weight:bold; color:#555;">SHARE LINK & EARN 5%</small>
+                        <div style="margin-top:10px; background: #fff; padding: 10px; border-radius: 8px; font-size: 11px; word-break: break-all; color: #111; border: 1px solid #eee;">${uniqueReferralLink}</div>
+                        <div style="display: flex; justify-content: space-between; align-items:center; margin-top: 10px;">
+                            <strong style="color:#6a0dad; font-size: 18px;">${refCode}</strong>
+                            <button onclick="window.copyReferralLink('${refCode}')" class="btn-deposit" style="padding:8px 20px; font-size:12px; border-radius:8px !important; cursor:pointer;">COPY LINK</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="action-list-card" style="margin-top:20px; background:white; border-radius:20px; overflow:hidden;">
+                    <a href="https://chat.whatsapp.com/Dw76vw5BJ68FONRPd6GPUi" target="_blank" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fab fa-whatsapp" style="width:25px; color:#25D366;"></i> Community Group</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="#change-password" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-key" style="width:25px; color:#6a0dad;"></i> Change Password</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="${pinActionHash}" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-lock" style="width:25px; color:#6a0dad;"></i> ${pinActionText}</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="#history" class="action-list-item" style="display:flex; justify-content:space-between; padding:18px; border-bottom:1px solid #f0f0f0; text-decoration:none; color:#111;">
+                        <span style="font-weight:700;"><i class="fas fa-list" style="width:25px; color:#6a0dad;"></i> Records</span><i class="fas fa-chevron-right"></i>
+                    </a>
+                    <a href="javascript:void(0)" onclick="window.logoutUser()" class="action-list-item" style="display:flex; padding:18px; text-decoration:none; color:#ef4444; font-weight:bold;">
+                        <span><i class="fas fa-sign-out-alt" style="width:25px;"></i> Logout</span>
+                    </a>
+                </div>
+            </div>`;
+    } catch(e) {}
 };
 
 const renderChangePasswordPage = async () => {
-    appContent.innerHTML = `<div style="padding: 20px;"><h2 style="font-weight:800; margin-bottom:25px; color:var(--text-dark);">Security Settings</h2><div style="background:white; padding:30px; border-radius:28px; box-shadow:var(--card-shadow);"><form id="changePasswordForm"><div class="form-group"><label>Current Password</label><input type="password" id="oldPassword" required></div><div class="form-group"><label>New Password</label><input type="password" id="newPassword" required></div><button type="submit" class="btn-deposit" style="width:100%; padding:18px; background:var(--text-dark)!important;">UPDATE PASSWORD</button></form></div></div>`;
+    appContent.innerHTML = `
+        <div class="page-container">
+            <h2 style="color:#111;">Change Password</h2>
+            <div style="background:white; padding:30px; border-radius:20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label style="color:#111; font-weight:700;">Current Password</label>
+                        <input type="password" id="oldPassword" class="security-input" required placeholder="Enter current password">
+                    </div>
+                    <div class="form-group" style="margin-top:15px;">
+                        <label style="color:#111; font-weight:700;">New Password</label>
+                        <input type="password" id="newPassword" class="security-input" required placeholder="Enter new password">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update Password</button>
+                </form>
+            </div>
+        </div>`;
     document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { method: 'POST', body: JSON.stringify({ oldPassword: oldPassword.value, newPassword: newPassword.value }) });
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/change-password`, { 
+            method: 'POST', 
+            body: JSON.stringify({ oldPassword: oldPassword.value, newPassword: newPassword.value }) 
+        });
         const result = await res.json();
-        if (res.ok) { showSuccessModal("Credentials updated successfully!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else alert(result.message);
-    });
-};
-
-const renderSetPinPage = async () => {
-    appContent.innerHTML = `<div style="padding:20px;"><h2 style="font-weight:800; color:var(--text-dark);">Security PIN</h2><div style="background:white; padding:40px; border-radius:28px; text-align:center; box-shadow:var(--card-shadow);"><form id="pinForm"><p style="color:#64748B;font-size:14px;margin-bottom:30px;">Set a 4-digit code for withdrawal authorization.</p><input type="password" id="pinInput" maxlength="4" style="text-align:center; font-size:32px; letter-spacing:15px; border:none; background:#F1F5F9; padding:20px; border-radius:18px;" required><button type="submit" class="btn-deposit" style="width:100%; margin-top:30px; padding:18px;">ACTIVATE PIN</button></form></div></div>`;
-    document.getElementById('pinForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin: pinInput.value }) });
-        if (res.ok) { showSuccessModal("Security PIN active!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else alert("PIN activation failed.");
+        if (res.ok) { showSuccessModal("Password Updated!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert(result.message || "Failed"); }
     });
 };
 
 const renderResetPinPage = async () => {
-    appContent.innerHTML = `<div style="padding:20px;"><h2 style="font-weight:800; color:var(--text-dark);">Transaction PIN</h2><div style="background:white; padding:40px; border-radius:28px; text-align:center; box-shadow:var(--card-shadow);"><form id="resetPinForm"><p style="color:#64748B;font-size:14px;margin-bottom:30px;">Define your withdrawal authorization code.</p><input type="password" id="newPinInput" maxlength="4" style="text-align:center; font-size:32px; letter-spacing:15px; border:none; background:#F1F5F9; padding:20px; border-radius:18px;" required><button type="submit" class="btn-deposit" style="width:100%; margin-top:30px; padding:18px;">UPDATE PIN</button></form></div></div>`;
+    appContent.innerHTML = `
+        <div class="page-container">
+            <h2 style="color:#111;">Reset Transaction PIN</h2>
+            <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <p style="color:#555; margin-bottom:20px;">Enter a new 4-digit PIN.</p>
+                <form id="resetPinForm">
+                    <div class="form-group">
+                        <input type="password" id="newPinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important; color:#000 !important;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Update PIN</button>
+                </form>
+            </div>
+        </div>`;
     document.getElementById('resetPinForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const res = await fetchWithAuth(`${API_BASE_URL}/users/reset-pin`, { method: 'POST', body: JSON.stringify({ newPin: newPinInput.value }) });
-        if (res.ok) { showSuccessModal("New PIN established!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else alert("Update failed.");
+        if (res.ok) { showSuccessModal("PIN Updated!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert("Failed to update PIN"); }
     });
 };
 
+const renderSetPinPage = async () => {
+    appContent.innerHTML = `
+        <div class="page-container">
+            <h2 style="color:#111;">Security PIN</h2>
+            <div style="background:white; padding:30px; border-radius:20px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <p style="color:#555; margin-bottom:20px;">Create a 4-digit PIN.</p>
+                <form id="pinForm">
+                    <div class="form-group">
+                        <input type="password" id="pinInput" class="security-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" required 
+                               style="text-align:center !important; letter-spacing:10px !important; font-size:24px !important; color:#000 !important;">
+                    </div>
+                    <button type="submit" class="btn-deposit" style="width:100%; margin-top:20px; padding:15px; border-radius:12px;">Save Security PIN</button>
+                </form>
+            </div>
+        </div>`;
+    document.getElementById('pinForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const res = await fetchWithAuth(`${API_BASE_URL}/users/set-pin`, { method: 'POST', body: JSON.stringify({ pin: pinInput.value }) });
+        if (res.ok) { showSuccessModal("PIN Set!"); setTimeout(() => { window.location.hash = '#me'; router(); }, 2000); } else { alert("Failed to set PIN"); }
+    });
+};
+
+const renderActiveInvestmentsPage = async () => {
+    appContent.innerHTML = '<p style="text-align: center; margin-top: 50px;">Syncing Portfolio...</p>';
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/dashboard`, { method: 'GET' });
+        const data = await response.json();
+        const investments = data.active_investments || [];
+
+        if (investments.length === 0) {
+            appContent.innerHTML = `
+                <div class="page-container">
+                    <div class="page-header"><h2 style="color:#111;">My Community Plans</h2></div>
+                    <div class="placeholder-card" style="text-align:center; padding: 40px;">
+                        <p style="color: #666;">You have no active plans.</p>
+                        <a href="#products" class="btn-deposit" style="display:inline-block; margin-top:10px; padding:10px 20px; border-radius:10px; text-decoration:none;">Activate a Plan</a>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        let html = '<div class="page-container"><div class="page-header"><h2 style="color:#111;">Active Plans</h2></div>';
+        
+        investments.forEach(inv => {
+            const name = inv.itemname || inv.itemName || "Winery Asset";
+            const cost = Number(inv.price || inv.investmentAmount) || 0;
+            const yieldAmt = Number(inv.daily_earning || inv.dailyYield) || 0;
+            const collected = Number(inv.total_earning || inv.totalAccumulated) || 0;
+            const daysLeft = inv.days_left !== undefined ? inv.days_left : (inv.daysLeft || 0);
+
+            html += `
+            <div class="product-card-wc" style="padding:20px; margin-bottom:20px; border-left: 6px solid #10b981; background:white; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 1px solid #f0f0f0; padding-bottom:12px; margin-bottom:12px;">
+                    <div>
+                        <h4 class="history-item-text" style="margin:0; font-size:18px; text-transform:uppercase;">${name}</h4>
+                        <small style="color:#10b981; font-weight:bold; font-size:12px;">ACTIVE EARNING</small>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="days-left-badge" style="background:${daysLeft > 5 ? '#10b981' : '#ef4444'}; color:white; padding:5px 12px; border-radius:20px; font-size:11px; font-weight:800;">${daysLeft} DAYS LEFT</span>
+                    </div>
+                </div>
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div class="stat-item">
+                        <span class="stat-label" style="font-size:10px; color:#888;">ACQUIRED PRICE</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800;">₦${cost.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item" style="text-align:right;">
+                        <span class="stat-label" style="font-size:10px; color:#888;">DAILY YIELD</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800; color:#10b981;">₦${yieldAmt.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label" style="font-size:10px; color:#888;">TOTAL COLLECTED</span>
+                        <span class="stat-value" style="font-size:16px; font-weight:800; color:#6a0dad;">₦${collected.toLocaleString()}</span>
+                    </div>
+                    <div class="stat-item" style="text-align:right;">
+                        <span class="stat-label" style="font-size:10px; color:#888;">NEXT PAYOUT</span>
+                        <span class="stat-value" style="font-size:14px; font-weight:800;">12:00 AM</span>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        appContent.innerHTML = html + '</div>';
+    } catch (e) { 
+        console.error("Dashboard Render Error:", e);
+        appContent.innerHTML = '<p style="text-align:center; color:#111; padding:20px;">Critical Sync Error. Please reload.</p>'; 
+    }
+};
+
+const renderCertificatePage_Final = () => { appContent.innerHTML = `<div class="page-container" style="text-align:center;"><h2 style="color:#111;">Certificate</h2><img src="image.png" style="width:100%; border-radius: 10px;" onerror="this.style.display='none'"></div>`; };
+
 // ==========================================
-// 6. ROUTER & SYSTEM HANDSHAKE
+// 6. ROUTER & EVENT SYSTEM
 // ==========================================
 
 const router = () => {
@@ -497,10 +820,7 @@ const router = () => {
     
     if (!token) { logoutUser(); return; }
     bottomNav.style.display = 'flex';
-    document.querySelectorAll('.nav-link').forEach(l => { 
-        l.classList.remove('active'); 
-        if (l.getAttribute('href') === hash) l.classList.add('active'); 
-    });
+    document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); if (link.getAttribute('href') === hash) link.classList.add('active'); });
 
     switch (hash) {
         case '#home': renderHomeScreen(); break;
@@ -514,13 +834,12 @@ const router = () => {
         case '#certificate': renderCertificatePage(); break;
         case '#rewards': renderRewardsPage(); break; 
         case '#support': renderSupportPage(); break;
+        case '#set-pin': renderSetPinPage(); break; 
+        case '#reset-pin': renderResetPinPage(); break; 
+        case '#change-password': renderChangePasswordPage(); break; 
         case '#my-plans': renderActiveInvestmentsPage(); break;
-        case '#change-password': renderChangePasswordPage(); break;
-        case '#set-pin': renderSetPinPage(); break;
-        case '#reset-pin': renderResetPinPage(); break;
         default: renderHomeScreen(); 
     }
-    window.scrollTo(0, 0);
 };
 
 window.addEventListener('hashchange', router);
@@ -529,50 +848,42 @@ document.getElementById('closeModalBtn').addEventListener('click', closeModal);
 appContent.addEventListener('click', handleInvestClick);
 
 // ==========================================
-// 7. FULL FOMO ENGINE
+// 8. SOCIAL PROOF POPUPS (FOMO)
 // ==========================================
 (function startSocialProof() {
     if (localStorage.getItem('user_email') === 'audit@flutterwave.com') return;
 
     const fomoData = {
-        names: ["Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako", "Dayo Ajayi", "Blessing Onoh", "Suleiman Audu", "Chika Uzor", "Babatunde Fash", "Hauwa Garba", "Nkem Okoro", "Bashir Usman", "Yinka Davies", "Zainab Idris", "Umar Danjuma", "Ekaette Akpan", "Olawale Cole", "Nneoma Dike", "Garba Shehu", "Bukky Wright", "Chinedu Ikedieze", "Osas Ighodaro", "Toke Makinwa", "Banky W", "Tiwa Savage", "Don Jazzy", "Wizkid Ayo", "Davido Adeleke", "Burna Boy", "Olamide Baddo", "Phyno Nelson", "Patoranking Okolo", "Flavour N'abania", "Tekno Miles", "Falz BahdGuy", "Mr Eazi", "Simi Kosoko", "Adekunle Gold", "Yemi Alade", "Kizz Daniel", "Fireboy DML", "Rema Divine", "Joeboy Akinfenwa", "Tems Openiyi", "Ayra Starr", "Ckay Kasari", "Zlatan Ibile", "Naira Marley", "Bella Shmurda", "Mohbad Aloba", "Omah Lay", "Buju Benson", "Oxlade Olaitan", "Victony Anthony", "Blaqbonez Emeka", "Teni Apata", "Skales Raoul", "Ice Prince", "M.I Abaga", "Reminisce Alaga", "Vector Tha Viper", "Ladipoe Eso", "Dremo Abori", "Mayorkun Adewale", "Peruzzi Okoro", "Tunde Ednut", "Bobrisky Okuneye", "Eniola Badmus", "Funke Akindele", "Mercy Johnson", "Rita Dominic", "Genevieve Nnaji", "Omotola Jalade", "Ini Edo", "Uche Jombo", "Omoni Oboli", "Toyin Abraham", "Iyabo Ojo", "Mercy Aigbe", "Odunlade Adekola", "Femi Adebayo", "Muyiwa Ademola", "Ali Nuhu", "Rahama Sadau", "Hadiza Gabon", "Sadiq Sani Sadiq", "Nuhu Abdullahi", "Ado Gwanja", "Hamisu Breaker", "Umar M Shareef", "Zpreety Queen", "Momee Gombe", "Maryam Yahaya", "Fati Washa", "Aisha Tsamiya", "Amal Umar", "Bilkisu Shema", "Nafisat Abdullahi", "Haleema Atete", "Sadiya Kabala", "Jamila Nagudu", "Fati SU"],
+        names: [
+            "Adewale Okafor", "Chioma Adeyemi", "Musa Ibrahim", "Ngozi Okeke", "Tunde Bakare", "Fatima Bello", "Emeka Nwosu", "Zainab Sani", "Olumide Balogun", "Aisha Mohammed", "Chinedu Eze", "Yusuf Abdullahi", "Funke Adegoke", "Grace Okafor", "Ahmed Suleiman", "Kehinde Alabi", "Amaka Onwuka", "Ibrahim Kabiru", "Toyin Oladipo", "Chika Nnaji", "Sadiq Umar", "Bisi Akindele", "Ifeanyi Okonkwo", "Halima Yusuf", "Seun Adebayo", "Uche Obi", "Maryam Abubakar", "Femi Olayinka", "Nneka Umeh", "Aliyu Garba", "Bolaji Coker", "Ogechi Ibe", "Kabiru Haruna", "Tola Fashola", "Chidi Okpara", "Rukayat Hassan", "Kunle Afolabi", "Ebele Chukwu", "Mustapha Idris", "Yemi Ojo", "Chinwe Dike", "Hauwa Adamu", "Segun Ogundipe", "Amarachi Eze", "Usman Bello", "Simi Adeola", "Obinna Uche", "Khadija Salihu", "Rotimi Cole", "Ada Obi", "Bashir Aminu", "Bukola Ayeni", "Kelechi Ibeh", "Nafisa Musa", "Jide Soweto", "Chinyere Kalu", "Aminu Kano", "Lola Omotola", "Emeka Ugochukwu", "Zarah Ahmed", "Tope Adeniyi", "Ify Nwachukwu", "Sani Danladi", "Remi Coker", "Chuks Okereke", "Farida Lawal", "Wale Tinubu", "Oby Ezekwesili", "Yakubu Moses", "Folake Adeyemi", "Chigozie Obi", "Rakiya Sani", "Bayo Adekunle", "Nkiru Okoye", "Isah Mohammed", "Titilayo Ajayi", "Collins Eke", "Jumoke Adeleke", "Abba Kyari", "Ronke Odusanya", "Prince Okon", "Asabe Kabir", "Deji Olanrewaju", "Chi-Chi Okoro", "Balarabe Musa", "Sola Sobowale", "Ebube Nnamdi", "Lami George", "Femi Falana", "Uju Nwafor", "Gambo Shehu", "Kemi Adetiba", "Pascal Atuma", "Hassana Garba", "Lanre Olusola", "Anita Okoye", "Shehu Shagari", "Bimbo Akintola", "Ikechukwu Uche", "Salamatu Bako",
+            "Dayo Ajayi", "Blessing Onoh", "Suleiman Audu", "Chika Uzor", "Babatunde Fash", "Hauwa Garba", "Nkem Okoro", "Bashir Usman", "Yinka Davies", "Zainab Idris", "Umar Danjuma", "Ekaette Akpan", "Olawale Cole", "Nneoma Dike", "Garba Shehu", "Bukky Wright", "Chinedu Ikedieze", "Osas Ighodaro", "Toke Makinwa", "Banky W", "Tiwa Savage", "Don Jazzy", "Wizkid Ayo", "Davido Adeleke", "Burna Boy", "Olamide Baddo", "Phyno Nelson", "Patoranking Okolo", "Flavour N'abania", "Tekno Miles", "Falz BahdGuy", "Mr Eazi", "Simi Kosoko", "Adekunle Gold", "Yemi Alade", "Kizz Daniel", "Fireboy DML", "Rema Divine", "Joeboy Akinfenwa", "Tems Openiyi", "Ayra Starr", "Ckay Kasari", "Zlatan Ibile", "Naira Marley", "Bella Shmurda", "Mohbad Aloba", "Omah Lay", "Buju Benson", "Oxlade Olaitan", "Victony Anthony", "Blaqbonez Emeka", "Teni Apata", "Skales Raoul", "Ice Prince", "M.I Abaga", "Reminisce Alaga", "Vector Tha Viper", "Ladipoe Eso", "Dremo Abori", "Mayorkun Adewale", "Peruzzi Okoro", "Tunde Ednut", "Bobrisky Okuneye", "Eniola Badmus", "Funke Akindele", "Mercy Johnson", "Rita Dominic", "Genevieve Nnaji", "Omotola Jalade", "Ini Edo", "Uche Jombo", "Omoni Oboli", "Toyin Abraham", "Iyabo Ojo", "Mercy Aigbe", "Odunlade Adekola", "Femi Adebayo", "Muyiwa Ademola", "Ali Nuhu", "Rahama Sadau", "Hadiza Gabon", "Sadiq Sani Sadiq", "Nuhu Abdullahi", "Ado Gwanja", "Hamisu Breaker", "Umar M Shareef", "Zpreety Queen", "Momee Gombe", "Maryam Yahaya", "Fati Washa", "Aisha Tsamiya", "Amal Umar", "Bilkisu Shema", "Nafisat Abdullahi", "Haleema Atete", "Sadiya Kabala", "Jamila Nagudu", "Fati SU"
+        ],
         locations: ["Lagos", "Abuja", "Port Harcourt", "Kano", "Ibadan", "Enugu", "Warri", "Benin City", "Kaduna", "Jos"],
         actions: [ { text: "just joined community", icon: "👤", color: "#3b82f6" }, { text: "acquired plan ₦50,000", icon: "💰", color: "#10b981" }, { text: "acquired plan ₦100,000", icon: "💰", color: "#10b981" }, { text: "joined VIP community", icon: "🍷", color: "#eab308" }, { text: "received yield ₦15,000", icon: "🏦", color: "#f43f5e" } ],
         times: ["Just now", "2 secs ago", "5 secs ago", "10 secs ago"]
     };
-
     const style = document.createElement('style');
-    style.innerHTML = `
-        #fomo-popup { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(200%); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-left: 5px solid #10B981; padding: 12px 18px; border-radius: 20px; box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1); z-index: 9999; transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; gap: 12px; width: 90%; max-width: 340px; pointer-events: none; }
-        #fomo-popup.show { transform: translateX(-50%) translateY(0); }
-        .fomo-icon-box { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #F1F5F9; flex-shrink: 0; }
-        .fomo-content { display: flex; flex-direction: column; }
-        .fomo-name { font-size: 13px; font-weight: 800; color: #0F172A; }
-        .fomo-desc { font-size: 12px; color: #64748B; }
-        .fomo-meta { font-size: 10px; color: #94A3B8; margin-top: 1px; }
-    `;
+    style.innerHTML = `#fomo-popup { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(200%); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-left: 5px solid #10B981; padding: 12px 16px; border-radius: 16px; box-shadow: 0 10px 40px -5px rgba(0, 0, 0, 0.15); font-family: sans-serif; z-index: 9999; transition: all 0.5s ease; display: flex; align-items: center; gap: 15px; width: 90%; max-width: 380px; pointer-events: none; } #fomo-popup.show { transform: translateX(-50%) translateY(0); } .fomo-icon-box { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; background: #f3f4f6; flex-shrink: 0; } .fomo-content { display: flex; flex-direction: column; } .fomo-name { font-size: 14px; font-weight: 800; color: #111; } .fomo-desc { font-size: 13px; color: #555; } .fomo-meta { font-size: 11px; color: #999; margin-top: 2px; }`;
     document.head.appendChild(style);
-
-    const popup = document.createElement('div');
-    popup.id = 'fomo-popup';
-    popup.innerHTML = `<div class="fomo-icon-box" id="fomo-icon">👋</div><div class="fomo-content"><span class="fomo-name" id="fomo-name">...</span><span class="fomo-desc" id="fomo-action">...</span><span class="fomo-meta"><span id="fomo-location">Lagos</span> • <span id="fomo-time">Just now</span></span></div>`;
+    const popup = document.createElement('div'); popup.id = 'fomo-popup'; popup.innerHTML = `<div class="fomo-icon-box" id="fomo-icon">👋</div><div class="fomo-content"><span class="fomo-name" id="fomo-name">...</span><span class="fomo-desc" id="fomo-action">...</span><span class="fomo-meta"><span id="fomo-location">Lagos</span> • <span id="fomo-time">Just now</span></span></div>`;
     document.body.appendChild(popup);
-
-    function trigger() {
-        const hash = window.location.hash; if(hash !== '#home' && hash !== '') return;
+    function showNotification() {
+        const hash = window.location.hash; if(hash !== '#home' && hash !== '') return; 
         const name = fomoData.names[Math.floor(Math.random() * fomoData.names.length)];
         const loc = fomoData.locations[Math.floor(Math.random() * fomoData.locations.length)];
-        const act = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
+        const actionObj = fomoData.actions[Math.floor(Math.random() * fomoData.actions.length)];
         const time = fomoData.times[Math.floor(Math.random() * fomoData.times.length)];
-        
-        document.getElementById('fomo-name').innerText = name;
-        document.getElementById('fomo-action').innerText = act.text;
-        document.getElementById('fomo-location').innerText = loc;
-        document.getElementById('fomo-time').innerText = time;
-        document.getElementById('fomo-icon').innerText = act.icon;
-        popup.style.borderLeftColor = act.color;
-        popup.classList.add('show');
-        setTimeout(() => popup.classList.remove('show'), 4000);
+        const nameEl = document.getElementById('fomo-name');
+        const actEl = document.getElementById('fomo-action');
+        const locEl = document.getElementById('fomo-location');
+        const timeEl = document.getElementById('fomo-time');
+        const iconEl = document.getElementById('fomo-icon');
+        const popupEl = document.getElementById('fomo-popup');
+        if (nameEl && actEl && locEl && timeEl && iconEl && popupEl) {
+            nameEl.innerText = name; actEl.innerText = actionObj.text; locEl.innerText = loc; timeEl.innerText = time; iconEl.innerText = actionObj.icon;
+            popupEl.style.borderLeftColor = actionObj.color;
+            popupEl.classList.add('show'); setTimeout(() => { popupEl.classList.remove('show'); }, 4000);
+        }
     }
-    setTimeout(trigger, 2000); setInterval(trigger, 15000);
+    setTimeout(showNotification, 2000); setInterval(() => { showNotification(); }, 12000);
 })();
